@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import Customers from "./pages/Customers";
 import Invoices from "./pages/Invoices";
 import Recurring from "./pages/Recurring";
+import CreateInvoice from "./pages/CreateInvoice";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -19,6 +20,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/invoices/new" element={<CreateInvoice />} />
           <Route path="/customers" element={<Customers />} />
           <Route path="/invoices" element={<Invoices />} />
           <Route path="/recurring" element={<Recurring />} />
