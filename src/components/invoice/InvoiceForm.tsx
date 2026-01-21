@@ -1,9 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { CalendarIcon, Building2, MapPin, RefreshCcw, Save, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,7 @@ import { LineItemsEditor, LineItem } from "./LineItemsEditor";
 import { TaxCalculator, useTaxCalculation } from "./TaxCalculator";
 import { CustomerSelector } from "@/components/customers/CustomerSelector";
 import { Customer, Address } from "@/hooks/useCustomers";
-import { useNextInvoiceNumber, useCreateInvoice } from "@/hooks/useInvoices";
+import { useNextInvoiceNumber, useUpdateInvoice, useDeleteInvoiceItems, Invoice, InvoiceItem } from "@/hooks/useInvoices";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -40,15 +40,50 @@ const invoiceFormSchema = z.object({
 
 type InvoiceFormData = z.infer<typeof invoiceFormSchema>;
 
+export interface InvoiceWithRelations {
+  id: string;
+  invoice_no: string;
+  customer_id: string | null;
+  date: string;
+  e_way_bill_no: string | null;
+  supplier_invoice_no: string | null;
+  supplier_invoice_date: string | null;
+  other_references: string | null;
+  billing_address_id: string | null;
+  shipping_address_id: string | null;
+  subtotal: number;
+  discount_percent: number;
+  discount_amount: number;
+  tax_rate: number;
+  tax_amount: number;
+  round_off: number;
+  grand_total: number;
+  amount_in_words: string | null;
+  status: string;
+  is_recurring: boolean;
+  recurring_frequency: string | null;
+  next_invoice_date: string | null;
+  created_at: string;
+  updated_at: string;
+  customers?: Customer | null;
+  billing_address?: Record<string, any> | null;
+  shipping_address?: Record<string, any> | null;
+  items?: InvoiceItem[];
+}
+
 interface InvoiceFormProps {
+  invoice?: InvoiceWithRelations | null;
   onCancel?: () => void;
   onSuccess?: () => void;
 }
 
-export function InvoiceForm({ onCancel, onSuccess }: InvoiceFormProps) {
+export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) {
   const navigate = useNavigate();
   const { data: nextInvoiceNo } = useNextInvoiceNumber();
-  const createInvoice = useCreateInvoice();
+  const updateInvoice = useUpdateInvoice();
+  const deleteInvoiceItems = useDeleteInvoiceItems();
+  
+  const isEditing = !!invoice;
   
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [selectedBillingAddress, setSelectedBillingAddress] = useState<Address | null>(null);
@@ -72,10 +107,57 @@ export function InvoiceForm({ onCancel, onSuccess }: InvoiceFormProps) {
     },
   });
 
-  // Set invoice number when loaded
-  if (nextInvoiceNo && !form.getValues("invoiceNo")) {
-    form.setValue("invoiceNo", nextInvoiceNo);
-  }
+  // Initialize form with existing invoice data
+  useEffect(() => {
+    if (invoice) {
+      form.reset({
+        invoiceNo: invoice.invoice_no,
+        date: parseISO(invoice.date),
+        eWayBillNo: invoice.e_way_bill_no || "",
+        supplierInvoiceNo: invoice.supplier_invoice_no || "",
+        supplierInvoiceDate: invoice.supplier_invoice_date ? parseISO(invoice.supplier_invoice_date) : null,
+        otherReferences: invoice.other_references || "",
+        isRecurring: invoice.is_recurring,
+        recurringFrequency: invoice.recurring_frequency as any,
+      });
+      
+      setDiscountPercent(invoice.discount_percent);
+      setTaxRate(invoice.tax_rate);
+      
+      if (invoice.customers) {
+        setSelectedCustomer(invoice.customers);
+      }
+      if (invoice.billing_address && invoice.billing_address.id) {
+        setSelectedBillingAddress(invoice.billing_address as Address);
+      }
+      if (invoice.shipping_address && invoice.shipping_address.id) {
+        setSelectedShippingAddress(invoice.shipping_address as Address);
+      }
+      
+      if (invoice.items && invoice.items.length > 0) {
+        setLineItems(
+          invoice.items.map((item) => ({
+            id: item.id,
+            slNo: item.sl_no,
+            description: item.description,
+            serialNumbers: item.serial_numbers?.join(", ") || "",
+            quantity: item.quantity,
+            unit: item.unit,
+            rate: item.rate,
+            discountPercent: item.discount_percent,
+            amount: item.amount,
+          }))
+        );
+      }
+    }
+  }, [invoice, form]);
+
+  // Set invoice number when loaded (only for new invoices)
+  useEffect(() => {
+    if (!isEditing && nextInvoiceNo && !form.getValues("invoiceNo")) {
+      form.setValue("invoiceNo", nextInvoiceNo);
+    }
+  }, [nextInvoiceNo, isEditing, form]);
 
   const subtotal = useMemo(() => {
     return lineItems.reduce((sum, item) => sum + item.amount, 0);
@@ -107,7 +189,6 @@ export function InvoiceForm({ onCancel, onSuccess }: InvoiceFormProps) {
     setIsSubmitting(true);
 
     try {
-      // Create the invoice
       const invoicePayload = {
         invoice_no: data.invoiceNo,
         customer_id: selectedCustomer?.id || null,
@@ -126,43 +207,72 @@ export function InvoiceForm({ onCancel, onSuccess }: InvoiceFormProps) {
         round_off: totals.roundOff,
         grand_total: totals.grandTotal,
         amount_in_words: totals.amountInWords,
-        status: "draft" as const,
         is_recurring: data.isRecurring,
         recurring_frequency: data.isRecurring ? data.recurringFrequency : null,
         next_invoice_date: null,
       };
 
-      const { data: invoice, error: invoiceError } = await supabase
-        .from("invoices")
-        .insert(invoicePayload)
-        .select()
-        .single();
+      if (isEditing && invoice) {
+        // Update existing invoice
+        const { error: updateError } = await supabase
+          .from("invoices")
+          .update(invoicePayload)
+          .eq("id", invoice.id);
 
-      if (invoiceError) throw invoiceError;
+        if (updateError) throw updateError;
 
-      // Create line items
-      const itemsPayload = lineItems.map((item) => ({
-        invoice_id: invoice.id,
-        sl_no: item.slNo,
-        description: item.description,
-        serial_numbers: item.serialNumbers ? item.serialNumbers.split(",").map((s) => s.trim()).filter(Boolean) : null,
-        quantity: item.quantity,
-        unit: item.unit,
-        rate: item.rate,
-        discount_percent: item.discountPercent,
-        amount: item.amount,
-      }));
+        // Delete existing items and re-create
+        await deleteInvoiceItems.mutateAsync(invoice.id);
 
-      const { error: itemsError } = await supabase.from("invoice_items").insert(itemsPayload);
+        const itemsPayload = lineItems.map((item) => ({
+          invoice_id: invoice.id,
+          sl_no: item.slNo,
+          description: item.description,
+          serial_numbers: item.serialNumbers ? item.serialNumbers.split(",").map((s) => s.trim()).filter(Boolean) : null,
+          quantity: item.quantity,
+          unit: item.unit,
+          rate: item.rate,
+          discount_percent: item.discountPercent,
+          amount: item.amount,
+        }));
 
-      if (itemsError) throw itemsError;
+        const { error: itemsError } = await supabase.from("invoice_items").insert(itemsPayload);
+        if (itemsError) throw itemsError;
 
-      toast.success("Invoice created successfully!");
+        toast.success("Invoice updated successfully!");
+      } else {
+        // Create new invoice
+        const { data: newInvoice, error: invoiceError } = await supabase
+          .from("invoices")
+          .insert({ ...invoicePayload, status: "draft" as const })
+          .select()
+          .single();
+
+        if (invoiceError) throw invoiceError;
+
+        const itemsPayload = lineItems.map((item) => ({
+          invoice_id: newInvoice.id,
+          sl_no: item.slNo,
+          description: item.description,
+          serial_numbers: item.serialNumbers ? item.serialNumbers.split(",").map((s) => s.trim()).filter(Boolean) : null,
+          quantity: item.quantity,
+          unit: item.unit,
+          rate: item.rate,
+          discount_percent: item.discountPercent,
+          amount: item.amount,
+        }));
+
+        const { error: itemsError } = await supabase.from("invoice_items").insert(itemsPayload);
+        if (itemsError) throw itemsError;
+
+        toast.success("Invoice created successfully!");
+      }
+
       onSuccess?.();
       navigate("/invoices");
     } catch (error: any) {
-      console.error("Error creating invoice:", error);
-      toast.error(error.message || "Failed to create invoice");
+      console.error("Error saving invoice:", error);
+      toast.error(error.message || "Failed to save invoice");
     } finally {
       setIsSubmitting(false);
     }
@@ -176,8 +286,12 @@ export function InvoiceForm({ onCancel, onSuccess }: InvoiceFormProps) {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-serif font-bold">Create Invoice</h2>
-            <p className="text-muted-foreground">Fill in the details to create a new invoice</p>
+            <h2 className="text-2xl font-serif font-bold">
+              {isEditing ? `Edit Invoice #${invoice?.invoice_no}` : "Create Invoice"}
+            </h2>
+            <p className="text-muted-foreground">
+              {isEditing ? "Update the invoice details" : "Fill in the details to create a new invoice"}
+            </p>
           </div>
           <div className="flex gap-2">
             <Button type="button" variant="outline" onClick={onCancel || (() => navigate("/invoices"))}>
@@ -186,7 +300,7 @@ export function InvoiceForm({ onCancel, onSuccess }: InvoiceFormProps) {
             </Button>
             <Button type="submit" disabled={isSubmitting} className="gap-2">
               <Save className="h-4 w-4" />
-              {isSubmitting ? "Saving..." : "Save Invoice"}
+              {isSubmitting ? "Saving..." : isEditing ? "Update Invoice" : "Save Invoice"}
             </Button>
           </div>
         </div>

@@ -1,11 +1,19 @@
 import { AppLayout } from "@/components/layout/AppLayout";
-import { useInvoices } from "@/hooks/useInvoices";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useInvoices, useUpdateInvoiceStatus, Invoice } from "@/hooks/useInvoices";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FileText, Plus, Eye, RefreshCcw } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { FileText, Plus, Edit, RefreshCcw, MoreVertical, Send, CheckCircle, XCircle, Clock } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 const statusColors: Record<string, string> = {
   draft: "bg-muted text-muted-foreground",
@@ -14,9 +22,17 @@ const statusColors: Record<string, string> = {
   cancelled: "bg-destructive/10 text-destructive",
 };
 
+const statusIcons: Record<string, React.ReactNode> = {
+  draft: <Clock className="h-3 w-3" />,
+  sent: <Send className="h-3 w-3" />,
+  paid: <CheckCircle className="h-3 w-3" />,
+  cancelled: <XCircle className="h-3 w-3" />,
+};
+
 export default function InvoicesPage() {
   const navigate = useNavigate();
   const { data: invoices, isLoading } = useInvoices();
+  const updateStatus = useUpdateInvoiceStatus();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-IN", {
@@ -24,6 +40,15 @@ export default function InvoicesPage() {
       currency: "INR",
       minimumFractionDigits: 2,
     }).format(amount);
+  };
+
+  const handleStatusChange = async (invoiceId: string, status: Invoice["status"]) => {
+    try {
+      await updateStatus.mutateAsync({ id: invoiceId, status });
+      toast.success(`Invoice status updated to ${status}`);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update status");
+    }
   };
 
   return (
@@ -97,13 +122,54 @@ export default function InvoicesPage() {
                     </div>
                     <div className="text-right">
                       <p className="font-semibold">{formatCurrency(Number(invoice.grand_total))}</p>
-                      <Badge className={statusColors[invoice.status] || statusColors.draft}>
+                      <Badge className={`gap-1 ${statusColors[invoice.status] || statusColors.draft}`}>
+                        {statusIcons[invoice.status]}
                         {invoice.status}
                       </Badge>
                     </div>
-                    <Button size="icon" variant="ghost">
-                      <Eye className="h-4 w-4" />
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button size="icon" variant="ghost">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem onClick={() => navigate(`/invoices/${invoice.id}/edit`)}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit Invoice
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => handleStatusChange(invoice.id, "draft")}
+                          disabled={invoice.status === "draft"}
+                        >
+                          <Clock className="h-4 w-4 mr-2" />
+                          Mark as Draft
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleStatusChange(invoice.id, "sent")}
+                          disabled={invoice.status === "sent"}
+                        >
+                          <Send className="h-4 w-4 mr-2" />
+                          Mark as Sent
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleStatusChange(invoice.id, "paid")}
+                          disabled={invoice.status === "paid"}
+                        >
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          Mark as Paid
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleStatusChange(invoice.id, "cancelled")}
+                          disabled={invoice.status === "cancelled"}
+                          className="text-destructive"
+                        >
+                          <XCircle className="h-4 w-4 mr-2" />
+                          Mark as Cancelled
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </CardContent>
               </Card>
