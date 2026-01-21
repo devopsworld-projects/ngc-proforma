@@ -1,5 +1,6 @@
 import { AppLayout } from "@/components/layout/AppLayout";
-import { useInvoices, useUpdateInvoiceStatus, Invoice } from "@/hooks/useInvoices";
+import { useInvoices, useInvoice, useUpdateInvoiceStatus, Invoice } from "@/hooks/useInvoices";
+import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,9 +12,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { FileText, Plus, Edit, RefreshCcw, MoreVertical, Send, CheckCircle, XCircle, Clock } from "lucide-react";
+import { FileText, Plus, Edit, RefreshCcw, MoreVertical, Send, CheckCircle, XCircle, Clock, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { generateInvoicePDF } from "@/lib/pdf-generator";
+import { supabase } from "@/integrations/supabase/client";
 
 const statusColors: Record<string, string> = {
   draft: "bg-muted text-muted-foreground",
@@ -32,6 +35,7 @@ const statusIcons: Record<string, React.ReactNode> = {
 export default function InvoicesPage() {
   const navigate = useNavigate();
   const { data: invoices, isLoading } = useInvoices();
+  const { data: companySettings } = useCompanySettings();
   const updateStatus = useUpdateInvoiceStatus();
 
   const formatCurrency = (amount: number) => {
@@ -48,6 +52,49 @@ export default function InvoicesPage() {
       toast.success(`Invoice status updated to ${status}`);
     } catch (error: any) {
       toast.error(error.message || "Failed to update status");
+    }
+  };
+
+  const handleExportPDF = async (invoiceId: string) => {
+    try {
+      // Fetch full invoice data with relations
+      const { data: invoice, error: invoiceError } = await supabase
+        .from("invoices")
+        .select("*, customers(*), billing_address:addresses!billing_address_id(*), shipping_address:addresses!shipping_address_id(*)")
+        .eq("id", invoiceId)
+        .single();
+
+      if (invoiceError) throw invoiceError;
+
+      const { data: items, error: itemsError } = await supabase
+        .from("invoice_items")
+        .select("*")
+        .eq("invoice_id", invoiceId)
+        .order("sl_no");
+
+      if (itemsError) throw itemsError;
+
+      if (!companySettings) {
+        toast.error("Please configure company settings first");
+        navigate("/settings");
+        return;
+      }
+
+      await generateInvoicePDF(
+        {
+          ...invoice,
+          items: items || [],
+          customer: invoice.customers,
+          billing_address: invoice.billing_address,
+          shipping_address: invoice.shipping_address,
+        },
+        companySettings
+      );
+
+      toast.success("PDF downloaded successfully");
+    } catch (error: any) {
+      console.error("PDF export error:", error);
+      toast.error(error.message || "Failed to export PDF");
     }
   };
 
@@ -127,6 +174,14 @@ export default function InvoicesPage() {
                         {invoice.status}
                       </Badge>
                     </div>
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      onClick={() => handleExportPDF(invoice.id)}
+                      title="Download PDF"
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button size="icon" variant="ghost">
@@ -134,6 +189,10 @@ export default function InvoicesPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem onClick={() => handleExportPDF(invoice.id)}>
+                          <Download className="h-4 w-4 mr-2" />
+                          Download PDF
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => navigate(`/invoices/${invoice.id}/edit`)}>
                           <Edit className="h-4 w-4 mr-2" />
                           Edit Invoice
