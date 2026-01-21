@@ -10,6 +10,7 @@ import Invoices from "./pages/Invoices";
 import Recurring from "./pages/Recurring";
 import CreateInvoice from "./pages/CreateInvoice";
 import EditInvoice from "./pages/EditInvoice";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/customers" element={<Customers />} />
           <Route path="/invoices" element={<Invoices />} />
           <Route path="/recurring" element={<Recurring />} />
+          <Route path="/settings" element={<Settings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
