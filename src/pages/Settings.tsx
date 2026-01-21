@@ -1,0 +1,417 @@
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { AppLayout } from "@/components/layout/AppLayout";
+import { useCompanySettings, useUpdateCompanySettings, uploadCompanyLogo, deleteCompanyLogo } from "@/hooks/useCompanySettings";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Building2, Save, Upload, X, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+
+const settingsSchema = z.object({
+  name: z.string().min(1, "Company name is required").max(200),
+  address_line1: z.string().max(200).optional(),
+  address_line2: z.string().max(200).optional(),
+  city: z.string().max(100).optional(),
+  state: z.string().max(100).optional(),
+  state_code: z.string().max(10).optional(),
+  postal_code: z.string().max(20).optional(),
+  phone: z.string().max(500).optional(),
+  email: z.string().email().max(255).optional().or(z.literal("")),
+  website: z.string().max(255).optional(),
+  gstin: z.string().max(20).optional(),
+});
+
+type SettingsFormData = z.infer<typeof settingsSchema>;
+
+export default function SettingsPage() {
+  const { data: settings, isLoading } = useCompanySettings();
+  const updateSettings = useUpdateCompanySettings();
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+
+  const form = useForm<SettingsFormData>({
+    resolver: zodResolver(settingsSchema),
+    defaultValues: {
+      name: "",
+      address_line1: "",
+      address_line2: "",
+      city: "",
+      state: "",
+      state_code: "",
+      postal_code: "",
+      phone: "",
+      email: "",
+      website: "",
+      gstin: "",
+    },
+  });
+
+  useEffect(() => {
+    if (settings) {
+      form.reset({
+        name: settings.name || "",
+        address_line1: settings.address_line1 || "",
+        address_line2: settings.address_line2 || "",
+        city: settings.city || "",
+        state: settings.state || "",
+        state_code: settings.state_code || "",
+        postal_code: settings.postal_code || "",
+        phone: settings.phone?.join(", ") || "",
+        email: settings.email || "",
+        website: settings.website || "",
+        gstin: settings.gstin || "",
+      });
+      setLogoUrl(settings.logo_url);
+    }
+  }, [settings, form]);
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image file");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Image must be less than 2MB");
+      return;
+    }
+
+    setIsUploadingLogo(true);
+    try {
+      // Delete old logo if exists
+      if (logoUrl) {
+        await deleteCompanyLogo(logoUrl);
+      }
+      const url = await uploadCompanyLogo(file);
+      setLogoUrl(url);
+      toast.success("Logo uploaded successfully");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to upload logo");
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  };
+
+  const handleRemoveLogo = async () => {
+    if (!logoUrl) return;
+    try {
+      await deleteCompanyLogo(logoUrl);
+      setLogoUrl(null);
+      toast.success("Logo removed");
+    } catch (error) {
+      toast.error("Failed to remove logo");
+    }
+  };
+
+  const onSubmit = async (data: SettingsFormData) => {
+    try {
+      const phoneArray = data.phone
+        ? data.phone.split(",").map((p) => p.trim()).filter(Boolean)
+        : null;
+
+      await updateSettings.mutateAsync({
+        id: settings?.id,
+        name: data.name,
+        address_line1: data.address_line1 || null,
+        address_line2: data.address_line2 || null,
+        city: data.city || null,
+        state: data.state || null,
+        state_code: data.state_code || null,
+        postal_code: data.postal_code || null,
+        phone: phoneArray,
+        email: data.email || null,
+        website: data.website || null,
+        gstin: data.gstin || null,
+        logo_url: logoUrl,
+      });
+
+      toast.success("Settings saved successfully");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to save settings");
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <AppLayout>
+        <div className="space-y-6">
+          <Skeleton className="h-8 w-48" />
+          <Card>
+            <CardContent className="py-6 space-y-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </CardContent>
+          </Card>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  return (
+    <AppLayout>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-serif font-bold">Company Settings</h2>
+              <p className="text-muted-foreground">
+                Manage your business details that appear on invoices
+              </p>
+            </div>
+            <Button type="submit" disabled={updateSettings.isPending} className="gap-2">
+              {updateSettings.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              Save Settings
+            </Button>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-3">
+            {/* Logo Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Company Logo</CardTitle>
+                <CardDescription>
+                  Upload your logo (max 2MB, PNG/JPG)
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex flex-col items-center gap-4">
+                  {logoUrl ? (
+                    <div className="relative">
+                      <img
+                        src={logoUrl}
+                        alt="Company logo"
+                        className="w-32 h-32 object-contain rounded-lg border bg-white"
+                      />
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="destructive"
+                        className="absolute -top-2 -right-2 h-6 w-6"
+                        onClick={handleRemoveLogo}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="w-32 h-32 rounded-lg border-2 border-dashed flex items-center justify-center bg-muted/50">
+                      <Building2 className="h-12 w-12 text-muted-foreground" />
+                    </div>
+                  )}
+                  <Label
+                    htmlFor="logo-upload"
+                    className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-md bg-muted hover:bg-muted/80 text-sm font-medium"
+                  >
+                    {isUploadingLogo ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Upload className="h-4 w-4" />
+                    )}
+                    {isUploadingLogo ? "Uploading..." : "Upload Logo"}
+                  </Label>
+                  <input
+                    id="logo-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleLogoUpload}
+                    disabled={isUploadingLogo}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Main Details */}
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="text-base">Business Information</CardTitle>
+                <CardDescription>
+                  Your company details for invoices and documents
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-4 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Company Name *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Your Company Name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="gstin"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>GSTIN</FormLabel>
+                      <FormControl>
+                        <Input placeholder="22AAAAA0000A1Z5" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="contact@company.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone Numbers</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Comma separated: 9876543210, 1234567890" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="website"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Website</FormLabel>
+                      <FormControl>
+                        <Input placeholder="www.company.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Address Section */}
+            <Card className="lg:col-span-3">
+              <CardHeader>
+                <CardTitle className="text-base">Business Address</CardTitle>
+                <CardDescription>
+                  Your registered business address
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-4 md:grid-cols-3">
+                <FormField
+                  control={form.control}
+                  name="address_line1"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Address Line 1</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Street address" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="address_line2"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Address Line 2</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Building, floor, etc." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="city"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>City</FormLabel>
+                      <FormControl>
+                        <Input placeholder="City" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="state"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>State</FormLabel>
+                      <FormControl>
+                        <Input placeholder="State" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="state_code"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>State Code</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g. 37" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="postal_code"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Postal Code</FormLabel>
+                      <FormControl>
+                        <Input placeholder="518001" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+          </div>
+        </form>
+      </Form>
+    </AppLayout>
+  );
+}
