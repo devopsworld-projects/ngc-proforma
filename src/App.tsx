@@ -8,6 +8,7 @@ import Customers from "./pages/Customers";
 import Invoices from "./pages/Invoices";
 import Recurring from "./pages/Recurring";
 import CreateInvoice from "./pages/CreateInvoice";
+import EditInvoice from "./pages/EditInvoice";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -21,6 +22,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/invoices/new" element={<CreateInvoice />} />
+          <Route path="/invoices/:id/edit" element={<EditInvoice />} />
           <Route path="/customers" element={<Customers />} />
           <Route path="/invoices" element={<Invoices />} />
           <Route path="/recurring" element={<Recurring />} />

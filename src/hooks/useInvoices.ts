@@ -63,7 +63,7 @@ export function useInvoice(id: string | undefined) {
       if (!id) return null;
       const { data: invoice, error: invoiceError } = await supabase
         .from("invoices")
-        .select("*, customers(*)")
+        .select("*, customers(*), billing_address:addresses!billing_address_id(*), shipping_address:addresses!shipping_address_id(*)")
         .eq("id", id)
         .maybeSingle();
       if (invoiceError) throw invoiceError;
@@ -79,6 +79,38 @@ export function useInvoice(id: string | undefined) {
       return { ...invoice, items: items || [] };
     },
     enabled: !!id,
+  });
+}
+
+export function useUpdateInvoiceStatus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: Invoice["status"] }) => {
+      const { data, error } = await supabase
+        .from("invoices")
+        .update({ status })
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["invoice", data.id] });
+    },
+  });
+}
+
+export function useDeleteInvoiceItems() {
+  return useMutation({
+    mutationFn: async (invoiceId: string) => {
+      const { error } = await supabase
+        .from("invoice_items")
+        .delete()
+        .eq("invoice_id", invoiceId);
+      if (error) throw error;
+    },
   });
 }
 
