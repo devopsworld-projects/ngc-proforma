@@ -14,7 +14,311 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      addresses: {
+        Row: {
+          address_line1: string
+          address_line2: string | null
+          address_type: string
+          city: string
+          country: string
+          created_at: string
+          customer_id: string
+          id: string
+          is_default: boolean
+          postal_code: string
+          state: string
+          state_code: string | null
+          updated_at: string
+        }
+        Insert: {
+          address_line1: string
+          address_line2?: string | null
+          address_type: string
+          city: string
+          country?: string
+          created_at?: string
+          customer_id: string
+          id?: string
+          is_default?: boolean
+          postal_code: string
+          state: string
+          state_code?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address_line1?: string
+          address_line2?: string | null
+          address_type?: string
+          city?: string
+          country?: string
+          created_at?: string
+          customer_id?: string
+          id?: string
+          is_default?: boolean
+          postal_code?: string
+          state?: string
+          state_code?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "addresses_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_settings: {
+        Row: {
+          address_line1: string | null
+          address_line2: string | null
+          city: string | null
+          created_at: string
+          email: string | null
+          gstin: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          phone: string[] | null
+          postal_code: string | null
+          state: string | null
+          state_code: string | null
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          address_line1?: string | null
+          address_line2?: string | null
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          gstin?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          phone?: string[] | null
+          postal_code?: string | null
+          state?: string | null
+          state_code?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          address_line1?: string | null
+          address_line2?: string | null
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          gstin?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          phone?: string[] | null
+          postal_code?: string | null
+          state?: string | null
+          state_code?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
+      customers: {
+        Row: {
+          created_at: string
+          email: string | null
+          gstin: string | null
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          phone: string | null
+          state: string | null
+          state_code: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          gstin?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          phone?: string | null
+          state?: string | null
+          state_code?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          gstin?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          state?: string | null
+          state_code?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      invoice_items: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string
+          discount_percent: number | null
+          id: string
+          invoice_id: string
+          quantity: number
+          rate: number
+          serial_numbers: string[] | null
+          sl_no: number
+          unit: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description: string
+          discount_percent?: number | null
+          id?: string
+          invoice_id: string
+          quantity: number
+          rate: number
+          serial_numbers?: string[] | null
+          sl_no: number
+          unit?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string
+          discount_percent?: number | null
+          id?: string
+          invoice_id?: string
+          quantity?: number
+          rate?: number
+          serial_numbers?: string[] | null
+          sl_no?: number
+          unit?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          amount_in_words: string | null
+          billing_address_id: string | null
+          created_at: string
+          customer_id: string | null
+          date: string
+          discount_amount: number | null
+          discount_percent: number | null
+          e_way_bill_no: string | null
+          grand_total: number
+          id: string
+          invoice_no: string
+          is_recurring: boolean
+          next_invoice_date: string | null
+          other_references: string | null
+          recurring_frequency: string | null
+          round_off: number | null
+          shipping_address_id: string | null
+          status: string
+          subtotal: number
+          supplier_invoice_date: string | null
+          supplier_invoice_no: string | null
+          tax_amount: number | null
+          tax_rate: number | null
+          updated_at: string
+        }
+        Insert: {
+          amount_in_words?: string | null
+          billing_address_id?: string | null
+          created_at?: string
+          customer_id?: string | null
+          date?: string
+          discount_amount?: number | null
+          discount_percent?: number | null
+          e_way_bill_no?: string | null
+          grand_total?: number
+          id?: string
+          invoice_no: string
+          is_recurring?: boolean
+          next_invoice_date?: string | null
+          other_references?: string | null
+          recurring_frequency?: string | null
+          round_off?: number | null
+          shipping_address_id?: string | null
+          status?: string
+          subtotal?: number
+          supplier_invoice_date?: string | null
+          supplier_invoice_no?: string | null
+          tax_amount?: number | null
+          tax_rate?: number | null
+          updated_at?: string
+        }
+        Update: {
+          amount_in_words?: string | null
+          billing_address_id?: string | null
+          created_at?: string
+          customer_id?: string | null
+          date?: string
+          discount_amount?: number | null
+          discount_percent?: number | null
+          e_way_bill_no?: string | null
+          grand_total?: number
+          id?: string
+          invoice_no?: string
+          is_recurring?: boolean
+          next_invoice_date?: string | null
+          other_references?: string | null
+          recurring_frequency?: string | null
+          round_off?: number | null
+          shipping_address_id?: string | null
+          status?: string
+          subtotal?: number
+          supplier_invoice_date?: string | null
+          supplier_invoice_no?: string | null
+          tax_amount?: number | null
+          tax_rate?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_billing_address_id_fkey"
+            columns: ["billing_address_id"]
+            isOneToOne: false
+            referencedRelation: "addresses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_shipping_address_id_fkey"
+            columns: ["shipping_address_id"]
+            isOneToOne: false
+            referencedRelation: "addresses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
