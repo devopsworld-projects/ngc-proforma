@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FileText, Plus, Eye, RefreshCcw } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const statusColors: Record<string, string> = {
   draft: "bg-muted text-muted-foreground",
@@ -15,6 +15,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function InvoicesPage() {
+  const navigate = useNavigate();
   const { data: invoices, isLoading } = useInvoices();
 
   const formatCurrency = (amount: number) => {
@@ -33,7 +34,7 @@ export default function InvoicesPage() {
             <h2 className="text-2xl font-serif font-bold">Invoices</h2>
             <p className="text-muted-foreground">View and manage all your invoices</p>
           </div>
-          <Button className="gap-2">
+          <Button className="gap-2" onClick={() => navigate("/invoices/new")}>
             <Plus className="h-4 w-4" />
             New Invoice
           </Button>
@@ -62,7 +63,7 @@ export default function InvoicesPage() {
               <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium mb-2">No invoices yet</h3>
               <p className="text-muted-foreground mb-4">Create your first invoice to get started</p>
-              <Button className="gap-2">
+              <Button className="gap-2" onClick={() => navigate("/invoices/new")}>
                 <Plus className="h-4 w-4" />
                 Create Invoice
               </Button>

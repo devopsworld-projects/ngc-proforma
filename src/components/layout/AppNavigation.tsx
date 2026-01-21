@@ -1,11 +1,12 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { FileText, Users, Settings, LayoutDashboard, RefreshCcw } from "lucide-react";
+import { FileText, Users, LayoutDashboard, RefreshCcw, PlusCircle } from "lucide-react";
 
 const navItems = [
   { path: "/", label: "Invoice Preview", icon: FileText },
+  { path: "/invoices/new", label: "Create Invoice", icon: PlusCircle },
   { path: "/customers", label: "Customers", icon: Users },
-  { path: "/invoices", label: "Invoices", icon: LayoutDashboard },
+  { path: "/invoices", label: "All Invoices", icon: LayoutDashboard },
   { path: "/recurring", label: "Recurring", icon: RefreshCcw },
 ];
 
