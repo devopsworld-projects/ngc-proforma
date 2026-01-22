@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Package, Search, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Package, Search, MoreHorizontal, Trash2, Filter } from "lucide-react";
 import { useProducts, useDeleteProduct } from "@/hooks/useProducts";
 import { ExcelUploadDialog } from "@/components/products/ExcelUploadDialog";
 import { formatCurrency } from "@/lib/invoice-utils";
@@ -14,17 +15,36 @@ import { toast } from "sonner";
 
 export default function ProductsPage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const { data: products = [], isLoading } = useProducts();
   const deleteProduct = useDeleteProduct();
 
-  const filteredProducts = products.filter((product) => {
-    const term = searchTerm.toLowerCase();
-    return (
-      product.name.toLowerCase().includes(term) ||
-      product.sku?.toLowerCase().includes(term) ||
-      product.description?.toLowerCase().includes(term)
-    );
-  });
+  const categories = useMemo(() => {
+    const uniqueCategories = new Set<string>();
+    products.forEach((product) => {
+      if (product.category) {
+        uniqueCategories.add(product.category);
+      }
+    });
+    return Array.from(uniqueCategories).sort();
+  }, [products]);
+
+  const filteredProducts = useMemo(() => {
+    return products.filter((product) => {
+      const term = searchTerm.toLowerCase();
+      const matchesSearch =
+        product.name.toLowerCase().includes(term) ||
+        product.sku?.toLowerCase().includes(term) ||
+        product.description?.toLowerCase().includes(term);
+      
+      const matchesCategory =
+        categoryFilter === "all" ||
+        (categoryFilter === "uncategorized" && !product.category) ||
+        product.category === categoryFilter;
+
+      return matchesSearch && matchesCategory;
+    });
+  }, [products, searchTerm, categoryFilter]);
 
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Are you sure you want to delete "${name}"?`)) return;
@@ -56,8 +76,8 @@ export default function ProductsPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="mb-4">
-              <div className="relative max-w-sm">
+            <div className="mb-4 flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1 max-w-sm">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search products..."
@@ -66,6 +86,21 @@ export default function ProductsPage() {
                   className="pl-9"
                 />
               </div>
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Category" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover z-50">
+                  <SelectItem value="all">All Categories</SelectItem>
+                  <SelectItem value="uncategorized">Uncategorized</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {isLoading ? (
