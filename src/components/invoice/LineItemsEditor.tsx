@@ -20,6 +20,7 @@ export interface LineItem {
   rate: number;
   discountPercent: number;
   amount: number;
+  productId?: string; // Reference to the product for stock tracking
 }
 
 interface LineItemsEditorProps {
@@ -55,6 +56,7 @@ export function LineItemsEditor({ items, onChange }: LineItemsEditorProps) {
       rate: product.rate,
       discountPercent: 0,
       amount: qty * product.rate,
+      productId: product.id,
     };
     onChange([...items, newItem]);
   };

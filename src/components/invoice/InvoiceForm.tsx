@@ -265,6 +265,42 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
         const { error: itemsError } = await supabase.from("invoice_items").insert(itemsPayload);
         if (itemsError) throw itemsError;
 
+        // Auto-deduct stock for items with productId
+        const stockDeductions = lineItems
+          .filter(item => item.productId)
+          .map(item => ({
+            product_id: item.productId!,
+            movement_type: "out" as const,
+            quantity: item.quantity,
+            serial_numbers: item.serialNumbers ? item.serialNumbers.split(",").map(s => s.trim()).filter(Boolean) : [],
+            reference_type: "invoice",
+            reference_id: newInvoice.id,
+            notes: `Invoice #${data.invoiceNo}`,
+          }));
+
+        if (stockDeductions.length > 0) {
+          // Get current user for stock movements
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            for (const movement of stockDeductions) {
+              // Insert stock movement
+              await supabase.from("stock_movements").insert({ ...movement, user_id: user.id });
+              // Update product stock
+              const { data: product } = await supabase
+                .from("products")
+                .select("stock_quantity")
+                .eq("id", movement.product_id)
+                .single();
+              if (product) {
+                await supabase
+                  .from("products")
+                  .update({ stock_quantity: Math.max(0, (product.stock_quantity || 0) - movement.quantity) })
+                  .eq("id", movement.product_id);
+              }
+            }
+          }
+        }
+
         toast.success("Invoice created successfully!");
       }
 

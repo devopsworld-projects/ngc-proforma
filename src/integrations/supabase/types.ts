@@ -328,6 +328,79 @@ export type Database = {
           },
         ]
       }
+      product_serials: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          product_id: string
+          purchase_date: string | null
+          purchase_price: number | null
+          serial_number: string
+          sold_date: string | null
+          sold_invoice_id: string | null
+          status: string
+          supplier_id: string | null
+          updated_at: string
+          user_id: string | null
+          warranty_expiry: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          product_id: string
+          purchase_date?: string | null
+          purchase_price?: number | null
+          serial_number: string
+          sold_date?: string | null
+          sold_invoice_id?: string | null
+          status?: string
+          supplier_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+          warranty_expiry?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          product_id?: string
+          purchase_date?: string | null
+          purchase_price?: number | null
+          serial_number?: string
+          sold_date?: string | null
+          sold_invoice_id?: string | null
+          status?: string
+          supplier_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+          warranty_expiry?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_serials_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_serials_sold_invoice_id_fkey"
+            columns: ["sold_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_serials_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           category: string | null
@@ -337,12 +410,16 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          purchase_price: number | null
           rate: number
           sku: string | null
           stock_quantity: number | null
+          supplier_contact: string | null
+          supplier_name: string | null
           unit: string
           updated_at: string
           user_id: string | null
+          warranty_months: number | null
         }
         Insert: {
           category?: string | null
@@ -352,12 +429,16 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          purchase_price?: number | null
           rate?: number
           sku?: string | null
           stock_quantity?: number | null
+          supplier_contact?: string | null
+          supplier_name?: string | null
           unit?: string
           updated_at?: string
           user_id?: string | null
+          warranty_months?: number | null
         }
         Update: {
           category?: string | null
@@ -367,12 +448,16 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          purchase_price?: number | null
           rate?: number
           sku?: string | null
           stock_quantity?: number | null
+          supplier_contact?: string | null
+          supplier_name?: string | null
           unit?: string
           updated_at?: string
           user_id?: string | null
+          warranty_months?: number | null
         }
         Relationships: []
       }
@@ -397,6 +482,187 @@ export type Database = {
           id?: string
           is_approved?: boolean
           updated_at?: string
+        }
+        Relationships: []
+      }
+      service_tickets: {
+        Row: {
+          brand: string | null
+          completed_date: string | null
+          created_at: string
+          customer_id: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          delivered_date: string | null
+          device_type: string
+          diagnosis: string | null
+          estimated_completion: string | null
+          estimated_cost: number | null
+          final_cost: number | null
+          id: string
+          model: string | null
+          parts_used: string[] | null
+          problem_description: string
+          received_date: string
+          resolution: string | null
+          serial_number: string | null
+          status: string
+          technician_notes: string | null
+          ticket_no: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          brand?: string | null
+          completed_date?: string | null
+          created_at?: string
+          customer_id?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          delivered_date?: string | null
+          device_type: string
+          diagnosis?: string | null
+          estimated_completion?: string | null
+          estimated_cost?: number | null
+          final_cost?: number | null
+          id?: string
+          model?: string | null
+          parts_used?: string[] | null
+          problem_description: string
+          received_date?: string
+          resolution?: string | null
+          serial_number?: string | null
+          status?: string
+          technician_notes?: string | null
+          ticket_no: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          brand?: string | null
+          completed_date?: string | null
+          created_at?: string
+          customer_id?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          delivered_date?: string | null
+          device_type?: string
+          diagnosis?: string | null
+          estimated_completion?: string | null
+          estimated_cost?: number | null
+          final_cost?: number | null
+          id?: string
+          model?: string | null
+          parts_used?: string[] | null
+          problem_description?: string
+          received_date?: string
+          resolution?: string | null
+          serial_number?: string | null
+          status?: string
+          technician_notes?: string | null
+          ticket_no?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_tickets_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_movements: {
+        Row: {
+          created_at: string
+          id: string
+          movement_type: string
+          notes: string | null
+          product_id: string
+          quantity: number
+          reference_id: string | null
+          reference_type: string | null
+          serial_numbers: string[] | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          movement_type: string
+          notes?: string | null
+          product_id: string
+          quantity: number
+          reference_id?: string | null
+          reference_type?: string | null
+          serial_numbers?: string[] | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          movement_type?: string
+          notes?: string | null
+          product_id?: string
+          quantity?: number
+          reference_id?: string | null
+          reference_type?: string | null
+          serial_numbers?: string[] | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      suppliers: {
+        Row: {
+          address: string | null
+          contact_person: string | null
+          created_at: string
+          email: string | null
+          gstin: string | null
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          phone: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          address?: string | null
+          contact_person?: string | null
+          created_at?: string
+          email?: string | null
+          gstin?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          address?: string | null
+          contact_person?: string | null
+          created_at?: string
+          email?: string | null
+          gstin?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
