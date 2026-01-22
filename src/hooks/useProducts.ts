@@ -35,6 +35,16 @@ export function useProducts() {
   });
 }
 
+// Sanitize search input to prevent SQL injection via special LIKE pattern characters
+function sanitizeSearchTerm(term: string): string {
+  // Escape special characters used in SQL LIKE patterns: %, _, \
+  // Also remove potential SQL injection characters: ', ", ;
+  return term
+    .replace(/[%_\\'"`;]/g, '')  // Remove dangerous characters
+    .trim()
+    .slice(0, 100);  // Limit length to prevent abuse
+}
+
 export function useSearchProducts(searchTerm: string) {
   const { user } = useAuth();
   return useQuery({
@@ -46,8 +56,9 @@ export function useSearchProducts(searchTerm: string) {
         .eq("is_active", true)
         .order("name");
 
-      if (searchTerm.trim()) {
-        query = query.or(`name.ilike.%${searchTerm}%,sku.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+      const sanitizedTerm = sanitizeSearchTerm(searchTerm);
+      if (sanitizedTerm) {
+        query = query.or(`name.ilike.%${sanitizedTerm}%,sku.ilike.%${sanitizedTerm}%,description.ilike.%${sanitizedTerm}%`);
       }
 
       const { data, error } = await query.limit(20);

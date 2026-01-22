@@ -72,9 +72,10 @@ export function useUpdateCompanySettings() {
   });
 }
 
-export async function uploadCompanyLogo(file: File): Promise<string> {
+export async function uploadCompanyLogo(file: File, userId: string): Promise<string> {
   const fileExt = file.name.split(".").pop();
-  const fileName = `logo-${Date.now()}.${fileExt}`;
+  // Use path-based ownership: {user_id}/logo-{timestamp}.{ext}
+  const fileName = `${userId}/logo-${Date.now()}.${fileExt}`;
   
   const { error: uploadError } = await supabase.storage
     .from("company-logos")
@@ -89,9 +90,13 @@ export async function uploadCompanyLogo(file: File): Promise<string> {
   return data.publicUrl;
 }
 
-export async function deleteCompanyLogo(url: string): Promise<void> {
-  const fileName = url.split("/").pop();
+export async function deleteCompanyLogo(url: string, userId: string): Promise<void> {
+  // Extract the filename from the URL (format: {user_id}/logo-{timestamp}.{ext})
+  const urlParts = url.split("/");
+  const fileName = urlParts.pop();
   if (!fileName) return;
   
-  await supabase.storage.from("company-logos").remove([fileName]);
+  // Reconstruct the path with user_id prefix for proper ownership validation
+  const filePath = `${userId}/${fileName}`;
+  await supabase.storage.from("company-logos").remove([filePath]);
 }

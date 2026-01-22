@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useCompanySettings, useUpdateCompanySettings, uploadCompanyLogo, deleteCompanyLogo } from "@/hooks/useCompanySettings";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +31,7 @@ const settingsSchema = z.object({
 type SettingsFormData = z.infer<typeof settingsSchema>;
 
 export default function SettingsPage() {
+  const { user } = useAuth();
   const { data: settings, isLoading } = useCompanySettings();
   const updateSettings = useUpdateCompanySettings();
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -73,7 +75,7 @@ export default function SettingsPage() {
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !user) return;
 
     if (!file.type.startsWith("image/")) {
       toast.error("Please upload an image file");
@@ -89,9 +91,9 @@ export default function SettingsPage() {
     try {
       // Delete old logo if exists
       if (logoUrl) {
-        await deleteCompanyLogo(logoUrl);
+        await deleteCompanyLogo(logoUrl, user.id);
       }
-      const url = await uploadCompanyLogo(file);
+      const url = await uploadCompanyLogo(file, user.id);
       setLogoUrl(url);
       toast.success("Logo uploaded successfully");
     } catch (error: any) {
@@ -102,9 +104,9 @@ export default function SettingsPage() {
   };
 
   const handleRemoveLogo = async () => {
-    if (!logoUrl) return;
+    if (!logoUrl || !user) return;
     try {
-      await deleteCompanyLogo(logoUrl);
+      await deleteCompanyLogo(logoUrl, user.id);
       setLogoUrl(null);
       toast.success("Logo removed");
     } catch (error) {

@@ -423,6 +423,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      approve_user: {
+        Args: { approved: boolean; target_user_id: string }
+        Returns: boolean
+      }
       get_admin_user_stats: {
         Args: never
         Returns: {
