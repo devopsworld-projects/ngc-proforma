@@ -2,7 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { 
   Users, LayoutDashboard, RefreshCcw, PlusCircle, BarChart3, Settings, 
-  Package, Shield, FileText, Boxes, ChevronRight, LogOut, UserCircle
+  Package, Shield, FileText, Boxes, LogOut, UserCircle, ChevronDown
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsAdmin } from "@/hooks/useAdmin";
@@ -11,9 +11,6 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -26,25 +23,19 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Separator } from "@/components/ui/separator";
 
-const mainNavItems = [
+const navItems = [
   { path: "/dashboard", label: "Dashboard", icon: BarChart3 },
-  { path: "/invoices/new", label: "Create Invoice", icon: PlusCircle },
-  { path: "/invoices", label: "All Invoices", icon: LayoutDashboard },
-];
-
-const managementItems = [
+  { path: "/invoices/new", label: "New Invoice", icon: PlusCircle },
+  { path: "/invoices", label: "Invoices", icon: LayoutDashboard },
   { path: "/customers", label: "Customers", icon: Users },
   { path: "/products", label: "Products", icon: Package },
   { path: "/inventory", label: "Inventory", icon: Boxes },
   { path: "/recurring", label: "Recurring", icon: RefreshCcw },
-];
-
-const settingsItems = [
   { path: "/settings", label: "Settings", icon: Settings },
 ];
 
@@ -62,164 +53,136 @@ export function AppSidebar() {
     navigate("/login");
   };
 
-  const NavItem = ({ item }: { item: { path: string; label: string; icon: React.ComponentType<{ className?: string }> } }) => {
-    const isActive = location.pathname === item.path;
-    const Icon = item.icon;
-    
-    return (
-      <SidebarMenuItem>
-        <SidebarMenuButton asChild isActive={isActive}>
-          <Link
-            to={item.path}
-            className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2.5 transition-all duration-200",
-              isActive
-                ? "bg-primary text-primary-foreground shadow-md"
-                : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-            )}
-          >
-            <Icon className={cn("h-4 w-4 shrink-0", isActive && "text-primary-foreground")} />
-            {!collapsed && <span className="font-medium">{item.label}</span>}
-          </Link>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-    );
-  };
-
   const userInitials = user?.email?.substring(0, 2).toUpperCase() || "U";
+  const userName = user?.email?.split("@")[0] || "User";
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-sidebar-border">
-      {/* Header */}
-      <SidebarHeader className="border-b border-sidebar-border p-4">
-        <Link to="/dashboard" className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl gradient-navy flex items-center justify-center shrink-0 shadow-lg">
-            <FileText className="w-5 h-5 text-white" />
+    <Sidebar 
+      collapsible="icon" 
+      className="border-r-0 bg-sidebar-background"
+    >
+      {/* Logo Header */}
+      <SidebarHeader className="p-4 pb-2">
+        <Link to="/dashboard" className="flex items-center gap-3 group">
+          <div className={cn(
+            "rounded-xl gradient-navy flex items-center justify-center shrink-0 shadow-lg transition-all duration-300 group-hover:shadow-xl",
+            collapsed ? "w-9 h-9" : "w-11 h-11"
+          )}>
+            <FileText className={cn("text-white transition-all", collapsed ? "w-4 h-4" : "w-5 h-5")} />
           </div>
           {!collapsed && (
             <div className="overflow-hidden">
-              <h1 className="text-lg font-serif font-bold text-sidebar-foreground truncate">Proforma</h1>
-              <p className="text-xs text-sidebar-foreground/60 truncate">Invoice System</p>
+              <h1 className="text-xl font-bold text-foreground tracking-tight">Proforma</h1>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Invoice System</p>
             </div>
           )}
         </Link>
       </SidebarHeader>
 
-      {/* Main Content */}
-      <SidebarContent className="px-2 py-4">
-        {/* Main Navigation */}
-        <SidebarGroup>
-          {!collapsed && (
-            <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider px-3 mb-2">
-              Main
-            </SidebarGroupLabel>
-          )}
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
-              {mainNavItems.map((item) => (
-                <NavItem key={item.path} item={item} />
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+      <Separator className="mx-4 w-auto" />
 
-        {/* Management */}
-        <SidebarGroup className="mt-6">
-          {!collapsed && (
-            <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider px-3 mb-2">
-              Management
-            </SidebarGroupLabel>
-          )}
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
-              {managementItems.map((item) => (
-                <NavItem key={item.path} item={item} />
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+      {/* Navigation */}
+      <SidebarContent className="px-3 py-4">
+        <SidebarMenu className="space-y-1">
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            const Icon = item.icon;
+            
+            return (
+              <SidebarMenuItem key={item.path}>
+                <SidebarMenuButton asChild isActive={isActive} tooltip={item.label}>
+                  <Link
+                    to={item.path}
+                    className={cn(
+                      "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
+                      isActive
+                        ? "bg-primary text-primary-foreground shadow-md"
+                        : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                    )}
+                  >
+                    <Icon className={cn(
+                      "h-[18px] w-[18px] shrink-0 transition-colors",
+                      isActive ? "text-primary-foreground" : "text-muted-foreground"
+                    )} />
+                    {!collapsed && <span>{item.label}</span>}
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          })}
 
-        {/* Settings & Admin */}
-        <SidebarGroup className="mt-6">
-          {!collapsed && (
-            <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider px-3 mb-2">
-              System
-            </SidebarGroupLabel>
+          {/* Admin Link */}
+          {isAdmin && (
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild isActive={location.pathname === "/admin"} tooltip="Admin">
+                <Link
+                  to="/admin"
+                  className={cn(
+                    "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
+                    location.pathname === "/admin"
+                      ? "bg-amber-500 text-white shadow-md"
+                      : "text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
+                  )}
+                >
+                  <Shield className="h-[18px] w-[18px] shrink-0" />
+                  {!collapsed && <span>Admin</span>}
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
           )}
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
-              {settingsItems.map((item) => (
-                <NavItem key={item.path} item={item} />
-              ))}
-              {isAdmin && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={location.pathname === "/admin"}>
-                    <Link
-                      to="/admin"
-                      className={cn(
-                        "flex items-center gap-3 rounded-lg px-3 py-2.5 transition-all duration-200",
-                        location.pathname === "/admin"
-                          ? "bg-amber-500 text-white shadow-md"
-                          : "text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20"
-                      )}
-                    >
-                      <Shield className="h-4 w-4 shrink-0" />
-                      {!collapsed && <span className="font-medium">Admin</span>}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        </SidebarMenu>
       </SidebarContent>
 
-      {/* Footer - User Menu */}
-      <SidebarFooter className="border-t border-sidebar-border p-3">
+      {/* User Footer */}
+      <SidebarFooter className="p-3 mt-auto">
+        <Separator className="mb-3" />
         {user && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 className={cn(
-                  "w-full justify-start gap-3 px-2 py-6 hover:bg-sidebar-accent",
-                  collapsed && "justify-center px-0"
+                  "w-full rounded-xl h-auto py-2 hover:bg-accent/50 transition-all",
+                  collapsed ? "justify-center px-2" : "justify-start px-3"
                 )}
               >
-                <Avatar className="h-8 w-8 shrink-0">
-                  <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+                <Avatar className={cn("shrink-0 border-2 border-primary/20", collapsed ? "h-8 w-8" : "h-9 w-9")}>
+                  <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
                     {userInitials}
                   </AvatarFallback>
                 </Avatar>
                 {!collapsed && (
-                  <div className="flex flex-col items-start overflow-hidden">
-                    <span className="text-sm font-medium text-sidebar-foreground truncate max-w-[140px]">
-                      {user.email?.split("@")[0]}
-                    </span>
-                    <span className="text-xs text-sidebar-foreground/60 truncate max-w-[140px]">
-                      {user.email}
-                    </span>
-                  </div>
+                  <>
+                    <div className="flex flex-col items-start ml-3 overflow-hidden">
+                      <span className="text-sm font-semibold text-foreground truncate max-w-[120px]">
+                        {userName}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground truncate max-w-[120px]">
+                        {user.email}
+                      </span>
+                    </div>
+                    <ChevronDown className="ml-auto h-4 w-4 text-muted-foreground" />
+                  </>
                 )}
-                {!collapsed && <ChevronRight className="ml-auto h-4 w-4 text-sidebar-foreground/50" />}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" side="right" className="w-56">
-              <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium">Account</p>
-                  <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-                </div>
-              </DropdownMenuLabel>
+            <DropdownMenuContent align="end" side="top" className="w-56 rounded-xl">
+              <div className="px-3 py-2">
+                <p className="text-sm font-medium">{userName}</p>
+                <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+              </div>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link to="/profile" className="cursor-pointer">
+              <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
+                <Link to="/profile">
                   <UserCircle className="mr-2 h-4 w-4" />
                   Profile
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="text-destructive cursor-pointer">
+              <DropdownMenuItem 
+                onClick={handleLogout} 
+                className="rounded-lg text-destructive focus:text-destructive cursor-pointer"
+              >
                 <LogOut className="mr-2 h-4 w-4" />
                 Logout
               </DropdownMenuItem>
