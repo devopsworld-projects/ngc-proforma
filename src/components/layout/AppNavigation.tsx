@@ -1,7 +1,8 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { FileText, Users, LayoutDashboard, RefreshCcw, PlusCircle, BarChart3, Settings, Package, LogOut } from "lucide-react";
+import { FileText, Users, LayoutDashboard, RefreshCcw, PlusCircle, BarChart3, Settings, Package, LogOut, Shield } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsAdmin } from "@/hooks/useAdmin";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -19,6 +20,7 @@ export function AppNavigation() {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
+  const { data: isAdmin } = useIsAdmin();
 
   const handleLogout = async () => {
     await signOut();
@@ -49,6 +51,20 @@ export function AppNavigation() {
                 </Link>
               );
             })}
+            {isAdmin && (
+              <Link
+                to="/admin"
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap",
+                  location.pathname === "/admin"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/20"
+                )}
+              >
+                <Shield className="h-4 w-4" />
+                Admin
+              </Link>
+            )}
           </div>
           {user && (
             <Button
