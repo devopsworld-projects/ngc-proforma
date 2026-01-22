@@ -429,9 +429,11 @@ export type Database = {
           created_at: string
           customer_count: number
           email: string
+          email_confirmed_at: string
           full_name: string
           invoice_count: number
           is_admin: boolean
+          is_approved: boolean
           total_revenue: number
           user_id: string
         }[]
