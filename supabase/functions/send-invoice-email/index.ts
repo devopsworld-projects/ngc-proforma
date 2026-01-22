@@ -21,27 +21,71 @@ interface SendInvoiceRequest {
   senderEmail?: string;
 }
 
+// Sanitize text to prevent XSS in email HTML
+function sanitizeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+// Validate and truncate string inputs
+function validateString(value: string | undefined, maxLength: number, defaultValue: string = ""): string {
+  if (!value || typeof value !== "string") return defaultValue;
+  return value.trim().slice(0, maxLength);
+}
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const {
-      invoiceId,
-      recipientEmail,
-      recipientName,
-      pdfBase64,
-      invoiceNo,
-      grandTotal,
-      companyName,
-      senderEmail,
-    }: SendInvoiceRequest = await req.json();
+    // Verify authentication
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized: Missing or invalid authorization header" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    
+    if (claimsError || !claimsData?.claims) {
+      console.error("JWT verification failed:", claimsError);
+      return new Response(
+        JSON.stringify({ error: "Unauthorized: Invalid token" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const userId = claimsData.claims.sub;
+    console.log("Authenticated user:", userId);
+
+    const body = await req.json();
+    
+    // Validate and sanitize inputs with length limits
+    const recipientEmail = validateString(body.recipientEmail, 255);
+    const recipientName = validateString(body.recipientName, 100, "Valued Customer");
+    const invoiceNo = validateString(body.invoiceNo, 50);
+    const grandTotal = validateString(body.grandTotal, 50);
+    const companyName = validateString(body.companyName, 200, "Invoice");
+    const pdfBase64 = body.pdfBase64;
 
     // Validate required fields
-    if (!recipientEmail || !pdfBase64 || !invoiceNo) {
+    if (!recipientEmail || !invoiceNo) {
       return new Response(
-        JSON.stringify({ error: "Missing required fields: recipientEmail, pdfBase64, or invoiceNo" }),
+        JSON.stringify({ error: "Missing required fields: recipientEmail or invoiceNo" }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
@@ -55,13 +99,36 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Validate PDF base64 (max 10MB)
+    if (!pdfBase64 || typeof pdfBase64 !== "string") {
+      return new Response(
+        JSON.stringify({ error: "Missing PDF attachment" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const pdfSizeBytes = (pdfBase64.length * 3) / 4; // Approximate decoded size
+    const maxPdfSize = 10 * 1024 * 1024; // 10MB
+    if (pdfSizeBytes > maxPdfSize) {
+      return new Response(
+        JSON.stringify({ error: "PDF file too large (max 10MB)" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     // Convert base64 to Uint8Array for attachment
     const pdfBuffer = Uint8Array.from(atob(pdfBase64), (c) => c.charCodeAt(0));
 
+    // Sanitize values for HTML rendering
+    const safeRecipientName = sanitizeHtml(recipientName);
+    const safeCompanyName = sanitizeHtml(companyName);
+    const safeInvoiceNo = sanitizeHtml(invoiceNo);
+    const safeGrandTotal = sanitizeHtml(grandTotal);
+
     const emailResponse = await resend.emails.send({
-      from: senderEmail || `${companyName || 'Invoice'} <onboarding@resend.dev>`,
+      from: `${safeCompanyName} <onboarding@resend.dev>`,
       to: [recipientEmail],
-      subject: `Invoice #${invoiceNo} from ${companyName || 'Our Company'}`,
+      subject: `Invoice #${safeInvoiceNo} from ${safeCompanyName}`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -71,24 +138,24 @@ const handler = async (req: Request): Promise<Response> => {
         </head>
         <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); padding: 30px; border-radius: 12px 12px 0 0;">
-            <h1 style="color: #fff; margin: 0; font-size: 24px;">${companyName || 'Invoice'}</h1>
+            <h1 style="color: #fff; margin: 0; font-size: 24px;">${safeCompanyName}</h1>
             <p style="color: rgba(255,255,255,0.8); margin: 5px 0 0;">Invoice Notification</p>
           </div>
           
           <div style="background: #fff; padding: 30px; border: 1px solid #e2e8f0; border-top: none;">
-            <p style="margin-top: 0;">Dear ${recipientName || 'Valued Customer'},</p>
+            <p style="margin-top: 0;">Dear ${safeRecipientName},</p>
             
-            <p>Please find attached Invoice <strong>#${invoiceNo}</strong> for your records.</p>
+            <p>Please find attached Invoice <strong>#${safeInvoiceNo}</strong> for your records.</p>
             
             <div style="background: #f8fafc; border-radius: 8px; padding: 20px; margin: 20px 0;">
               <table style="width: 100%; border-collapse: collapse;">
                 <tr>
                   <td style="padding: 8px 0; color: #64748b;">Invoice Number:</td>
-                  <td style="padding: 8px 0; text-align: right; font-weight: 600;">#${invoiceNo}</td>
+                  <td style="padding: 8px 0; text-align: right; font-weight: 600;">#${safeInvoiceNo}</td>
                 </tr>
                 <tr>
                   <td style="padding: 8px 0; color: #64748b;">Amount Due:</td>
-                  <td style="padding: 8px 0; text-align: right; font-weight: 600; font-size: 18px; color: #1e293b;">${grandTotal}</td>
+                  <td style="padding: 8px 0; text-align: right; font-weight: 600; font-size: 18px; color: #1e293b;">${safeGrandTotal}</td>
                 </tr>
               </table>
             </div>
@@ -96,18 +163,18 @@ const handler = async (req: Request): Promise<Response> => {
             <p>If you have any questions regarding this invoice, please don't hesitate to contact us.</p>
             
             <p style="margin-bottom: 0;">Thank you for your business!</p>
-            <p style="color: #64748b; margin-top: 5px;">Best regards,<br><strong>${companyName || 'The Team'}</strong></p>
+            <p style="color: #64748b; margin-top: 5px;">Best regards,<br><strong>${safeCompanyName}</strong></p>
           </div>
           
           <div style="background: #f1f5f9; padding: 20px; border-radius: 0 0 12px 12px; text-align: center; color: #64748b; font-size: 12px;">
-            <p style="margin: 0;">This email was sent by ${companyName || 'Invoice System'}</p>
+            <p style="margin: 0;">This email was sent by ${safeCompanyName}</p>
           </div>
         </body>
         </html>
       `,
       attachments: [
         {
-          filename: `Invoice-${invoiceNo}.pdf`,
+          filename: `Invoice-${safeInvoiceNo}.pdf`,
           content: pdfBuffer,
         },
       ],

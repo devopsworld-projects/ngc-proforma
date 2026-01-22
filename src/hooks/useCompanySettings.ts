@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "./useAuth";
 
 export interface CompanySettings {
   id: string;
@@ -15,13 +16,15 @@ export interface CompanySettings {
   website: string | null;
   gstin: string | null;
   logo_url: string | null;
+  user_id: string | null;
   created_at: string;
   updated_at: string;
 }
 
 export function useCompanySettings() {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: ["companySettings"],
+    queryKey: ["companySettings", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("company_settings")
@@ -30,13 +33,16 @@ export function useCompanySettings() {
       if (error) throw error;
       return data as CompanySettings | null;
     },
+    enabled: !!user,
   });
 }
 
 export function useUpdateCompanySettings() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   return useMutation({
     mutationFn: async (settings: Partial<CompanySettings> & { id?: string; name: string }) => {
+      if (!user) throw new Error("Not authenticated");
       if (settings.id) {
         // Update existing
         const { id, ...updateData } = settings;
@@ -53,7 +59,7 @@ export function useUpdateCompanySettings() {
         const { id, ...insertData } = settings;
         const { data, error } = await supabase
           .from("company_settings")
-          .insert(insertData)
+          .insert({ ...insertData, user_id: user.id })
           .select()
           .single();
         if (error) throw error;

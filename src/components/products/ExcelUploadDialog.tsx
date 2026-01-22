@@ -68,7 +68,9 @@ export function ExcelUploadDialog({ trigger }: ExcelUploadDialogProps) {
         jsonData.forEach((row: any, index: number) => {
           const rowNum = index + 2; // +2 for 1-indexed and header row
           
-          const name = String(row.name || row.Name || row.PRODUCT_NAME || row["Product Name"] || "").trim();
+          // Validate and truncate name (max 200 chars)
+          const rawName = String(row.name || row.Name || row.PRODUCT_NAME || row["Product Name"] || "").trim();
+          const name = rawName.slice(0, 200);
           if (!name) {
             parseErrors.push(`Row ${rowNum}: Missing product name`);
             return;
@@ -82,14 +84,21 @@ export function ExcelUploadDialog({ trigger }: ExcelUploadDialogProps) {
 
           const stockQty = parseFloat(row.stock_quantity || row.stock || row.Stock || row.quantity || row.Quantity || 0);
 
+          // Apply length limits to all string fields
+          const description = String(row.description || row.Description || row.DESCRIPTION || "").trim().slice(0, 1000) || null;
+          const sku = String(row.sku || row.SKU || row.sku_code || row["SKU Code"] || "").trim().slice(0, 50) || null;
+          const unit = String(row.unit || row.Unit || row.UNIT || "NOS").trim().slice(0, 20);
+          const hsn_code = String(row.hsn_code || row.HSN || row.hsn || row["HSN Code"] || "").trim().slice(0, 20) || null;
+          const category = String(row.category || row.Category || row.CATEGORY || "").trim().slice(0, 100) || null;
+
           products.push({
             name,
-            description: String(row.description || row.Description || row.DESCRIPTION || "").trim() || null,
-            sku: String(row.sku || row.SKU || row.sku_code || row["SKU Code"] || "").trim() || null,
-            unit: String(row.unit || row.Unit || row.UNIT || "NOS").trim(),
+            description,
+            sku,
+            unit,
             rate,
-            hsn_code: String(row.hsn_code || row.HSN || row.hsn || row["HSN Code"] || "").trim() || null,
-            category: String(row.category || row.Category || row.CATEGORY || "").trim() || null,
+            hsn_code,
+            category,
             stock_quantity: isNaN(stockQty) ? 0 : stockQty,
             is_active: true,
           });

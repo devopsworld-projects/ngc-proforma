@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "./useAuth";
 
 export interface Invoice {
   id: string;
@@ -24,6 +25,7 @@ export interface Invoice {
   is_recurring: boolean;
   recurring_frequency: "weekly" | "monthly" | "quarterly" | "yearly" | null;
   next_invoice_date: string | null;
+  user_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -43,8 +45,9 @@ export interface InvoiceItem {
 }
 
 export function useInvoices() {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: ["invoices"],
+    queryKey: ["invoices", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("invoices")
@@ -53,10 +56,12 @@ export function useInvoices() {
       if (error) throw error;
       return data;
     },
+    enabled: !!user,
   });
 }
 
 export function useInvoice(id: string | undefined) {
+  const { user } = useAuth();
   return useQuery({
     queryKey: ["invoice", id],
     queryFn: async () => {
@@ -78,7 +83,7 @@ export function useInvoice(id: string | undefined) {
 
       return { ...invoice, items: items || [] };
     },
-    enabled: !!id,
+    enabled: !!id && !!user,
   });
 }
 
@@ -116,11 +121,13 @@ export function useDeleteInvoiceItems() {
 
 export function useCreateInvoice() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   return useMutation({
-    mutationFn: async (invoice: Omit<Invoice, "id" | "created_at" | "updated_at">) => {
+    mutationFn: async (invoice: Omit<Invoice, "id" | "created_at" | "updated_at" | "user_id">) => {
+      if (!user) throw new Error("Not authenticated");
       const { data, error } = await supabase
         .from("invoices")
-        .insert(invoice)
+        .insert({ ...invoice, user_id: user.id })
         .select()
         .single();
       if (error) throw error;
@@ -153,8 +160,9 @@ export function useUpdateInvoice() {
 }
 
 export function useNextInvoiceNumber() {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: ["nextInvoiceNumber"],
+    queryKey: ["nextInvoiceNumber", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("invoices")
@@ -166,5 +174,6 @@ export function useNextInvoiceNumber() {
       const lastNo = parseInt(data[0].invoice_no) || 0;
       return String(lastNo + 1);
     },
+    enabled: !!user,
   });
 }

@@ -2,7 +2,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "@/components/auth/AuthProvider";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Customers from "./pages/Customers";
@@ -13,6 +15,8 @@ import EditInvoice from "./pages/EditInvoice";
 import InvoicePreview from "./pages/InvoicePreview";
 import Settings from "./pages/Settings";
 import Products from "./pages/Products";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,20 +27,24 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/invoices/new" element={<CreateInvoice />} />
-          <Route path="/invoices/:id" element={<InvoicePreview />} />
-          <Route path="/invoices/:id/edit" element={<EditInvoice />} />
-          <Route path="/customers" element={<Customers />} />
-          <Route path="/invoices" element={<Invoices />} />
-          <Route path="/recurring" element={<Recurring />} />
-          <Route path="/products" element={<Products />} />
-          <Route path="/settings" element={<Settings />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/invoices/new" element={<ProtectedRoute><CreateInvoice /></ProtectedRoute>} />
+            <Route path="/invoices/:id" element={<ProtectedRoute><InvoicePreview /></ProtectedRoute>} />
+            <Route path="/invoices/:id/edit" element={<ProtectedRoute><EditInvoice /></ProtectedRoute>} />
+            <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
+            <Route path="/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
+            <Route path="/recurring" element={<ProtectedRoute><Recurring /></ProtectedRoute>} />
+            <Route path="/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
