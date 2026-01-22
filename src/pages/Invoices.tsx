@@ -3,12 +3,15 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useInvoices, useUpdateInvoiceStatus, Invoice } from "@/hooks/useInvoices";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { useInvoiceFilters } from "@/hooks/useInvoiceFilters";
+import { useSendStatusNotification } from "@/hooks/useStatusNotification";
 import { InvoiceFilters } from "@/components/invoices/InvoiceFilters";
 import { SendInvoiceDialog } from "@/components/invoices/SendInvoiceDialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,7 +19,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { FileText, Plus, Edit, RefreshCcw, MoreVertical, Send, CheckCircle, XCircle, Clock, Download, Eye, SearchX, Mail } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { FileText, Plus, Edit, RefreshCcw, MoreVertical, Send, CheckCircle, XCircle, Clock, Download, Eye, SearchX, Mail, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { generateInvoicePDF } from "@/lib/pdf-generator";
@@ -24,7 +35,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const statusColors: Record<string, string> = {
   draft: "bg-muted text-muted-foreground",
-  sent: "bg-blue-100 text-blue-800",
+  sent: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
   paid: "bg-invoice-success/10 text-invoice-success",
   cancelled: "bg-destructive/10 text-destructive",
 };
@@ -58,16 +69,31 @@ interface FullInvoiceData {
   shipping_address?: any;
 }
 
+interface StatusChangeConfirmation {
+  invoiceId: string;
+  invoiceNo: string;
+  newStatus: Invoice["status"];
+  customerEmail?: string;
+  customerName?: string;
+  grandTotal: number;
+}
+
 export default function InvoicesPage() {
   const navigate = useNavigate();
   const { data: invoices, isLoading } = useInvoices();
   const { data: companySettings } = useCompanySettings();
   const updateStatus = useUpdateInvoiceStatus();
+  const sendNotification = useSendStatusNotification();
   
   const { filters, setFilters, filteredInvoices, clearFilters, hasActiveFilters } = useInvoiceFilters(invoices);
 
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<FullInvoiceData | null>(null);
+  
+  // Status change with notification
+  const [statusConfirmation, setStatusConfirmation] = useState<StatusChangeConfirmation | null>(null);
+  const [sendNotificationEmail, setSendNotificationEmail] = useState(true);
+  const [isChangingStatus, setIsChangingStatus] = useState(false);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-IN", {
@@ -77,13 +103,60 @@ export default function InvoicesPage() {
     }).format(amount);
   };
 
-  const handleStatusChange = async (invoiceId: string, status: Invoice["status"]) => {
+  const initiateStatusChange = async (invoiceId: string, status: Invoice["status"]) => {
+    // Find invoice details
+    const invoice = invoices?.find(inv => inv.id === invoiceId);
+    if (!invoice) return;
+
+    const customer = (invoice as any).customers;
+    
+    // If customer has email and status is not draft, show confirmation
+    if (customer?.email && status !== "draft") {
+      setStatusConfirmation({
+        invoiceId,
+        invoiceNo: invoice.invoice_no,
+        newStatus: status,
+        customerEmail: customer.email,
+        customerName: customer.name,
+        grandTotal: Number(invoice.grand_total),
+      });
+      setSendNotificationEmail(true);
+    } else {
+      // No email or draft status, just update
+      await handleStatusChange(invoiceId, status, false);
+    }
+  };
+
+  const handleStatusChange = async (invoiceId: string, status: Invoice["status"], notify: boolean = false) => {
+    setIsChangingStatus(true);
     try {
       await updateStatus.mutateAsync({ id: invoiceId, status });
-      toast.success(`Invoice status updated to ${status}`);
+      
+      if (notify && statusConfirmation) {
+        await sendNotification.mutateAsync({
+          invoiceId,
+          invoiceNo: statusConfirmation.invoiceNo,
+          newStatus: status,
+          recipientEmail: statusConfirmation.customerEmail!,
+          recipientName: statusConfirmation.customerName || "Valued Customer",
+          grandTotal: formatCurrency(statusConfirmation.grandTotal),
+          companyName: companySettings?.name || "Invoice System",
+        });
+        toast.success(`Status updated and notification sent to ${statusConfirmation.customerEmail}`);
+      } else {
+        toast.success(`Invoice status updated to ${status}`);
+      }
     } catch (error: any) {
       toast.error(error.message || "Failed to update status");
+    } finally {
+      setIsChangingStatus(false);
+      setStatusConfirmation(null);
     }
+  };
+
+  const confirmStatusChange = async () => {
+    if (!statusConfirmation) return;
+    await handleStatusChange(statusConfirmation.invoiceId, statusConfirmation.newStatus, sendNotificationEmail);
   };
 
   const fetchFullInvoice = async (invoiceId: string): Promise<FullInvoiceData | null> => {
@@ -282,28 +355,28 @@ export default function InvoicesPage() {
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
-                          onClick={() => handleStatusChange(invoice.id, "draft")}
+                          onClick={() => initiateStatusChange(invoice.id, "draft")}
                           disabled={invoice.status === "draft"}
                         >
                           <Clock className="h-4 w-4 mr-2" />
                           Mark as Draft
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => handleStatusChange(invoice.id, "sent")}
+                          onClick={() => initiateStatusChange(invoice.id, "sent")}
                           disabled={invoice.status === "sent"}
                         >
                           <Send className="h-4 w-4 mr-2" />
                           Mark as Sent
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => handleStatusChange(invoice.id, "paid")}
+                          onClick={() => initiateStatusChange(invoice.id, "paid")}
                           disabled={invoice.status === "paid"}
                         >
                           <CheckCircle className="h-4 w-4 mr-2" />
                           Mark as Paid
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => handleStatusChange(invoice.id, "cancelled")}
+                          onClick={() => initiateStatusChange(invoice.id, "cancelled")}
                           disabled={invoice.status === "cancelled"}
                           className="text-destructive"
                         >
@@ -327,6 +400,52 @@ export default function InvoicesPage() {
         invoice={selectedInvoice}
         companySettings={companySettings || null}
       />
+
+      {/* Status Change Confirmation Dialog */}
+      <Dialog open={!!statusConfirmation} onOpenChange={(open) => !open && setStatusConfirmation(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Update Invoice Status</DialogTitle>
+            <DialogDescription>
+              Change Invoice #{statusConfirmation?.invoiceNo} to <strong>{statusConfirmation?.newStatus}</strong>
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <div className="flex items-start space-x-3">
+              <Checkbox
+                id="sendNotification"
+                checked={sendNotificationEmail}
+                onCheckedChange={(checked) => setSendNotificationEmail(checked as boolean)}
+              />
+              <div className="space-y-1">
+                <Label htmlFor="sendNotification" className="cursor-pointer">
+                  Send email notification
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Notify {statusConfirmation?.customerName} at {statusConfirmation?.customerEmail}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setStatusConfirmation(null)} disabled={isChangingStatus}>
+              Cancel
+            </Button>
+            <Button onClick={confirmStatusChange} disabled={isChangingStatus}>
+              {isChangingStatus ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                "Confirm"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }
