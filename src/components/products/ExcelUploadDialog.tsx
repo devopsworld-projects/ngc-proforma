@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import * as XLSX from "xlsx";
+import { parseExcelFile, downloadExcelTemplate } from "@/lib/excel-utils";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Upload, FileSpreadsheet, AlertCircle, CheckCircle, Download } from "lucide-react";
+import { Upload, FileSpreadsheet, AlertCircle, CheckCircle, Download, Loader2 } from "lucide-react";
 import { useBulkCreateProducts } from "@/hooks/useProducts";
 import { toast } from "sonner";
 
@@ -41,78 +41,73 @@ export function ExcelUploadDialog({ trigger }: ExcelUploadDialogProps) {
   const [parsedProducts, setParsedProducts] = useState<ParsedProduct[]>([]);
   const [errors, setErrors] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [isParsing, setIsParsing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const bulkCreate = useBulkCreateProducts();
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
 
     setFile(selectedFile);
     setErrors([]);
     setParsedProducts([]);
+    setIsParsing(true);
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const data = new Uint8Array(event.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: "array" });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+    try {
+      const jsonData = await parseExcelFile(selectedFile);
 
-        const products: ParsedProduct[] = [];
-        const parseErrors: string[] = [];
+      const products: ParsedProduct[] = [];
+      const parseErrors: string[] = [];
 
-        jsonData.forEach((row: any, index: number) => {
-          const rowNum = index + 2; // +2 for 1-indexed and header row
-          
-          // Validate and truncate name (max 200 chars)
-          const rawName = String(row.name || row.Name || row.PRODUCT_NAME || row["Product Name"] || "").trim();
-          const name = rawName.slice(0, 200);
-          if (!name) {
-            parseErrors.push(`Row ${rowNum}: Missing product name`);
-            return;
-          }
+      jsonData.forEach((row: any, index: number) => {
+        const rowNum = index + 2; // +2 for 1-indexed and header row
+        
+        // Validate and truncate name (max 200 chars)
+        const rawName = String(row.name || row.Name || row.PRODUCT_NAME || row["Product Name"] || "").trim();
+        const name = rawName.slice(0, 200);
+        if (!name) {
+          parseErrors.push(`Row ${rowNum}: Missing product name`);
+          return;
+        }
 
-          const rate = parseFloat(row.rate || row.Rate || row.RATE || row.Price || row.price || 0);
-          if (isNaN(rate) || rate < 0) {
-            parseErrors.push(`Row ${rowNum}: Invalid rate for "${name}"`);
-            return;
-          }
+        const rate = parseFloat(row.rate || row.Rate || row.RATE || row.Price || row.price || 0);
+        if (isNaN(rate) || rate < 0) {
+          parseErrors.push(`Row ${rowNum}: Invalid rate for "${name}"`);
+          return;
+        }
 
-          const stockQty = parseFloat(row.stock_quantity || row.stock || row.Stock || row.quantity || row.Quantity || 0);
+        const stockQty = parseFloat(row.stock_quantity || row.stock || row.Stock || row.quantity || row.Quantity || 0);
 
-          // Apply length limits to all string fields
-          const description = String(row.description || row.Description || row.DESCRIPTION || "").trim().slice(0, 1000) || null;
-          const sku = String(row.sku || row.SKU || row.sku_code || row["SKU Code"] || "").trim().slice(0, 50) || null;
-          const unit = String(row.unit || row.Unit || row.UNIT || "NOS").trim().slice(0, 20);
-          const hsn_code = String(row.hsn_code || row.HSN || row.hsn || row["HSN Code"] || "").trim().slice(0, 20) || null;
-          const category = String(row.category || row.Category || row.CATEGORY || "").trim().slice(0, 100) || null;
+        // Apply length limits to all string fields
+        const description = String(row.description || row.Description || row.DESCRIPTION || "").trim().slice(0, 1000) || null;
+        const sku = String(row.sku || row.SKU || row.sku_code || row["SKU Code"] || "").trim().slice(0, 50) || null;
+        const unit = String(row.unit || row.Unit || row.UNIT || "NOS").trim().slice(0, 20);
+        const hsn_code = String(row.hsn_code || row.HSN || row.hsn || row["HSN Code"] || "").trim().slice(0, 20) || null;
+        const category = String(row.category || row.Category || row.CATEGORY || "").trim().slice(0, 100) || null;
 
-          products.push({
-            name,
-            description,
-            sku,
-            unit,
-            rate,
-            hsn_code,
-            category,
-            stock_quantity: isNaN(stockQty) ? 0 : stockQty,
-            is_active: true,
-          });
+        products.push({
+          name,
+          description,
+          sku,
+          unit,
+          rate,
+          hsn_code,
+          category,
+          stock_quantity: isNaN(stockQty) ? 0 : stockQty,
+          is_active: true,
         });
+      });
 
-        setParsedProducts(products);
-        setErrors(parseErrors);
-      } catch (error) {
-        console.error("Error parsing Excel file:", error);
-        setErrors(["Failed to parse Excel file. Please ensure it's a valid .xlsx or .xls file."]);
-      }
-    };
-
-    reader.readAsArrayBuffer(selectedFile);
+      setParsedProducts(products);
+      setErrors(parseErrors);
+    } catch (error) {
+      console.error("Error parsing Excel file:", error);
+      setErrors(["Failed to parse Excel file. Please ensure it's a valid .xlsx or .xls file."]);
+    } finally {
+      setIsParsing(false);
+    }
   };
 
   const handleUpload = async () => {
@@ -144,7 +139,7 @@ export function ExcelUploadDialog({ trigger }: ExcelUploadDialogProps) {
     }
   };
 
-  const downloadTemplate = () => {
+  const downloadTemplate = async () => {
     const template = [
       {
         name: "Sample Product",
@@ -158,10 +153,7 @@ export function ExcelUploadDialog({ trigger }: ExcelUploadDialogProps) {
       },
     ];
 
-    const ws = XLSX.utils.json_to_sheet(template);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Products");
-    XLSX.writeFile(wb, "products_template.xlsx");
+    await downloadExcelTemplate(template, "products_template.xlsx", "Products");
   };
 
   return (
@@ -203,8 +195,16 @@ export function ExcelUploadDialog({ trigger }: ExcelUploadDialogProps) {
               type="file"
               accept=".xlsx,.xls"
               onChange={handleFileChange}
+              disabled={isParsing}
             />
           </div>
+
+          {isParsing && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Parsing Excel file...</span>
+            </div>
+          )}
 
           {errors.length > 0 && (
             <div className="p-3 bg-destructive/10 rounded-lg space-y-1">
@@ -284,11 +284,14 @@ export function ExcelUploadDialog({ trigger }: ExcelUploadDialogProps) {
           </Button>
           <Button
             onClick={handleUpload}
-            disabled={parsedProducts.length === 0 || isUploading}
+            disabled={parsedProducts.length === 0 || isUploading || isParsing}
             className="gap-2"
           >
             {isUploading ? (
-              <>Importing...</>
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Importing...
+              </>
             ) : (
               <>
                 <Upload className="h-4 w-4" />
