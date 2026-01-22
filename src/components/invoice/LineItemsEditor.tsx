@@ -6,6 +6,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Package } from "lucide-react";
 import { formatCurrency } from "@/lib/invoice-utils";
+import { ProductSelector } from "@/components/products/ProductSelector";
+import { ExcelUploadDialog } from "@/components/products/ExcelUploadDialog";
+import { Product } from "@/hooks/useProducts";
 
 export interface LineItem {
   id: string;
@@ -36,6 +39,22 @@ export function LineItemsEditor({ items, onChange }: LineItemsEditorProps) {
       rate: 0,
       discountPercent: 0,
       amount: 0,
+    };
+    onChange([...items, newItem]);
+  };
+
+  const addProductAsItem = (product: Product) => {
+    const qty = 1;
+    const newItem: LineItem = {
+      id: crypto.randomUUID(),
+      slNo: items.length + 1,
+      description: product.name + (product.description ? ` - ${product.description}` : ""),
+      serialNumbers: "",
+      quantity: qty,
+      unit: product.unit,
+      rate: product.rate,
+      discountPercent: 0,
+      amount: qty * product.rate,
     };
     onChange([...items, newItem]);
   };
@@ -73,12 +92,24 @@ export function LineItemsEditor({ items, onChange }: LineItemsEditorProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <Label className="text-base font-semibold">Line Items</Label>
-        <Button type="button" size="sm" onClick={addItem} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Add Item
-        </Button>
+        <div className="flex items-center gap-2">
+          <ExcelUploadDialog />
+          <Button type="button" size="sm" onClick={addItem} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add Item
+          </Button>
+        </div>
+      </div>
+
+      {/* Product Search */}
+      <div className="space-y-1">
+        <Label className="text-xs text-muted-foreground">Search products to add</Label>
+        <ProductSelector
+          onSelect={addProductAsItem}
+          placeholder="Search by name, SKU, or description..."
+        />
       </div>
 
       {items.length === 0 ? (
@@ -86,9 +117,12 @@ export function LineItemsEditor({ items, onChange }: LineItemsEditorProps) {
           <CardContent className="py-8 text-center">
             <Package className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
             <p className="text-muted-foreground mb-3">No items added yet</p>
+            <p className="text-sm text-muted-foreground mb-3">
+              Search for products above or add a custom item
+            </p>
             <Button type="button" variant="outline" onClick={addItem} className="gap-2">
               <Plus className="h-4 w-4" />
-              Add First Item
+              Add Custom Item
             </Button>
           </CardContent>
         </Card>

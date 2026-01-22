@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { FileText, Users, LayoutDashboard, RefreshCcw, PlusCircle, BarChart3, Settings } from "lucide-react";
+import { FileText, Users, LayoutDashboard, RefreshCcw, PlusCircle, BarChart3, Settings, Package } from "lucide-react";
 
 const navItems = [
   { path: "/dashboard", label: "Dashboard", icon: BarChart3 },
@@ -8,6 +8,7 @@ const navItems = [
   { path: "/invoices/new", label: "Create Invoice", icon: PlusCircle },
   { path: "/customers", label: "Customers", icon: Users },
   { path: "/invoices", label: "All Invoices", icon: LayoutDashboard },
+  { path: "/products", label: "Products", icon: Package },
   { path: "/recurring", label: "Recurring", icon: RefreshCcw },
   { path: "/settings", label: "Settings", icon: Settings },
 ];
