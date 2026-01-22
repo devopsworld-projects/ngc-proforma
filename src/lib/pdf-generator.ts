@@ -67,8 +67,9 @@ interface InvoiceData {
 
 export async function generateInvoicePDF(
   invoice: InvoiceData,
-  company: CompanyInfo
-): Promise<void> {
+  company: CompanyInfo,
+  options: { returnBase64?: boolean } = {}
+): Promise<string | void> {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 15;
@@ -296,6 +297,10 @@ export async function generateInvoicePDF(
   addText("For " + company.name, pageWidth - margin, yPos - 7, { fontSize: 9, fontStyle: "bold", align: "right" });
   addText("Authorized Signatory", pageWidth - margin, yPos + 10, { fontSize: 8, color: mutedColor, align: "right" });
 
-  // Save PDF
+  // Return base64 or save PDF
+  if (options.returnBase64) {
+    return doc.output("datauristring").split(",")[1];
+  }
+  
   doc.save(`Invoice-${invoice.invoice_no}.pdf`);
 }

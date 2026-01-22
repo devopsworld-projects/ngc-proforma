@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useInvoices, useUpdateInvoiceStatus, Invoice } from "@/hooks/useInvoices";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { useInvoiceFilters } from "@/hooks/useInvoiceFilters";
 import { InvoiceFilters } from "@/components/invoices/InvoiceFilters";
+import { SendInvoiceDialog } from "@/components/invoices/SendInvoiceDialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,7 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { FileText, Plus, Edit, RefreshCcw, MoreVertical, Send, CheckCircle, XCircle, Clock, Download, Eye, SearchX } from "lucide-react";
+import { FileText, Plus, Edit, RefreshCcw, MoreVertical, Send, CheckCircle, XCircle, Clock, Download, Eye, SearchX, Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { generateInvoicePDF } from "@/lib/pdf-generator";
@@ -34,6 +36,28 @@ const statusIcons: Record<string, React.ReactNode> = {
   cancelled: <XCircle className="h-3 w-3" />,
 };
 
+interface FullInvoiceData {
+  id: string;
+  invoice_no: string;
+  date: string;
+  grand_total: number;
+  subtotal: number;
+  discount_percent: number;
+  discount_amount: number;
+  tax_rate: number;
+  tax_amount: number;
+  round_off: number;
+  e_way_bill_no?: string | null;
+  supplier_invoice_no?: string | null;
+  supplier_invoice_date?: string | null;
+  other_references?: string | null;
+  amount_in_words?: string | null;
+  items: any[];
+  customer?: any;
+  billing_address?: any;
+  shipping_address?: any;
+}
+
 export default function InvoicesPage() {
   const navigate = useNavigate();
   const { data: invoices, isLoading } = useInvoices();
@@ -41,6 +65,9 @@ export default function InvoicesPage() {
   const updateStatus = useUpdateInvoiceStatus();
   
   const { filters, setFilters, filteredInvoices, clearFilters, hasActiveFilters } = useInvoiceFilters(invoices);
+
+  const [sendDialogOpen, setSendDialogOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<FullInvoiceData | null>(null);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-IN", {
@@ -59,23 +86,35 @@ export default function InvoicesPage() {
     }
   };
 
+  const fetchFullInvoice = async (invoiceId: string): Promise<FullInvoiceData | null> => {
+    const { data: invoice, error: invoiceError } = await supabase
+      .from("invoices")
+      .select("*, customers(*), billing_address:addresses!billing_address_id(*), shipping_address:addresses!shipping_address_id(*)")
+      .eq("id", invoiceId)
+      .single();
+
+    if (invoiceError) throw invoiceError;
+
+    const { data: items, error: itemsError } = await supabase
+      .from("invoice_items")
+      .select("*")
+      .eq("invoice_id", invoiceId)
+      .order("sl_no");
+
+    if (itemsError) throw itemsError;
+
+    return {
+      ...invoice,
+      items: items || [],
+      customer: invoice.customers,
+      billing_address: invoice.billing_address,
+      shipping_address: invoice.shipping_address,
+    };
+  };
+
   const handleExportPDF = async (invoiceId: string) => {
     try {
-      const { data: invoice, error: invoiceError } = await supabase
-        .from("invoices")
-        .select("*, customers(*), billing_address:addresses!billing_address_id(*), shipping_address:addresses!shipping_address_id(*)")
-        .eq("id", invoiceId)
-        .single();
-
-      if (invoiceError) throw invoiceError;
-
-      const { data: items, error: itemsError } = await supabase
-        .from("invoice_items")
-        .select("*")
-        .eq("invoice_id", invoiceId)
-        .order("sl_no");
-
-      if (itemsError) throw itemsError;
+      const fullInvoice = await fetchFullInvoice(invoiceId);
 
       if (!companySettings) {
         toast.error("Please configure company settings first");
@@ -83,21 +122,28 @@ export default function InvoicesPage() {
         return;
       }
 
-      await generateInvoicePDF(
-        {
-          ...invoice,
-          items: items || [],
-          customer: invoice.customers,
-          billing_address: invoice.billing_address,
-          shipping_address: invoice.shipping_address,
-        },
-        companySettings
-      );
-
+      await generateInvoicePDF(fullInvoice!, companySettings);
       toast.success("PDF downloaded successfully");
     } catch (error: any) {
       console.error("PDF export error:", error);
       toast.error(error.message || "Failed to export PDF");
+    }
+  };
+
+  const handleSendEmail = async (invoiceId: string) => {
+    if (!companySettings) {
+      toast.error("Please configure company settings first");
+      navigate("/settings");
+      return;
+    }
+
+    try {
+      const fullInvoice = await fetchFullInvoice(invoiceId);
+      setSelectedInvoice(fullInvoice);
+      setSendDialogOpen(true);
+    } catch (error: any) {
+      console.error("Error fetching invoice:", error);
+      toast.error(error.message || "Failed to load invoice");
     }
   };
 
@@ -222,6 +268,10 @@ export default function InvoicesPage() {
                           <Eye className="h-4 w-4 mr-2" />
                           View Invoice
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleSendEmail(invoice.id)}>
+                          <Mail className="h-4 w-4 mr-2" />
+                          Send via Email
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleExportPDF(invoice.id)}>
                           <Download className="h-4 w-4 mr-2" />
                           Download PDF
@@ -269,6 +319,14 @@ export default function InvoicesPage() {
           </div>
         )}
       </div>
+
+      {/* Send Invoice Email Dialog */}
+      <SendInvoiceDialog
+        open={sendDialogOpen}
+        onOpenChange={setSendDialogOpen}
+        invoice={selectedInvoice}
+        companySettings={companySettings || null}
+      />
     </AppLayout>
   );
 }
