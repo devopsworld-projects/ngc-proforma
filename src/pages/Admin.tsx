@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { useIsAdmin, useAdminUserStats, useAdminUserInvoices, useToggleAdminRole, useApproveUser, UserStats } from "@/hooks/useAdmin";
+import { useIsAdmin, useAdminUserStats, useAdminUserInvoices, useToggleAdminRole, useApproveUser, useDeleteUser, UserStats } from "@/hooks/useAdmin";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,7 +27,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Users, FileText, DollarSign, Shield, ShieldOff, Eye, Loader2, CheckCircle, XCircle, Mail, MailX, UserCheck, UserX } from "lucide-react";
+import { Users, FileText, DollarSign, Shield, ShieldOff, Eye, Loader2, CheckCircle, XCircle, Mail, MailX, UserCheck, UserX, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -52,6 +52,7 @@ export default function AdminPage() {
   const { data: users, isLoading: usersLoading } = useAdminUserStats();
   const toggleAdmin = useToggleAdminRole();
   const approveUser = useApproveUser();
+  const deleteUser = useDeleteUser();
   
   const [selectedUser, setSelectedUser] = useState<UserStats | null>(null);
   const { data: userInvoices, isLoading: invoicesLoading } = useAdminUserInvoices(selectedUser?.user_id || null);
@@ -112,6 +113,15 @@ export default function AdminPage() {
       );
     } catch (error: any) {
       toast.error(error.message || "Failed to update approval status");
+    }
+  };
+
+  const handleDeleteUser = async (targetUser: UserStats) => {
+    try {
+      await deleteUser.mutateAsync(targetUser.user_id);
+      toast.success(`Deleted user ${targetUser.full_name || targetUser.email}`);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete user");
     }
   };
 
@@ -338,6 +348,46 @@ export default function AdminPage() {
                                       "Remove Admin"
                                     ) : (
                                       "Grant Admin"
+                                    )}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+                          
+                          {/* Delete User */}
+                          {u.user_id !== user.id && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="sm" title="Delete user">
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete User Permanently?</AlertDialogTitle>
+                                  <AlertDialogDescription className="space-y-2">
+                                    <p>
+                                      This will permanently delete <strong>{u.full_name || u.email}</strong> and all their data including:
+                                    </p>
+                                    <ul className="list-disc list-inside text-sm">
+                                      <li>{u.invoice_count} invoices ({formatCurrency(Number(u.total_revenue))} revenue)</li>
+                                      <li>{u.customer_count} customers and their addresses</li>
+                                      <li>All products, inventory, and service tickets</li>
+                                    </ul>
+                                    <p className="font-medium text-destructive">This action cannot be undone.</p>
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleDeleteUser(u)}
+                                    className="bg-destructive hover:bg-destructive/90"
+                                  >
+                                    {deleteUser.isPending ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      "Delete User"
                                     )}
                                   </AlertDialogAction>
                                 </AlertDialogFooter>
