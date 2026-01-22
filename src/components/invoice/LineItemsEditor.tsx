@@ -1,14 +1,37 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Package } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { 
+  Plus, 
+  Trash2, 
+  Package, 
+  Search, 
+  GripVertical, 
+  ChevronDown, 
+  ChevronUp,
+  Barcode,
+  Percent,
+  AlertCircle
+} from "lucide-react";
 import { formatCurrency } from "@/lib/invoice-utils";
-import { ProductSelector } from "@/components/products/ProductSelector";
 import { ExcelLineItemsUpload } from "@/components/invoice/ExcelLineItemsUpload";
-import { Product } from "@/hooks/useProducts";
+import { useSearchProducts, Product } from "@/hooks/useProducts";
+import { cn } from "@/lib/utils";
 
 export interface LineItem {
   id: string;
@@ -20,7 +43,7 @@ export interface LineItem {
   rate: number;
   discountPercent: number;
   amount: number;
-  productId?: string; // Reference to the product for stock tracking
+  productId?: string;
 }
 
 interface LineItemsEditorProps {
@@ -29,6 +52,15 @@ interface LineItemsEditorProps {
 }
 
 export function LineItemsEditor({ items, onChange }: LineItemsEditorProps) {
+  const [expandedItem, setExpandedItem] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const { data: products = [], isLoading } = useSearchProducts(searchTerm);
+
   const addItem = () => {
     const newItem: LineItem = {
       id: crypto.randomUUID(),
@@ -42,6 +74,7 @@ export function LineItemsEditor({ items, onChange }: LineItemsEditorProps) {
       amount: 0,
     };
     onChange([...items, newItem]);
+    setExpandedItem(newItem.id);
   };
 
   const addProductAsItem = (product: Product) => {
@@ -59,6 +92,9 @@ export function LineItemsEditor({ items, onChange }: LineItemsEditorProps) {
       productId: product.id,
     };
     onChange([...items, newItem]);
+    setSearchTerm("");
+    setIsSearchOpen(false);
+    searchInputRef.current?.focus();
   };
 
   const updateItem = (id: string, field: keyof LineItem, value: string | number) => {
@@ -67,7 +103,6 @@ export function LineItemsEditor({ items, onChange }: LineItemsEditorProps) {
 
       const updatedItem = { ...item, [field]: value };
 
-      // Recalculate amount when quantity, rate, or discount changes
       if (field === "quantity" || field === "rate" || field === "discountPercent") {
         const qty = field === "quantity" ? Number(value) : updatedItem.quantity;
         const rate = field === "rate" ? Number(value) : updatedItem.rate;
@@ -84,16 +119,15 @@ export function LineItemsEditor({ items, onChange }: LineItemsEditorProps) {
 
   const removeItem = (id: string) => {
     const filtered = items.filter((item) => item.id !== id);
-    // Renumber items
     const renumbered = filtered.map((item, index) => ({
       ...item,
       slNo: index + 1,
     }));
     onChange(renumbered);
+    if (expandedItem === id) setExpandedItem(null);
   };
 
   const handleExcelImport = (importedItems: LineItem[]) => {
-    // Renumber items starting from current count + 1
     const startNo = items.length + 1;
     const renumberedItems = importedItems.map((item, index) => ({
       ...item,
@@ -102,150 +136,377 @@ export function LineItemsEditor({ items, onChange }: LineItemsEditorProps) {
     onChange([...items, ...renumberedItems]);
   };
 
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (!isSearchOpen && products.length > 0) {
+      if (e.key === "ArrowDown" || e.key === "Enter") {
+        setIsSearchOpen(true);
+        return;
+      }
+    }
+
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        setHighlightedIndex((prev) => Math.min(prev + 1, products.length - 1));
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        setHighlightedIndex((prev) => Math.max(prev - 1, 0));
+        break;
+      case "Enter":
+        e.preventDefault();
+        if (products[highlightedIndex]) {
+          addProductAsItem(products[highlightedIndex]);
+        }
+        break;
+      case "Escape":
+        setIsSearchOpen(false);
+        break;
+    }
+  };
+
+  const subtotal = items.reduce((sum, item) => sum + item.amount, 0);
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <Label className="text-base font-semibold">Line Items</Label>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Label className="text-base font-semibold">Line Items</Label>
+          {items.length > 0 && (
+            <Badge variant="secondary" className="font-mono">
+              {items.length}
+            </Badge>
+          )}
+        </div>
         <div className="flex items-center gap-2">
           <ExcelLineItemsUpload onImport={handleExcelImport} />
-          <Button type="button" size="sm" onClick={addItem} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Item
-          </Button>
         </div>
       </div>
 
-      {/* Product Search */}
-      <div className="space-y-1">
-        <Label className="text-xs text-muted-foreground">Search products to add</Label>
-        <ProductSelector
-          onSelect={addProductAsItem}
-          placeholder="Search by name, SKU, or description..."
-        />
+      {/* Quick Add Section */}
+      <div className="bg-muted/30 rounded-lg p-4 space-y-3">
+        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+          <Package className="h-4 w-4" />
+          <span>Quick Add Products</span>
+        </div>
+        
+        <div ref={containerRef} className="relative">
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                ref={searchInputRef}
+                placeholder="Type to search products by name, SKU..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setIsSearchOpen(true);
+                  setHighlightedIndex(0);
+                }}
+                onFocus={() => searchTerm && setIsSearchOpen(true)}
+                onKeyDown={handleSearchKeyDown}
+                className="pl-9 pr-4"
+              />
+              
+              {/* Search Results Dropdown */}
+              {isSearchOpen && searchTerm && (
+                <div className="absolute z-50 w-full mt-1 bg-popover border rounded-lg shadow-lg overflow-hidden">
+                  <ScrollArea className="max-h-[300px]">
+                    {isLoading ? (
+                      <div className="p-4 text-center text-sm text-muted-foreground">
+                        Searching...
+                      </div>
+                    ) : products.length === 0 ? (
+                      <div className="p-4 text-center">
+                        <Package className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                        <p className="text-sm text-muted-foreground">No products found</p>
+                      </div>
+                    ) : (
+                      <div className="py-1">
+                        {products.map((product, index) => (
+                          <button
+                            key={product.id}
+                            type="button"
+                            onClick={() => addProductAsItem(product)}
+                            className={cn(
+                              "w-full px-3 py-2.5 text-left flex items-center gap-3 hover:bg-accent transition-colors",
+                              index === highlightedIndex && "bg-accent"
+                            )}
+                          >
+                            <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
+                              <Plus className="h-4 w-4 text-primary" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium truncate">{product.name}</span>
+                                {product.stock_quantity <= 0 && (
+                                  <Badge variant="destructive" className="text-[10px] h-4">
+                                    Out of stock
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
+                                {product.sku && (
+                                  <span className="font-mono bg-muted px-1 rounded">{product.sku}</span>
+                                )}
+                                <span>{product.unit}</span>
+                                <span className={product.stock_quantity <= 0 ? "text-destructive" : "text-green-600"}>
+                                  {product.stock_quantity} in stock
+                                </span>
+                              </div>
+                            </div>
+                            <div className="text-right flex-shrink-0">
+                              <div className="font-semibold text-primary">{formatCurrency(product.rate)}</div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </ScrollArea>
+                </div>
+              )}
+            </div>
+            
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button type="button" variant="outline" onClick={addItem} className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  <span className="hidden sm:inline">Custom</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Add custom item</TooltipContent>
+            </Tooltip>
+          </div>
+          
+          <p className="text-xs text-muted-foreground mt-2">
+            Search products to add, or click "Custom" for manual entry
+          </p>
+        </div>
       </div>
 
+      {/* Items List */}
       {items.length === 0 ? (
-        <Card className="border-dashed">
-          <CardContent className="py-8 text-center">
-            <Package className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-            <p className="text-muted-foreground mb-3">No items added yet</p>
-            <p className="text-sm text-muted-foreground mb-3">
-              Search for products above or add a custom item
-            </p>
-            <Button type="button" variant="outline" onClick={addItem} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Add Custom Item
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="border-2 border-dashed rounded-lg p-8 text-center">
+          <Package className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
+          <p className="text-muted-foreground font-medium mb-1">No items added yet</p>
+          <p className="text-sm text-muted-foreground">
+            Use the search above to add products from inventory
+          </p>
+        </div>
       ) : (
-        <div className="space-y-3">
-          {items.map((item, index) => (
-            <Card key={item.id} className="overflow-hidden">
-              <CardContent className="p-4">
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    <span className="text-sm font-semibold text-primary">{item.slNo}</span>
+        <div className="border rounded-lg overflow-hidden">
+          {/* Table Header */}
+          <div className="hidden md:grid md:grid-cols-12 gap-2 px-4 py-2.5 bg-muted/50 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            <div className="col-span-1">#</div>
+            <div className="col-span-4">Description</div>
+            <div className="col-span-2 text-center">Qty × Rate</div>
+            <div className="col-span-2 text-center">Discount</div>
+            <div className="col-span-2 text-right">Amount</div>
+            <div className="col-span-1"></div>
+          </div>
+          
+          <div className="divide-y">
+            {items.map((item) => (
+              <div key={item.id} className="group">
+                {/* Compact Row */}
+                <div 
+                  className={cn(
+                    "grid grid-cols-12 gap-2 px-4 py-3 items-center transition-colors cursor-pointer hover:bg-muted/30",
+                    expandedItem === item.id && "bg-muted/40"
+                  )}
+                  onClick={() => setExpandedItem(expandedItem === item.id ? null : item.id)}
+                >
+                  {/* Serial Number */}
+                  <div className="col-span-1 flex items-center gap-2">
+                    <GripVertical className="h-4 w-4 text-muted-foreground/50 hidden group-hover:block" />
+                    <span className="text-sm font-medium text-muted-foreground w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs">
+                      {item.slNo}
+                    </span>
                   </div>
-
-                  <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="lg:col-span-2">
-                      <Label className="text-xs text-muted-foreground">Description *</Label>
-                      <Input
-                        placeholder="Product/Service description"
-                        value={item.description}
-                        onChange={(e) => updateItem(item.id, "description", e.target.value)}
-                        className="mt-1"
-                      />
-                    </div>
-
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Quantity *</Label>
-                      <div className="flex gap-2 mt-1">
+                  
+                  {/* Description */}
+                  <div className="col-span-4 md:col-span-4 min-w-0">
+                    <p className="font-medium truncate text-sm">{item.description || "—"}</p>
+                    {item.serialNumbers && (
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <Barcode className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground font-mono truncate">
+                          {item.serialNumbers}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Quantity × Rate */}
+                  <div className="col-span-2 text-center text-sm">
+                    <span className="font-medium">{item.quantity}</span>
+                    <span className="text-muted-foreground mx-1">×</span>
+                    <span>{formatCurrency(item.rate)}</span>
+                  </div>
+                  
+                  {/* Discount */}
+                  <div className="col-span-2 text-center">
+                    {item.discountPercent > 0 ? (
+                      <Badge variant="secondary" className="text-xs gap-1">
+                        <Percent className="h-3 w-3" />
+                        {item.discountPercent}%
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">—</span>
+                    )}
+                  </div>
+                  
+                  {/* Amount */}
+                  <div className="col-span-2 text-right">
+                    <span className="font-semibold text-sm">{formatCurrency(item.amount)}</span>
+                  </div>
+                  
+                  {/* Actions */}
+                  <div className="col-span-1 flex items-center justify-end gap-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setExpandedItem(expandedItem === item.id ? null : item.id);
+                      }}
+                    >
+                      {expandedItem === item.id ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeItem(item.id);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                
+                {/* Expanded Edit Panel */}
+                {expandedItem === item.id && (
+                  <div className="px-4 pb-4 pt-2 bg-muted/20 border-t border-dashed">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div className="lg:col-span-2">
+                        <Label className="text-xs font-medium mb-1.5 block">Description</Label>
+                        <Textarea
+                          placeholder="Product/Service description"
+                          value={item.description}
+                          onChange={(e) => updateItem(item.id, "description", e.target.value)}
+                          rows={2}
+                          className="resize-none"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label className="text-xs font-medium mb-1.5 block">Quantity</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.001"
+                            placeholder="Qty"
+                            value={item.quantity || ""}
+                            onChange={(e) => updateItem(item.id, "quantity", parseFloat(e.target.value) || 0)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex-1"
+                          />
+                          <Input
+                            placeholder="Unit"
+                            value={item.unit}
+                            onChange={(e) => updateItem(item.id, "unit", e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-16"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label className="text-xs font-medium mb-1.5 block">Rate (₹)</Label>
                         <Input
                           type="number"
                           min="0"
-                          step="0.001"
-                          placeholder="Qty"
-                          value={item.quantity || ""}
-                          onChange={(e) => updateItem(item.id, "quantity", parseFloat(e.target.value) || 0)}
-                          className="flex-1"
-                        />
-                        <Input
-                          placeholder="Unit"
-                          value={item.unit}
-                          onChange={(e) => updateItem(item.id, "unit", e.target.value)}
-                          className="w-20"
+                          step="0.01"
+                          placeholder="Rate"
+                          value={item.rate || ""}
+                          onChange={(e) => updateItem(item.id, "rate", parseFloat(e.target.value) || 0)}
+                          onClick={(e) => e.stopPropagation()}
                         />
                       </div>
-                    </div>
-
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Rate (₹) *</Label>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        placeholder="Rate"
-                        value={item.rate || ""}
-                        onChange={(e) => updateItem(item.id, "rate", parseFloat(e.target.value) || 0)}
-                        className="mt-1"
-                      />
-                    </div>
-
-                    <div className="lg:col-span-2">
-                      <Label className="text-xs text-muted-foreground">Serial Numbers (comma separated)</Label>
-                      <Input
-                        placeholder="SN001, SN002, SN003..."
-                        value={item.serialNumbers}
-                        onChange={(e) => updateItem(item.id, "serialNumbers", e.target.value)}
-                        className="mt-1 font-mono text-xs"
-                      />
-                    </div>
-
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Discount %</Label>
-                      <Input
-                        type="number"
-                        min="0"
-                        max="100"
-                        step="0.01"
-                        placeholder="0"
-                        value={item.discountPercent || ""}
-                        onChange={(e) => updateItem(item.id, "discountPercent", parseFloat(e.target.value) || 0)}
-                        className="mt-1"
-                      />
-                    </div>
-
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Amount</Label>
-                      <div className="mt-1 h-10 px-3 flex items-center bg-muted rounded-md">
-                        <span className="font-semibold">{formatCurrency(item.amount)}</span>
+                      
+                      <div className="lg:col-span-2">
+                        <Label className="text-xs font-medium mb-1.5 block">
+                          Serial Numbers
+                          <span className="text-muted-foreground font-normal ml-1">(comma separated)</span>
+                        </Label>
+                        <Input
+                          placeholder="SN001, SN002, SN003..."
+                          value={item.serialNumbers}
+                          onChange={(e) => updateItem(item.id, "serialNumbers", e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="font-mono text-xs"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label className="text-xs font-medium mb-1.5 block">Discount %</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.01"
+                          placeholder="0"
+                          value={item.discountPercent || ""}
+                          onChange={(e) => updateItem(item.id, "discountPercent", parseFloat(e.target.value) || 0)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label className="text-xs font-medium mb-1.5 block">Amount</Label>
+                        <div className="h-10 px-3 flex items-center bg-background border rounded-md">
+                          <span className="font-semibold">{formatCurrency(item.amount)}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
-
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="text-destructive hover:text-destructive flex-shrink-0"
-                    onClick={() => removeItem(item.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {items.length > 0 && (
-        <div className="flex justify-end">
-          <Badge variant="secondary" className="text-sm py-1.5 px-3">
-            {items.length} item{items.length > 1 ? "s" : ""} • Subtotal: {formatCurrency(items.reduce((sum, item) => sum + item.amount, 0))}
-          </Badge>
+                )}
+              </div>
+            ))}
+          </div>
+          
+          {/* Footer with Subtotal */}
+          <div className="px-4 py-3 bg-muted/50 border-t">
+            <div className="flex items-center justify-between">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={addItem}
+                className="gap-2 text-muted-foreground"
+              >
+                <Plus className="h-4 w-4" />
+                Add another item
+              </Button>
+              <div className="text-right">
+                <span className="text-sm text-muted-foreground mr-3">Subtotal:</span>
+                <span className="font-semibold text-lg">{formatCurrency(subtotal)}</span>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
