@@ -96,9 +96,11 @@ export function useBulkCreateProducts() {
     mutationFn: async (products: Omit<Product, "id" | "created_at" | "updated_at" | "user_id">[]) => {
       if (!user) throw new Error("Not authenticated");
       const productsWithUserId = products.map(p => ({ ...p, user_id: user.id }));
+      // Use simple insert - duplicates by SKU for this user will fail
+      // For upsert to work, we'd need the composite constraint name which varies
       const { data, error } = await supabase
         .from("products")
-        .upsert(productsWithUserId, { onConflict: "sku", ignoreDuplicates: false })
+        .insert(productsWithUserId)
         .select();
       if (error) throw error;
       return data;
