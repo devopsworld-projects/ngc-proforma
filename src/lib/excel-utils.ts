@@ -1,10 +1,11 @@
-import ExcelJS from "exceljs";
+// Excel utilities using exceljs for safer parsing (no prototype pollution vulnerabilities)
+// Type imports to avoid circular reference issues
 
 /**
  * Parse an Excel file and return rows as JSON objects
- * Uses exceljs for safer parsing (no prototype pollution vulnerabilities)
  */
-export async function parseExcelFile(file: File): Promise<Record<string, any>[]> {
+export async function parseExcelFile(file: File): Promise<Record<string, unknown>[]> {
+  const ExcelJS = await import("exceljs");
   const buffer = await file.arrayBuffer();
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(buffer);
@@ -14,7 +15,7 @@ export async function parseExcelFile(file: File): Promise<Record<string, any>[]>
     throw new Error("No worksheet found in Excel file");
   }
   
-  const rows: Record<string, any>[] = [];
+  const rows: Record<string, unknown>[] = [];
   const headers: string[] = [];
   
   worksheet.eachRow((row, rowNumber) => {
@@ -25,22 +26,22 @@ export async function parseExcelFile(file: File): Promise<Record<string, any>[]>
       });
     } else {
       // Data rows
-      const rowData: Record<string, any> = {};
+      const rowData: Record<string, unknown> = {};
       row.eachCell((cell, colNumber) => {
         const header = headers[colNumber - 1];
         if (header) {
           // Handle different cell value types
-          let value = cell.value;
+          let value: unknown = cell.value;
           if (value && typeof value === "object") {
+            const cellValue = value as Record<string, unknown>;
             // Handle rich text, formulas, etc.
-            if ("result" in value) {
-              value = value.result;
-            } else if ("text" in value) {
-              value = value.text;
-            } else if ("richText" in value) {
-              value = (value as ExcelJS.CellRichTextValue).richText
-                .map(rt => rt.text)
-                .join("");
+            if ("result" in cellValue) {
+              value = cellValue.result;
+            } else if ("text" in cellValue) {
+              value = cellValue.text;
+            } else if ("richText" in cellValue) {
+              const richText = cellValue.richText as Array<{ text: string }>;
+              value = richText.map(rt => rt.text).join("");
             }
           }
           rowData[header] = value ?? "";
@@ -60,11 +61,12 @@ export async function parseExcelFile(file: File): Promise<Record<string, any>[]>
  * Create and download an Excel file from JSON data
  */
 export async function downloadExcelTemplate(
-  data: Record<string, any>[],
+  data: Record<string, unknown>[],
   filename: string,
   sheetName: string = "Sheet1",
   columnWidths?: number[]
 ): Promise<void> {
+  const ExcelJS = await import("exceljs");
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet(sheetName);
   
