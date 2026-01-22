@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, FileText, AlertCircle, CheckCircle } from "lucide-react";
 import { z } from "zod";
+import { PasswordStrengthIndicator } from "@/components/auth/PasswordStrengthIndicator";
 
 const signupSchema = z.object({
   fullName: z.string().min(2, "Name must be at least 2 characters").max(100, "Name too long"),
@@ -125,6 +126,7 @@ export default function SignupPage() {
                 required
                 autoComplete="new-password"
               />
+              <PasswordStrengthIndicator password={password} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirm Password</Label>
