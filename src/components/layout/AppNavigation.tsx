@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Users, LayoutDashboard, RefreshCcw, PlusCircle, BarChart3, Settings, Package, LogOut, Shield, UserCircle } from "lucide-react";
+import { Users, LayoutDashboard, RefreshCcw, PlusCircle, BarChart3, Settings, Package, LogOut, Shield, UserCircle, Boxes } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsAdmin } from "@/hooks/useAdmin";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ const navItems = [
   { path: "/customers", label: "Customers", icon: Users },
   { path: "/invoices", label: "All Invoices", icon: LayoutDashboard },
   { path: "/products", label: "Products", icon: Package },
+  { path: "/inventory", label: "Inventory", icon: Boxes },
   { path: "/recurring", label: "Recurring", icon: RefreshCcw },
   { path: "/settings", label: "Settings", icon: Settings },
 ];
