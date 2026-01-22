@@ -19,7 +19,6 @@ const nameSchema = z.object({
 });
 
 const passwordSchema = z.object({
-  currentPassword: z.string().min(1, "Current password is required"),
   newPassword: z.string().min(6, "New password must be at least 6 characters"),
   confirmPassword: z.string(),
 }).refine((data) => data.newPassword === data.confirmPassword, {
@@ -38,7 +37,6 @@ export default function ProfilePage() {
   const [nameError, setNameError] = useState<string | null>(null);
   
   // Password state
-  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isChangingPassword, setIsChangingPassword] = useState(false);
@@ -98,7 +96,16 @@ export default function ProfilePage() {
     e.preventDefault();
     setPasswordError(null);
 
-    const validation = passwordSchema.safeParse({ currentPassword, newPassword, confirmPassword });
+    // Simplified validation - only check new password requirements
+    const simplifiedSchema = z.object({
+      newPassword: z.string().min(6, "New password must be at least 6 characters"),
+      confirmPassword: z.string(),
+    }).refine((data) => data.newPassword === data.confirmPassword, {
+      message: "Passwords don't match",
+      path: ["confirmPassword"],
+    });
+
+    const validation = simplifiedSchema.safeParse({ newPassword, confirmPassword });
     if (!validation.success) {
       setPasswordError(validation.error.errors[0].message);
       return;
@@ -106,27 +113,23 @@ export default function ProfilePage() {
 
     setIsChangingPassword(true);
     try {
-      // First verify current password by attempting to sign in
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: user!.email!,
-        password: currentPassword,
-      });
-
-      if (signInError) {
-        setPasswordError("Current password is incorrect");
-        setIsChangingPassword(false);
-        return;
-      }
-
-      // Now update the password
+      // Supabase's updateUser handles reauthentication requirements automatically
+      // No need to verify current password via signInWithPassword (anti-pattern)
       const { error: updateError } = await supabase.auth.updateUser({
         password: newPassword,
       });
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        // Handle common errors with user-friendly messages
+        if (updateError.message.includes("reauthentication")) {
+          setPasswordError("Please log out and log back in before changing your password");
+        } else {
+          throw updateError;
+        }
+        return;
+      }
 
       toast.success("Password changed successfully");
-      setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch (error: any) {
@@ -244,18 +247,6 @@ export default function ProfilePage() {
                   <AlertDescription>{passwordError}</AlertDescription>
                 </Alert>
               )}
-
-              <div className="space-y-2">
-                <Label htmlFor="currentPassword">Current Password</Label>
-                <Input
-                  id="currentPassword"
-                  type="password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  placeholder="Enter current password"
-                  autoComplete="current-password"
-                />
-              </div>
 
               <div className="space-y-2">
                 <Label htmlFor="newPassword">New Password</Label>
