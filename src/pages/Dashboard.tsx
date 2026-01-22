@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { QuickActionCards } from "@/components/dashboard/QuickActionCards";
 import { 
   DollarSign, 
   FileText, 
@@ -146,6 +147,9 @@ export default function DashboardPage() {
           <h2 className="text-2xl font-serif font-bold">Dashboard</h2>
           <p className="text-muted-foreground">Overview of your invoicing activity</p>
         </div>
+
+        {/* Quick Actions */}
+        <QuickActionCards />
 
         {/* Summary Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
