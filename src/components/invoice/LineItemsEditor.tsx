@@ -1,15 +1,28 @@
 import { useState, useRef } from "react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragStartEvent,
+  DragOverlay,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import {
   Tooltip,
   TooltipContent,
@@ -26,7 +39,6 @@ import {
   ChevronUp,
   Barcode,
   Percent,
-  AlertCircle
 } from "lucide-react";
 import { formatCurrency } from "@/lib/invoice-utils";
 import { ExcelLineItemsUpload } from "@/components/invoice/ExcelLineItemsUpload";
@@ -51,8 +63,242 @@ interface LineItemsEditorProps {
   onChange: (items: LineItem[]) => void;
 }
 
+interface SortableLineItemProps {
+  item: LineItem;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
+  onUpdate: (field: keyof LineItem, value: string | number) => void;
+  onRemove: () => void;
+  isDragging?: boolean;
+}
+
+function SortableLineItem({ 
+  item, 
+  isExpanded, 
+  onToggleExpand, 
+  onUpdate, 
+  onRemove,
+  isDragging 
+}: SortableLineItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging: isSortableDragging,
+  } = useSortable({ id: item.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "group",
+        isSortableDragging && "opacity-50"
+      )}
+    >
+      {/* Compact Row */}
+      <div 
+        className={cn(
+          "grid grid-cols-12 gap-2 px-4 py-3 items-center transition-colors",
+          isExpanded && "bg-muted/40",
+          !isSortableDragging && "hover:bg-muted/30"
+        )}
+      >
+        {/* Drag Handle & Serial Number */}
+        <div className="col-span-1 flex items-center gap-1">
+          <button
+            type="button"
+            className="touch-none p-1 -ml-1 cursor-grab active:cursor-grabbing text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical className="h-4 w-4" />
+          </button>
+          <span className="text-sm font-medium text-muted-foreground w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs">
+            {item.slNo}
+          </span>
+        </div>
+        
+        {/* Description */}
+        <div 
+          className="col-span-4 md:col-span-4 min-w-0 cursor-pointer"
+          onClick={onToggleExpand}
+        >
+          <p className="font-medium truncate text-sm">{item.description || "—"}</p>
+          {item.serialNumbers && (
+            <div className="flex items-center gap-1 mt-0.5">
+              <Barcode className="h-3 w-3 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground font-mono truncate">
+                {item.serialNumbers}
+              </span>
+            </div>
+          )}
+        </div>
+        
+        {/* Quantity × Rate */}
+        <div className="col-span-2 text-center text-sm" onClick={onToggleExpand}>
+          <span className="font-medium">{item.quantity}</span>
+          <span className="text-muted-foreground mx-1">×</span>
+          <span>{formatCurrency(item.rate)}</span>
+        </div>
+        
+        {/* Discount */}
+        <div className="col-span-2 text-center" onClick={onToggleExpand}>
+          {item.discountPercent > 0 ? (
+            <Badge variant="secondary" className="text-xs gap-1">
+              <Percent className="h-3 w-3" />
+              {item.discountPercent}%
+            </Badge>
+          ) : (
+            <span className="text-muted-foreground text-sm">—</span>
+          )}
+        </div>
+        
+        {/* Amount */}
+        <div className="col-span-2 text-right" onClick={onToggleExpand}>
+          <span className="font-semibold text-sm">{formatCurrency(item.amount)}</span>
+        </div>
+        
+        {/* Actions */}
+        <div className="col-span-1 flex items-center justify-end gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={onToggleExpand}
+          >
+            {isExpanded ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={onRemove}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+      
+      {/* Expanded Edit Panel */}
+      {isExpanded && (
+        <div className="px-4 pb-4 pt-2 bg-muted/20 border-t border-dashed animate-fade-in">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="lg:col-span-2">
+              <Label className="text-xs font-medium mb-1.5 block">Description</Label>
+              <Textarea
+                placeholder="Product/Service description"
+                value={item.description}
+                onChange={(e) => onUpdate("description", e.target.value)}
+                rows={2}
+                className="resize-none"
+              />
+            </div>
+            
+            <div>
+              <Label className="text-xs font-medium mb-1.5 block">Quantity</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.001"
+                  placeholder="Qty"
+                  value={item.quantity || ""}
+                  onChange={(e) => onUpdate("quantity", parseFloat(e.target.value) || 0)}
+                  className="flex-1"
+                />
+                <Input
+                  placeholder="Unit"
+                  value={item.unit}
+                  onChange={(e) => onUpdate("unit", e.target.value)}
+                  className="w-16"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <Label className="text-xs font-medium mb-1.5 block">Rate (₹)</Label>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="Rate"
+                value={item.rate || ""}
+                onChange={(e) => onUpdate("rate", parseFloat(e.target.value) || 0)}
+              />
+            </div>
+            
+            <div className="lg:col-span-2">
+              <Label className="text-xs font-medium mb-1.5 block">
+                Serial Numbers
+                <span className="text-muted-foreground font-normal ml-1">(comma separated)</span>
+              </Label>
+              <Input
+                placeholder="SN001, SN002, SN003..."
+                value={item.serialNumbers}
+                onChange={(e) => onUpdate("serialNumbers", e.target.value)}
+                className="font-mono text-xs"
+              />
+            </div>
+            
+            <div>
+              <Label className="text-xs font-medium mb-1.5 block">Discount %</Label>
+              <Input
+                type="number"
+                min="0"
+                max="100"
+                step="0.01"
+                placeholder="0"
+                value={item.discountPercent || ""}
+                onChange={(e) => onUpdate("discountPercent", parseFloat(e.target.value) || 0)}
+              />
+            </div>
+            
+            <div>
+              <Label className="text-xs font-medium mb-1.5 block">Amount</Label>
+              <div className="h-10 px-3 flex items-center bg-background border rounded-md">
+                <span className="font-semibold">{formatCurrency(item.amount)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Drag overlay component for smooth dragging visual
+function DragOverlayItem({ item }: { item: LineItem }) {
+  return (
+    <div className="bg-background border rounded-lg shadow-lg px-4 py-3 opacity-95">
+      <div className="flex items-center gap-3">
+        <GripVertical className="h-4 w-4 text-muted-foreground" />
+        <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-medium">
+          {item.slNo}
+        </span>
+        <span className="font-medium truncate flex-1">{item.description || "—"}</span>
+        <span className="font-semibold">{formatCurrency(item.amount)}</span>
+      </div>
+    </div>
+  );
+}
+
 export function LineItemsEditor({ items, onChange }: LineItemsEditorProps) {
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
@@ -60,6 +306,40 @@ export function LineItemsEditor({ items, onChange }: LineItemsEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const { data: products = [], isLoading } = useSearchProducts(searchTerm);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+    setExpandedItem(null); // Collapse any expanded item when dragging starts
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (over && active.id !== over.id) {
+      const oldIndex = items.findIndex((item) => item.id === active.id);
+      const newIndex = items.findIndex((item) => item.id === over.id);
+
+      const reordered = arrayMove(items, oldIndex, newIndex);
+      // Renumber items after reorder
+      const renumbered = reordered.map((item, index) => ({
+        ...item,
+        slNo: index + 1,
+      }));
+      onChange(renumbered);
+    }
+  };
 
   const addItem = () => {
     const newItem: LineItem = {
@@ -166,6 +446,7 @@ export function LineItemsEditor({ items, onChange }: LineItemsEditorProps) {
   };
 
   const subtotal = items.reduce((sum, item) => sum + item.amount, 0);
+  const activeItem = activeId ? items.find((item) => item.id === activeId) : null;
 
   return (
     <div className="space-y-4">
@@ -280,7 +561,7 @@ export function LineItemsEditor({ items, onChange }: LineItemsEditorProps) {
           </div>
           
           <p className="text-xs text-muted-foreground mt-2">
-            Search products to add, or click "Custom" for manual entry
+            Search products to add, or click "Custom" for manual entry. Drag items to reorder.
           </p>
         </div>
       </div>
@@ -295,219 +576,64 @@ export function LineItemsEditor({ items, onChange }: LineItemsEditorProps) {
           </p>
         </div>
       ) : (
-        <div className="border rounded-lg overflow-hidden">
-          {/* Table Header */}
-          <div className="hidden md:grid md:grid-cols-12 gap-2 px-4 py-2.5 bg-muted/50 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            <div className="col-span-1">#</div>
-            <div className="col-span-4">Description</div>
-            <div className="col-span-2 text-center">Qty × Rate</div>
-            <div className="col-span-2 text-center">Discount</div>
-            <div className="col-span-2 text-right">Amount</div>
-            <div className="col-span-1"></div>
-          </div>
-          
-          <div className="divide-y">
-            {items.map((item) => (
-              <div key={item.id} className="group">
-                {/* Compact Row */}
-                <div 
-                  className={cn(
-                    "grid grid-cols-12 gap-2 px-4 py-3 items-center transition-colors cursor-pointer hover:bg-muted/30",
-                    expandedItem === item.id && "bg-muted/40"
-                  )}
-                  onClick={() => setExpandedItem(expandedItem === item.id ? null : item.id)}
-                >
-                  {/* Serial Number */}
-                  <div className="col-span-1 flex items-center gap-2">
-                    <GripVertical className="h-4 w-4 text-muted-foreground/50 hidden group-hover:block" />
-                    <span className="text-sm font-medium text-muted-foreground w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs">
-                      {item.slNo}
-                    </span>
-                  </div>
-                  
-                  {/* Description */}
-                  <div className="col-span-4 md:col-span-4 min-w-0">
-                    <p className="font-medium truncate text-sm">{item.description || "—"}</p>
-                    {item.serialNumbers && (
-                      <div className="flex items-center gap-1 mt-0.5">
-                        <Barcode className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground font-mono truncate">
-                          {item.serialNumbers}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Quantity × Rate */}
-                  <div className="col-span-2 text-center text-sm">
-                    <span className="font-medium">{item.quantity}</span>
-                    <span className="text-muted-foreground mx-1">×</span>
-                    <span>{formatCurrency(item.rate)}</span>
-                  </div>
-                  
-                  {/* Discount */}
-                  <div className="col-span-2 text-center">
-                    {item.discountPercent > 0 ? (
-                      <Badge variant="secondary" className="text-xs gap-1">
-                        <Percent className="h-3 w-3" />
-                        {item.discountPercent}%
-                      </Badge>
-                    ) : (
-                      <span className="text-muted-foreground text-sm">—</span>
-                    )}
-                  </div>
-                  
-                  {/* Amount */}
-                  <div className="col-span-2 text-right">
-                    <span className="font-semibold text-sm">{formatCurrency(item.amount)}</span>
-                  </div>
-                  
-                  {/* Actions */}
-                  <div className="col-span-1 flex items-center justify-end gap-1">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setExpandedItem(expandedItem === item.id ? null : item.id);
-                      }}
-                    >
-                      {expandedItem === item.id ? (
-                        <ChevronUp className="h-4 w-4" />
-                      ) : (
-                        <ChevronDown className="h-4 w-4" />
-                      )}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeItem(item.id);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                
-                {/* Expanded Edit Panel */}
-                {expandedItem === item.id && (
-                  <div className="px-4 pb-4 pt-2 bg-muted/20 border-t border-dashed">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                      <div className="lg:col-span-2">
-                        <Label className="text-xs font-medium mb-1.5 block">Description</Label>
-                        <Textarea
-                          placeholder="Product/Service description"
-                          value={item.description}
-                          onChange={(e) => updateItem(item.id, "description", e.target.value)}
-                          rows={2}
-                          className="resize-none"
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label className="text-xs font-medium mb-1.5 block">Quantity</Label>
-                        <div className="flex gap-2">
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.001"
-                            placeholder="Qty"
-                            value={item.quantity || ""}
-                            onChange={(e) => updateItem(item.id, "quantity", parseFloat(e.target.value) || 0)}
-                            onClick={(e) => e.stopPropagation()}
-                            className="flex-1"
-                          />
-                          <Input
-                            placeholder="Unit"
-                            value={item.unit}
-                            onChange={(e) => updateItem(item.id, "unit", e.target.value)}
-                            onClick={(e) => e.stopPropagation()}
-                            className="w-16"
-                          />
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <Label className="text-xs font-medium mb-1.5 block">Rate (₹)</Label>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          placeholder="Rate"
-                          value={item.rate || ""}
-                          onChange={(e) => updateItem(item.id, "rate", parseFloat(e.target.value) || 0)}
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      </div>
-                      
-                      <div className="lg:col-span-2">
-                        <Label className="text-xs font-medium mb-1.5 block">
-                          Serial Numbers
-                          <span className="text-muted-foreground font-normal ml-1">(comma separated)</span>
-                        </Label>
-                        <Input
-                          placeholder="SN001, SN002, SN003..."
-                          value={item.serialNumbers}
-                          onChange={(e) => updateItem(item.id, "serialNumbers", e.target.value)}
-                          onClick={(e) => e.stopPropagation()}
-                          className="font-mono text-xs"
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label className="text-xs font-medium mb-1.5 block">Discount %</Label>
-                        <Input
-                          type="number"
-                          min="0"
-                          max="100"
-                          step="0.01"
-                          placeholder="0"
-                          value={item.discountPercent || ""}
-                          onChange={(e) => updateItem(item.id, "discountPercent", parseFloat(e.target.value) || 0)}
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label className="text-xs font-medium mb-1.5 block">Amount</Label>
-                        <div className="h-10 px-3 flex items-center bg-background border rounded-md">
-                          <span className="font-semibold">{formatCurrency(item.amount)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="border rounded-lg overflow-hidden">
+            {/* Table Header */}
+            <div className="hidden md:grid md:grid-cols-12 gap-2 px-4 py-2.5 bg-muted/50 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              <div className="col-span-1">#</div>
+              <div className="col-span-4">Description</div>
+              <div className="col-span-2 text-center">Qty × Rate</div>
+              <div className="col-span-2 text-center">Discount</div>
+              <div className="col-span-2 text-right">Amount</div>
+              <div className="col-span-1"></div>
+            </div>
+            
+            <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
+              <div className="divide-y">
+                {items.map((item) => (
+                  <SortableLineItem
+                    key={item.id}
+                    item={item}
+                    isExpanded={expandedItem === item.id}
+                    onToggleExpand={() => setExpandedItem(expandedItem === item.id ? null : item.id)}
+                    onUpdate={(field, value) => updateItem(item.id, field, value)}
+                    onRemove={() => removeItem(item.id)}
+                  />
+                ))}
               </div>
-            ))}
-          </div>
-          
-          {/* Footer with Subtotal */}
-          <div className="px-4 py-3 bg-muted/50 border-t">
-            <div className="flex items-center justify-between">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={addItem}
-                className="gap-2 text-muted-foreground"
-              >
-                <Plus className="h-4 w-4" />
-                Add another item
-              </Button>
-              <div className="text-right">
-                <span className="text-sm text-muted-foreground mr-3">Subtotal:</span>
-                <span className="font-semibold text-lg">{formatCurrency(subtotal)}</span>
+            </SortableContext>
+            
+            {/* Footer with Subtotal */}
+            <div className="px-4 py-3 bg-muted/50 border-t">
+              <div className="flex items-center justify-between">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={addItem}
+                  className="gap-2 text-muted-foreground"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add another item
+                </Button>
+                <div className="text-right">
+                  <span className="text-sm text-muted-foreground mr-3">Subtotal:</span>
+                  <span className="font-semibold text-lg">{formatCurrency(subtotal)}</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+          
+          {/* Drag Overlay */}
+          <DragOverlay>
+            {activeItem ? <DragOverlayItem item={activeItem} /> : null}
+          </DragOverlay>
+        </DndContext>
       )}
     </div>
   );
