@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Package } from "lucide-react";
 import { formatCurrency } from "@/lib/invoice-utils";
 import { ProductSelector } from "@/components/products/ProductSelector";
-import { ExcelUploadDialog } from "@/components/products/ExcelUploadDialog";
+import { ExcelLineItemsUpload } from "@/components/invoice/ExcelLineItemsUpload";
 import { Product } from "@/hooks/useProducts";
 
 export interface LineItem {
@@ -90,12 +90,22 @@ export function LineItemsEditor({ items, onChange }: LineItemsEditorProps) {
     onChange(renumbered);
   };
 
+  const handleExcelImport = (importedItems: LineItem[]) => {
+    // Renumber items starting from current count + 1
+    const startNo = items.length + 1;
+    const renumberedItems = importedItems.map((item, index) => ({
+      ...item,
+      slNo: startNo + index,
+    }));
+    onChange([...items, ...renumberedItems]);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <Label className="text-base font-semibold">Line Items</Label>
         <div className="flex items-center gap-2">
-          <ExcelUploadDialog />
+          <ExcelLineItemsUpload onImport={handleExcelImport} />
           <Button type="button" size="sm" onClick={addItem} className="gap-2">
             <Plus className="h-4 w-4" />
             Add Item
