@@ -1,6 +1,8 @@
 import { AppLayout } from "@/components/layout/AppLayout";
-import { useInvoices, useInvoice, useUpdateInvoiceStatus, Invoice } from "@/hooks/useInvoices";
+import { useInvoices, useUpdateInvoiceStatus, Invoice } from "@/hooks/useInvoices";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
+import { useInvoiceFilters } from "@/hooks/useInvoiceFilters";
+import { InvoiceFilters } from "@/components/invoices/InvoiceFilters";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,7 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { FileText, Plus, Edit, RefreshCcw, MoreVertical, Send, CheckCircle, XCircle, Clock, Download, Eye } from "lucide-react";
+import { FileText, Plus, Edit, RefreshCcw, MoreVertical, Send, CheckCircle, XCircle, Clock, Download, Eye, SearchX } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { generateInvoicePDF } from "@/lib/pdf-generator";
@@ -37,6 +39,8 @@ export default function InvoicesPage() {
   const { data: invoices, isLoading } = useInvoices();
   const { data: companySettings } = useCompanySettings();
   const updateStatus = useUpdateInvoiceStatus();
+  
+  const { filters, setFilters, filteredInvoices, clearFilters, hasActiveFilters } = useInvoiceFilters(invoices);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-IN", {
@@ -57,7 +61,6 @@ export default function InvoicesPage() {
 
   const handleExportPDF = async (invoiceId: string) => {
     try {
-      // Fetch full invoice data with relations
       const { data: invoice, error: invoiceError } = await supabase
         .from("invoices")
         .select("*, customers(*), billing_address:addresses!billing_address_id(*), shipping_address:addresses!shipping_address_id(*)")
@@ -112,6 +115,21 @@ export default function InvoicesPage() {
           </Button>
         </div>
 
+        {/* Search and Filters */}
+        <InvoiceFilters
+          filters={filters}
+          onFiltersChange={setFilters}
+          onClearFilters={clearFilters}
+        />
+
+        {/* Results Summary */}
+        {!isLoading && invoices && invoices.length > 0 && (
+          <div className="text-sm text-muted-foreground">
+            Showing {filteredInvoices.length} of {invoices.length} invoices
+            {hasActiveFilters && " (filtered)"}
+          </div>
+        )}
+
         {isLoading ? (
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
@@ -141,9 +159,20 @@ export default function InvoicesPage() {
               </Button>
             </CardContent>
           </Card>
+        ) : filteredInvoices.length === 0 ? (
+          <Card className="border-dashed">
+            <CardContent className="py-12 text-center">
+              <SearchX className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">No matching invoices</h3>
+              <p className="text-muted-foreground mb-4">Try adjusting your search or filters</p>
+              <Button variant="outline" onClick={clearFilters}>
+                Clear Filters
+              </Button>
+            </CardContent>
+          </Card>
         ) : (
           <div className="space-y-3">
-            {invoices?.map((invoice) => (
+            {filteredInvoices.map((invoice) => (
               <Card key={invoice.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="py-4">
                   <div className="flex items-center gap-4">
@@ -188,7 +217,7 @@ export default function InvoicesPage() {
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuContent align="end" className="w-48 bg-popover">
                         <DropdownMenuItem onClick={() => navigate(`/invoices/${invoice.id}`)}>
                           <Eye className="h-4 w-4 mr-2" />
                           View Invoice
