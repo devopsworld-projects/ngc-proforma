@@ -25,6 +25,7 @@ import { CustomerSelector } from "@/components/customers/CustomerSelector";
 import { Customer, Address } from "@/hooks/useCustomers";
 import { useNextInvoiceNumber, useUpdateInvoice, useDeleteInvoiceItems, Invoice, InvoiceItem } from "@/hooks/useInvoices";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 const invoiceFormSchema = z.object({
@@ -79,6 +80,7 @@ interface InvoiceFormProps {
 
 export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { data: nextInvoiceNo } = useNextInvoiceNumber();
   const updateInvoice = useUpdateInvoice();
   const deleteInvoiceItems = useDeleteInvoiceItems();
@@ -189,6 +191,10 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
     setIsSubmitting(true);
 
     try {
+      if (!user) {
+        throw new Error("You must be logged in to create invoices");
+      }
+
       const invoicePayload = {
         invoice_no: data.invoiceNo,
         customer_id: selectedCustomer?.id || null,
@@ -210,6 +216,7 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
         is_recurring: data.isRecurring,
         recurring_frequency: data.isRecurring ? data.recurringFrequency : null,
         next_invoice_date: null,
+        user_id: user.id,
       };
 
       if (isEditing && invoice) {
@@ -276,27 +283,24 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
             reference_type: "invoice",
             reference_id: newInvoice.id,
             notes: `Invoice #${data.invoiceNo}`,
+            user_id: user.id,
           }));
 
         if (stockDeductions.length > 0) {
-          // Get current user for stock movements
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            for (const movement of stockDeductions) {
-              // Insert stock movement
-              await supabase.from("stock_movements").insert({ ...movement, user_id: user.id });
-              // Update product stock
-              const { data: product } = await supabase
+          for (const movement of stockDeductions) {
+            // Insert stock movement
+            await supabase.from("stock_movements").insert(movement);
+            // Update product stock
+            const { data: product } = await supabase
+              .from("products")
+              .select("stock_quantity")
+              .eq("id", movement.product_id)
+              .single();
+            if (product) {
+              await supabase
                 .from("products")
-                .select("stock_quantity")
-                .eq("id", movement.product_id)
-                .single();
-              if (product) {
-                await supabase
-                  .from("products")
-                  .update({ stock_quantity: Math.max(0, (product.stock_quantity || 0) - movement.quantity) })
-                  .eq("id", movement.product_id);
-              }
+                .update({ stock_quantity: Math.max(0, (product.stock_quantity || 0) - movement.quantity) })
+                .eq("id", movement.product_id);
             }
           }
         }
