@@ -1,8 +1,11 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useInvoices } from "@/hooks/useInvoices";
 import { useCustomers } from "@/hooks/useCustomers";
+import { useProducts } from "@/hooks/useProducts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   DollarSign, 
   FileText, 
@@ -11,8 +14,11 @@ import {
   Clock, 
   CheckCircle,
   XCircle,
-  Send
+  Send,
+  AlertTriangle,
+  Package
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import {
   BarChart,
   Bar,
@@ -44,9 +50,12 @@ const COLORS = {
   cancelled: "hsl(var(--destructive))",
 };
 
+const LOW_STOCK_THRESHOLD = 10;
+
 export default function DashboardPage() {
   const { data: invoices, isLoading: invoicesLoading } = useInvoices();
   const { data: customers, isLoading: customersLoading } = useCustomers();
+  const { data: products, isLoading: productsLoading } = useProducts();
 
   const stats = useMemo(() => {
     if (!invoices) return null;
@@ -98,7 +107,14 @@ export default function DashboardPage() {
     ];
   }, [stats]);
 
-  const isLoading = invoicesLoading || customersLoading;
+  const lowStockProducts = useMemo(() => {
+    if (!products) return [];
+    return products
+      .filter((p) => p.stock_quantity <= LOW_STOCK_THRESHOLD)
+      .sort((a, b) => a.stock_quantity - b.stock_quantity);
+  }, [products]);
+
+  const isLoading = invoicesLoading || customersLoading || productsLoading;
 
   if (isLoading) {
     return (
@@ -279,6 +295,64 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Low Stock Alerts */}
+        {lowStockProducts.length > 0 && (
+          <Card className="border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                <AlertTriangle className="h-4 w-4" />
+                Low Stock Alerts
+                <Badge variant="secondary" className="ml-auto bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
+                  {lowStockProducts.length} items
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[200px]">
+                <div className="space-y-2">
+                  {lowStockProducts.map((product) => (
+                    <div
+                      key={product.id}
+                      className="flex items-center justify-between p-3 rounded-lg bg-background border"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg ${product.stock_quantity === 0 ? 'bg-red-100 dark:bg-red-900/30' : 'bg-amber-100 dark:bg-amber-900/30'}`}>
+                          <Package className={`h-4 w-4 ${product.stock_quantity === 0 ? 'text-red-600' : 'text-amber-600'}`} />
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">{product.name}</p>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            {product.sku && <span className="font-mono">{product.sku}</span>}
+                            {product.category && (
+                              <Badge variant="outline" className="text-[10px] h-4">
+                                {product.category}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className={`text-lg font-bold ${product.stock_quantity === 0 ? 'text-red-600' : 'text-amber-600'}`}>
+                          {product.stock_quantity}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {product.stock_quantity === 0 ? 'Out of stock' : 'Low stock'}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+              <Link 
+                to="/products" 
+                className="mt-3 block text-center text-sm text-primary hover:underline"
+              >
+                View all products →
+              </Link>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Quick Stats */}
         <div className="grid gap-4 md:grid-cols-4">
