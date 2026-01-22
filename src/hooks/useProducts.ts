@@ -89,13 +89,55 @@ export function useCreateProduct() {
   });
 }
 
+export interface BulkImportOptions {
+  stockMode: "replace" | "add"; // replace = set stock to imported value, add = add to existing stock
+  createStockMovements: boolean;
+}
+
+export interface BulkImportResult {
+  created: number;
+  updated: number;
+  total: number;
+}
+
 export function useBulkCreateProducts() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   return useMutation({
-    mutationFn: async (products: Omit<Product, "id" | "created_at" | "updated_at" | "user_id">[]) => {
+    mutationFn: async ({ 
+      products, 
+      options = { stockMode: "replace", createStockMovements: true } 
+    }: { 
+      products: Omit<Product, "id" | "created_at" | "updated_at" | "user_id">[]; 
+      options?: BulkImportOptions;
+    }): Promise<BulkImportResult> => {
       if (!user) throw new Error("Not authenticated");
-      const productsWithUserId = products.map(p => ({ ...p, user_id: user.id }));
+      
+      // Get existing products by SKU to determine new vs update
+      const skus = products.filter(p => p.sku).map(p => p.sku);
+      const { data: existingProducts } = await supabase
+        .from("products")
+        .select("id, sku, stock_quantity")
+        .eq("user_id", user.id)
+        .eq("is_active", true)
+        .in("sku", skus);
+      
+      const existingSkuMap = new Map(
+        (existingProducts || []).map(p => [p.sku, { id: p.id, stock: p.stock_quantity }])
+      );
+      
+      // Prepare products with adjusted stock if needed
+      const productsWithUserId = products.map(p => {
+        let finalStock = p.stock_quantity;
+        
+        if (options.stockMode === "add" && p.sku && existingSkuMap.has(p.sku)) {
+          const existing = existingSkuMap.get(p.sku)!;
+          finalStock = (existing.stock || 0) + p.stock_quantity;
+        }
+        
+        return { ...p, stock_quantity: finalStock, user_id: user.id };
+      });
+      
       // Use upsert with the composite unique index on (user_id, sku)
       const { data, error } = await supabase
         .from("products")
@@ -105,10 +147,46 @@ export function useBulkCreateProducts() {
         })
         .select();
       if (error) throw error;
-      return data;
+      
+      // Create stock movements for tracking
+      if (options.createStockMovements && data) {
+        const movements = products
+          .filter(p => p.stock_quantity > 0)
+          .map(p => {
+            const upsertedProduct = data.find(d => d.sku === p.sku || d.name === p.name);
+            if (!upsertedProduct) return null;
+            
+            const wasExisting = p.sku && existingSkuMap.has(p.sku);
+            return {
+              product_id: upsertedProduct.id,
+              user_id: user.id,
+              movement_type: "in" as const,
+              quantity: p.stock_quantity,
+              notes: wasExisting 
+                ? `Excel import (${options.stockMode === "add" ? "added" : "replaced"})` 
+                : "Excel import (new product)",
+            };
+          })
+          .filter(Boolean);
+        
+        if (movements.length > 0) {
+          await supabase.from("stock_movements").insert(movements);
+        }
+      }
+      
+      // Calculate stats
+      const createdCount = products.filter(p => !p.sku || !existingSkuMap.has(p.sku)).length;
+      const updatedCount = products.filter(p => p.sku && existingSkuMap.has(p.sku)).length;
+      
+      return {
+        created: createdCount,
+        updated: updatedCount,
+        total: data?.length || 0,
+      };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["stock_movements"] });
     },
   });
 }

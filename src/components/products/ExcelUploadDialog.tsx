@@ -15,8 +15,10 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Upload, FileSpreadsheet, AlertCircle, CheckCircle, Download, Loader2 } from "lucide-react";
-import { useBulkCreateProducts } from "@/hooks/useProducts";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Switch } from "@/components/ui/switch";
+import { Upload, FileSpreadsheet, AlertCircle, CheckCircle, Download, Loader2, Package, RefreshCw, Plus } from "lucide-react";
+import { useBulkCreateProducts, BulkImportOptions } from "@/hooks/useProducts";
 import { toast } from "sonner";
 
 interface ParsedProduct {
@@ -42,6 +44,8 @@ export function ExcelUploadDialog({ trigger }: ExcelUploadDialogProps) {
   const [errors, setErrors] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
+  const [stockMode, setStockMode] = useState<"replace" | "add">("replace");
+  const [createMovements, setCreateMovements] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const bulkCreate = useBulkCreateProducts();
@@ -118,8 +122,17 @@ export function ExcelUploadDialog({ trigger }: ExcelUploadDialogProps) {
 
     setIsUploading(true);
     try {
-      await bulkCreate.mutateAsync(parsedProducts);
-      toast.success(`Successfully imported ${parsedProducts.length} products`);
+      const options: BulkImportOptions = {
+        stockMode,
+        createStockMovements: createMovements,
+      };
+      const result = await bulkCreate.mutateAsync({ products: parsedProducts, options });
+      
+      const messages: string[] = [];
+      if (result.created > 0) messages.push(`${result.created} new products created`);
+      if (result.updated > 0) messages.push(`${result.updated} products updated`);
+      
+      toast.success(`Import complete: ${messages.join(", ")}`);
       setOpen(false);
       resetState();
     } catch (error: any) {
@@ -134,6 +147,8 @@ export function ExcelUploadDialog({ trigger }: ExcelUploadDialogProps) {
     setFile(null);
     setParsedProducts([]);
     setErrors([]);
+    setStockMode("replace");
+    setCreateMovements(true);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -227,7 +242,67 @@ export function ExcelUploadDialog({ trigger }: ExcelUploadDialogProps) {
                 <CheckCircle className="h-4 w-4 text-green-600" />
                 <span className="font-medium">{parsedProducts.length} products ready to import</span>
               </div>
-              <ScrollArea className="h-[250px] border rounded-lg">
+              
+              {/* Stock Import Options */}
+              <div className="p-4 bg-muted/50 rounded-lg space-y-4">
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium">Stock Quantity Handling</Label>
+                  <RadioGroup 
+                    value={stockMode} 
+                    onValueChange={(v) => setStockMode(v as "replace" | "add")}
+                    className="grid grid-cols-2 gap-3"
+                  >
+                    <Label 
+                      htmlFor="stock-replace" 
+                      className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+                        stockMode === "replace" ? "border-primary bg-primary/5" : "hover:bg-accent"
+                      }`}
+                    >
+                      <RadioGroupItem value="replace" id="stock-replace" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <RefreshCw className="h-4 w-4" />
+                          <span className="font-medium">Replace Stock</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Set stock to imported value
+                        </p>
+                      </div>
+                    </Label>
+                    <Label 
+                      htmlFor="stock-add" 
+                      className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+                        stockMode === "add" ? "border-primary bg-primary/5" : "hover:bg-accent"
+                      }`}
+                    >
+                      <RadioGroupItem value="add" id="stock-add" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <Plus className="h-4 w-4" />
+                          <span className="font-medium">Add to Stock</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Add to existing quantity
+                        </p>
+                      </div>
+                    </Label>
+                  </RadioGroup>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="track-movements" className="text-sm font-medium">Track Stock Movements</Label>
+                    <p className="text-xs text-muted-foreground">Record import as stock-in movement</p>
+                  </div>
+                  <Switch
+                    id="track-movements"
+                    checked={createMovements}
+                    onCheckedChange={setCreateMovements}
+                  />
+                </div>
+              </div>
+              
+              <ScrollArea className="h-[200px] border rounded-lg">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -262,7 +337,12 @@ export function ExcelUploadDialog({ trigger }: ExcelUploadDialogProps) {
                             <span className="text-muted-foreground">—</span>
                           )}
                         </TableCell>
-                        <TableCell className="text-right">{product.stock_quantity}</TableCell>
+                        <TableCell className="text-right">
+                          <span className={product.stock_quantity > 0 ? "text-green-600 font-medium" : ""}>
+                            {stockMode === "add" && product.stock_quantity > 0 ? "+" : ""}
+                            {product.stock_quantity}
+                          </span>
+                        </TableCell>
                         <TableCell className="text-right">{product.rate.toFixed(2)}</TableCell>
                       </TableRow>
                     ))}
@@ -294,7 +374,7 @@ export function ExcelUploadDialog({ trigger }: ExcelUploadDialogProps) {
               </>
             ) : (
               <>
-                <Upload className="h-4 w-4" />
+                <Package className="h-4 w-4" />
                 Import {parsedProducts.length} Products
               </>
             )}
