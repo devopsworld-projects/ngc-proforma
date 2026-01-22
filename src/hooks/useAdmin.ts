@@ -1,0 +1,94 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "./useAuth";
+
+export interface UserStats {
+  user_id: string;
+  full_name: string | null;
+  email: string;
+  created_at: string;
+  is_admin: boolean;
+  invoice_count: number;
+  total_revenue: number;
+  customer_count: number;
+}
+
+export interface UserInvoice {
+  id: string;
+  invoice_no: string;
+  date: string;
+  status: string;
+  grand_total: number;
+  customer_name: string | null;
+  created_at: string;
+}
+
+export function useIsAdmin() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["isAdmin", user?.id],
+    queryFn: async () => {
+      if (!user) return false;
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      if (error) return false;
+      return !!data;
+    },
+    enabled: !!user,
+  });
+}
+
+export function useAdminUserStats() {
+  const { user } = useAuth();
+  const { data: isAdmin } = useIsAdmin();
+  
+  return useQuery({
+    queryKey: ["adminUserStats"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_admin_user_stats");
+      if (error) throw error;
+      return data as UserStats[];
+    },
+    enabled: !!user && isAdmin === true,
+  });
+}
+
+export function useAdminUserInvoices(userId: string | null) {
+  const { user } = useAuth();
+  const { data: isAdmin } = useIsAdmin();
+  
+  return useQuery({
+    queryKey: ["adminUserInvoices", userId],
+    queryFn: async () => {
+      if (!userId) return [];
+      const { data, error } = await supabase.rpc("get_user_invoices_admin", {
+        target_user_id: userId,
+      });
+      if (error) throw error;
+      return data as UserInvoice[];
+    },
+    enabled: !!user && isAdmin === true && !!userId,
+  });
+}
+
+export function useToggleAdminRole() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ userId, makeAdmin }: { userId: string; makeAdmin: boolean }) => {
+      const { data, error } = await supabase.rpc("toggle_admin_role", {
+        target_user_id: userId,
+        make_admin: makeAdmin,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["adminUserStats"] });
+    },
+  });
+}

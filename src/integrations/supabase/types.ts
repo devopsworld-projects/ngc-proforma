@@ -423,11 +423,40 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_admin_user_stats: {
+        Args: never
+        Returns: {
+          created_at: string
+          customer_count: number
+          email: string
+          full_name: string
+          invoice_count: number
+          is_admin: boolean
+          total_revenue: number
+          user_id: string
+        }[]
+      }
+      get_user_invoices_admin: {
+        Args: { target_user_id: string }
+        Returns: {
+          created_at: string
+          customer_name: string
+          date: string
+          grand_total: number
+          id: string
+          invoice_no: string
+          status: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      toggle_admin_role: {
+        Args: { make_admin: boolean; target_user_id: string }
         Returns: boolean
       }
     }
