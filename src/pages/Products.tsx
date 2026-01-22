@@ -7,9 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Package, Search, MoreHorizontal, Trash2, Filter } from "lucide-react";
+import { Package, Search, MoreHorizontal, Trash2, Filter, Pencil } from "lucide-react";
 import { useProducts, useDeleteProduct } from "@/hooks/useProducts";
 import { ExcelUploadDialog } from "@/components/products/ExcelUploadDialog";
+import { ProductFormDialog } from "@/components/products/ProductFormDialog";
 import { formatCurrency } from "@/lib/invoice-utils";
 import { toast } from "sonner";
 
@@ -65,7 +66,10 @@ export default function ProductsPage() {
             <h1 className="text-3xl font-serif font-bold">Products</h1>
             <p className="text-muted-foreground">Manage your product inventory</p>
           </div>
-          <ExcelUploadDialog />
+          <div className="flex items-center gap-2">
+            <ProductFormDialog />
+            <ExcelUploadDialog />
+          </div>
         </div>
 
         <Card>
@@ -176,6 +180,17 @@ export default function ProductsPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              <DropdownMenuItem asChild>
+                                <ProductFormDialog
+                                  product={product}
+                                  trigger={
+                                    <button className="flex w-full items-center px-2 py-1.5 text-sm">
+                                      <Pencil className="h-4 w-4 mr-2" />
+                                      Edit
+                                    </button>
+                                  }
+                                />
+                              </DropdownMenuItem>
                               <DropdownMenuItem
                                 className="text-destructive"
                                 onClick={() => handleDelete(product.id, product.name)}
