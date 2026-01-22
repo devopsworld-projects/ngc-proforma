@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { useIsAdmin, useAdminUserStats, useAdminUserInvoices, useToggleAdminRole, UserStats } from "@/hooks/useAdmin";
+import { useIsAdmin, useAdminUserStats, useAdminUserInvoices, useToggleAdminRole, useApproveUser, UserStats } from "@/hooks/useAdmin";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,7 +27,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Users, FileText, DollarSign, Shield, ShieldOff, Eye, Loader2 } from "lucide-react";
+import { Users, FileText, DollarSign, Shield, ShieldOff, Eye, Loader2, CheckCircle, XCircle, Mail, MailX, UserCheck, UserX } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -51,6 +51,7 @@ export default function AdminPage() {
   const { data: isAdmin, isLoading: adminLoading } = useIsAdmin();
   const { data: users, isLoading: usersLoading } = useAdminUserStats();
   const toggleAdmin = useToggleAdminRole();
+  const approveUser = useApproveUser();
   
   const [selectedUser, setSelectedUser] = useState<UserStats | null>(null);
   const { data: userInvoices, isLoading: invoicesLoading } = useAdminUserInvoices(selectedUser?.user_id || null);
@@ -98,7 +99,24 @@ export default function AdminPage() {
     }
   };
 
+  const handleApproveUser = async (targetUser: UserStats, approve: boolean) => {
+    try {
+      await approveUser.mutateAsync({
+        userId: targetUser.user_id,
+        approved: approve,
+      });
+      toast.success(
+        approve
+          ? `Approved ${targetUser.full_name || targetUser.email}`
+          : `Revoked approval for ${targetUser.full_name || targetUser.email}`
+      );
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update approval status");
+    }
+  };
+
   const totalUsers = users?.length || 0;
+  const pendingApproval = users?.filter(u => !u.is_approved && u.email_confirmed_at).length || 0;
   const totalInvoices = users?.reduce((sum, u) => sum + u.invoice_count, 0) || 0;
   const totalRevenue = users?.reduce((sum, u) => sum + Number(u.total_revenue), 0) || 0;
 
@@ -112,7 +130,7 @@ export default function AdminPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Total Users</CardTitle>
@@ -120,6 +138,18 @@ export default function AdminPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{totalUsers}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Pending Approval</CardTitle>
+              <UserCheck className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{pendingApproval}</div>
+              {pendingApproval > 0 && (
+                <p className="text-xs text-amber-600 dark:text-amber-400">Requires attention</p>
+              )}
             </CardContent>
           </Card>
           <Card>
@@ -146,7 +176,7 @@ export default function AdminPage() {
         <Card>
           <CardHeader>
             <CardTitle>All Users</CardTitle>
-            <CardDescription>View and manage user accounts and their activity</CardDescription>
+            <CardDescription>View and manage user accounts, approvals, and activity</CardDescription>
           </CardHeader>
           <CardContent>
             {usersLoading ? (
@@ -162,9 +192,10 @@ export default function AdminPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>User</TableHead>
+                    <TableHead>Email Status</TableHead>
+                    <TableHead>Approval</TableHead>
                     <TableHead>Role</TableHead>
                     <TableHead className="text-center">Invoices</TableHead>
-                    <TableHead className="text-center">Customers</TableHead>
                     <TableHead className="text-right">Revenue</TableHead>
                     <TableHead className="text-center">Joined</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -180,6 +211,32 @@ export default function AdminPage() {
                         </div>
                       </TableCell>
                       <TableCell>
+                        {u.email_confirmed_at ? (
+                          <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                            <Mail className="h-3 w-3 mr-1" />
+                            Verified
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary">
+                            <MailX className="h-3 w-3 mr-1" />
+                            Pending
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {u.is_approved ? (
+                          <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Approved
+                          </Badge>
+                        ) : (
+                          <Badge variant="destructive">
+                            <XCircle className="h-3 w-3 mr-1" />
+                            Pending
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
                         {u.is_admin ? (
                           <Badge className="bg-primary">Admin</Badge>
                         ) : (
@@ -187,26 +244,70 @@ export default function AdminPage() {
                         )}
                       </TableCell>
                       <TableCell className="text-center">{u.invoice_count}</TableCell>
-                      <TableCell className="text-center">{u.customer_count}</TableCell>
                       <TableCell className="text-right">{formatCurrency(Number(u.total_revenue))}</TableCell>
                       <TableCell className="text-center">
                         {format(new Date(u.created_at), "MMM d, yyyy")}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-1">
+                          {/* View Invoices */}
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => setSelectedUser(u)}
                             disabled={u.invoice_count === 0}
+                            title="View invoices"
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
                           
+                          {/* Approve/Revoke User */}
                           {u.user_id !== user.id && (
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="sm">
+                                <Button variant="ghost" size="sm" title={u.is_approved ? "Revoke approval" : "Approve user"}>
+                                  {u.is_approved ? (
+                                    <UserX className="h-4 w-4 text-amber-600" />
+                                  ) : (
+                                    <UserCheck className="h-4 w-4 text-green-600" />
+                                  )}
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>
+                                    {u.is_approved ? "Revoke User Approval?" : "Approve User?"}
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    {u.is_approved
+                                      ? `This will revoke access for ${u.full_name || u.email}. They will no longer be able to use the application.`
+                                      : `This will approve ${u.full_name || u.email} and grant them access to the application.`}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleApproveUser(u, !u.is_approved)}
+                                    className={u.is_approved ? "bg-destructive hover:bg-destructive/90" : "bg-green-600 hover:bg-green-700"}
+                                  >
+                                    {approveUser.isPending ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : u.is_approved ? (
+                                      "Revoke Approval"
+                                    ) : (
+                                      "Approve User"
+                                    )}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+                          
+                          {/* Toggle Admin Role */}
+                          {u.user_id !== user.id && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="sm" title={u.is_admin ? "Remove admin" : "Make admin"}>
                                   {u.is_admin ? (
                                     <ShieldOff className="h-4 w-4 text-destructive" />
                                   ) : (

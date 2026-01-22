@@ -49,8 +49,6 @@ export default function SignupPage() {
         setError(error.message);
       } else {
         setSuccess(true);
-        // Auto-confirm is enabled, so redirect to dashboard
-        setTimeout(() => navigate("/dashboard"), 1500);
       }
     } finally {
       setIsLoading(false);
@@ -66,7 +64,12 @@ export default function SignupPage() {
               <CheckCircle className="h-6 w-6 text-green-600" />
             </div>
             <h2 className="text-xl font-semibold mb-2">Account created!</h2>
-            <p className="text-muted-foreground">Redirecting you to the dashboard...</p>
+            <p className="text-muted-foreground mb-4">
+              Please check your email to verify your account. After verification, an administrator will approve your access.
+            </p>
+            <Link to="/login">
+              <Button variant="outline">Go to Login</Button>
+            </Link>
           </CardContent>
         </Card>
       </div>

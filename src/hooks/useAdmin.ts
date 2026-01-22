@@ -11,6 +11,8 @@ export interface UserStats {
   invoice_count: number;
   total_revenue: number;
   customer_count: number;
+  is_approved: boolean;
+  email_confirmed_at: string | null;
 }
 
 export interface UserInvoice {
@@ -90,5 +92,53 @@ export function useToggleAdminRole() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["adminUserStats"] });
     },
+  });
+}
+
+export function useApproveUser() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ userId, approved }: { userId: string; approved: boolean }) => {
+      // Use type assertion since the function was just created
+      const { data, error } = await (supabase.rpc as any)("approve_user", {
+        target_user_id: userId,
+        approved,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["adminUserStats"] });
+    },
+  });
+}
+
+export function useUserApprovalStatus() {
+  const { user } = useAuth();
+  
+  return useQuery({
+    queryKey: ["userApprovalStatus", user?.id],
+    queryFn: async () => {
+      if (!user) return { is_approved: false, email_confirmed: false };
+      
+      // Use type assertion for the new column
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+      
+      if (error) return { is_approved: false, email_confirmed: false };
+      
+      // Check if email is confirmed from auth metadata
+      const emailConfirmed = !!user.email_confirmed_at;
+      
+      return { 
+        is_approved: (data as any)?.is_approved ?? false,
+        email_confirmed: emailConfirmed
+      };
+    },
+    enabled: !!user,
   });
 }
