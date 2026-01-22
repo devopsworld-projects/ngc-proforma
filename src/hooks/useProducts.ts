@@ -9,6 +9,8 @@ export interface Product {
   unit: string;
   rate: number;
   hsn_code: string | null;
+  category: string | null;
+  stock_quantity: number;
   is_active: boolean;
   created_at: string;
   updated_at: string;
