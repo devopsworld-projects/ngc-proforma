@@ -114,6 +114,23 @@ export function useApproveUser() {
   });
 }
 
+export function useDeleteUser() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      const { data, error } = await (supabase.rpc as any)("delete_user", {
+        target_user_id: userId,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["adminUserStats"] });
+    },
+  });
+}
+
 export function useUserApprovalStatus() {
   const { user } = useAuth();
   

@@ -696,6 +696,7 @@ export type Database = {
         Args: { approved: boolean; target_user_id: string }
         Returns: boolean
       }
+      delete_user: { Args: { target_user_id: string }; Returns: boolean }
       get_admin_user_stats: {
         Args: never
         Returns: {
