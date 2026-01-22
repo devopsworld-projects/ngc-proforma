@@ -120,7 +120,14 @@ export function ProductSelector({ onSelect, placeholder = "Search products...", 
                     )}
                   >
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate">{product.name}</div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium truncate">{product.name}</span>
+                        {product.category && (
+                          <Badge variant="secondary" className="text-[10px] h-4">
+                            {product.category}
+                          </Badge>
+                        )}
+                      </div>
                       <div className="text-xs text-muted-foreground flex items-center gap-2">
                         {product.sku && (
                           <Badge variant="outline" className="text-[10px] h-4 font-mono">
@@ -129,6 +136,9 @@ export function ProductSelector({ onSelect, placeholder = "Search products...", 
                         )}
                         <span>{product.unit}</span>
                         {product.hsn_code && <span>HSN: {product.hsn_code}</span>}
+                        <span className={product.stock_quantity <= 0 ? "text-destructive" : "text-green-600"}>
+                          Stock: {product.stock_quantity}
+                        </span>
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0">

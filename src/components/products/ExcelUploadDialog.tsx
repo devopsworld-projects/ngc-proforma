@@ -26,6 +26,8 @@ interface ParsedProduct {
   unit: string;
   rate: number;
   hsn_code: string | null;
+  category: string | null;
+  stock_quantity: number;
   is_active: boolean;
 }
 
@@ -78,6 +80,8 @@ export function ExcelUploadDialog({ trigger }: ExcelUploadDialogProps) {
             return;
           }
 
+          const stockQty = parseFloat(row.stock_quantity || row.stock || row.Stock || row.quantity || row.Quantity || 0);
+
           products.push({
             name,
             description: String(row.description || row.Description || row.DESCRIPTION || "").trim() || null,
@@ -85,6 +89,8 @@ export function ExcelUploadDialog({ trigger }: ExcelUploadDialogProps) {
             unit: String(row.unit || row.Unit || row.UNIT || "NOS").trim(),
             rate,
             hsn_code: String(row.hsn_code || row.HSN || row.hsn || row["HSN Code"] || "").trim() || null,
+            category: String(row.category || row.Category || row.CATEGORY || "").trim() || null,
+            stock_quantity: isNaN(stockQty) ? 0 : stockQty,
             is_active: true,
           });
         });
@@ -138,6 +144,8 @@ export function ExcelUploadDialog({ trigger }: ExcelUploadDialogProps) {
         unit: "NOS",
         rate: 100,
         hsn_code: "8471",
+        category: "Electronics",
+        stock_quantity: 50,
       },
     ];
 
@@ -167,7 +175,7 @@ export function ExcelUploadDialog({ trigger }: ExcelUploadDialogProps) {
             Import Products from Excel
           </DialogTitle>
           <DialogDescription>
-            Upload an Excel file (.xlsx, .xls) with your products. Required columns: name, rate. Optional: description, sku, unit, hsn_code.
+            Upload an Excel file (.xlsx, .xls) with your products. Required columns: name, rate. Optional: description, sku, unit, hsn_code, category, stock_quantity.
           </DialogDescription>
         </DialogHeader>
 
@@ -217,7 +225,8 @@ export function ExcelUploadDialog({ trigger }: ExcelUploadDialogProps) {
                       <TableHead className="w-12">#</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>SKU</TableHead>
-                      <TableHead>Unit</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead className="text-right">Stock</TableHead>
                       <TableHead className="text-right">Rate (₹)</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -235,7 +244,16 @@ export function ExcelUploadDialog({ trigger }: ExcelUploadDialogProps) {
                             <span className="text-muted-foreground">—</span>
                           )}
                         </TableCell>
-                        <TableCell>{product.unit}</TableCell>
+                        <TableCell>
+                          {product.category ? (
+                            <Badge variant="secondary" className="text-xs">
+                              {product.category}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">{product.stock_quantity}</TableCell>
                         <TableCell className="text-right">{product.rate.toFixed(2)}</TableCell>
                       </TableRow>
                     ))}

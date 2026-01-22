@@ -321,6 +321,7 @@ export type Database = {
       }
       products: {
         Row: {
+          category: string | null
           created_at: string
           description: string | null
           hsn_code: string | null
@@ -329,10 +330,12 @@ export type Database = {
           name: string
           rate: number
           sku: string | null
+          stock_quantity: number | null
           unit: string
           updated_at: string
         }
         Insert: {
+          category?: string | null
           created_at?: string
           description?: string | null
           hsn_code?: string | null
@@ -341,10 +344,12 @@ export type Database = {
           name: string
           rate?: number
           sku?: string | null
+          stock_quantity?: number | null
           unit?: string
           updated_at?: string
         }
         Update: {
+          category?: string | null
           created_at?: string
           description?: string | null
           hsn_code?: string | null
@@ -353,6 +358,7 @@ export type Database = {
           name?: string
           rate?: number
           sku?: string | null
+          stock_quantity?: number | null
           unit?: string
           updated_at?: string
         }

@@ -86,7 +86,8 @@ export default function ProductsPage() {
                     <TableRow>
                       <TableHead>Name</TableHead>
                       <TableHead>SKU</TableHead>
-                      <TableHead>HSN Code</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead className="text-right">Stock</TableHead>
                       <TableHead>Unit</TableHead>
                       <TableHead className="text-right">Rate</TableHead>
                       <TableHead className="w-10"></TableHead>
@@ -115,7 +116,18 @@ export default function ProductsPage() {
                           )}
                         </TableCell>
                         <TableCell>
-                          {product.hsn_code || <span className="text-muted-foreground">—</span>}
+                          {product.category ? (
+                            <Badge variant="secondary" className="text-xs">
+                              {product.category}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <span className={product.stock_quantity <= 0 ? "text-destructive font-medium" : product.stock_quantity <= 10 ? "text-amber-600 font-medium" : ""}>
+                            {product.stock_quantity}
+                          </span>
                         </TableCell>
                         <TableCell>{product.unit}</TableCell>
                         <TableCell className="text-right font-medium">
