@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "./useAuth";
 
 export interface Customer {
   id: string;
@@ -11,6 +12,7 @@ export interface Customer {
   state_code: string | null;
   is_active: boolean;
   notes: string | null;
+  user_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -36,8 +38,9 @@ export interface CustomerWithAddresses extends Customer {
 }
 
 export function useCustomers() {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: ["customers"],
+    queryKey: ["customers", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("customers")
@@ -46,10 +49,12 @@ export function useCustomers() {
       if (error) throw error;
       return data as Customer[];
     },
+    enabled: !!user,
   });
 }
 
 export function useCustomer(id: string | undefined) {
+  const { user } = useAuth();
   return useQuery({
     queryKey: ["customer", id],
     queryFn: async () => {
@@ -71,17 +76,19 @@ export function useCustomer(id: string | undefined) {
 
       return { ...customer, addresses: addresses || [] } as CustomerWithAddresses;
     },
-    enabled: !!id,
+    enabled: !!id && !!user,
   });
 }
 
 export function useCreateCustomer() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   return useMutation({
-    mutationFn: async (customer: Omit<Customer, "id" | "created_at" | "updated_at">) => {
+    mutationFn: async (customer: Omit<Customer, "id" | "created_at" | "updated_at" | "user_id">) => {
+      if (!user) throw new Error("Not authenticated");
       const { data, error } = await supabase
         .from("customers")
-        .insert(customer)
+        .insert({ ...customer, user_id: user.id })
         .select()
         .single();
       if (error) throw error;

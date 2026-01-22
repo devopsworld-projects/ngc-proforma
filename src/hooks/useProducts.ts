@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "./useAuth";
 
 export interface Product {
   id: string;
@@ -12,13 +13,15 @@ export interface Product {
   category: string | null;
   stock_quantity: number;
   is_active: boolean;
+  user_id: string | null;
   created_at: string;
   updated_at: string;
 }
 
 export function useProducts() {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: ["products"],
+    queryKey: ["products", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
@@ -28,12 +31,14 @@ export function useProducts() {
       if (error) throw error;
       return data as Product[];
     },
+    enabled: !!user,
   });
 }
 
 export function useSearchProducts(searchTerm: string) {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: ["products", "search", searchTerm],
+    queryKey: ["products", "search", searchTerm, user?.id],
     queryFn: async () => {
       let query = supabase
         .from("products")
@@ -49,17 +54,19 @@ export function useSearchProducts(searchTerm: string) {
       if (error) throw error;
       return data as Product[];
     },
-    enabled: true,
+    enabled: !!user,
   });
 }
 
 export function useCreateProduct() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   return useMutation({
-    mutationFn: async (product: Omit<Product, "id" | "created_at" | "updated_at">) => {
+    mutationFn: async (product: Omit<Product, "id" | "created_at" | "updated_at" | "user_id">) => {
+      if (!user) throw new Error("Not authenticated");
       const { data, error } = await supabase
         .from("products")
-        .insert(product)
+        .insert({ ...product, user_id: user.id })
         .select()
         .single();
       if (error) throw error;
@@ -73,11 +80,14 @@ export function useCreateProduct() {
 
 export function useBulkCreateProducts() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   return useMutation({
-    mutationFn: async (products: Omit<Product, "id" | "created_at" | "updated_at">[]) => {
+    mutationFn: async (products: Omit<Product, "id" | "created_at" | "updated_at" | "user_id">[]) => {
+      if (!user) throw new Error("Not authenticated");
+      const productsWithUserId = products.map(p => ({ ...p, user_id: user.id }));
       const { data, error } = await supabase
         .from("products")
-        .upsert(products, { onConflict: "sku", ignoreDuplicates: false })
+        .upsert(productsWithUserId, { onConflict: "sku", ignoreDuplicates: false })
         .select();
       if (error) throw error;
       return data;
