@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Building2, Save, Upload, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { DataExportCard } from "@/components/settings/DataExportCard";
 
 const settingsSchema = z.object({
   name: z.string().min(1, "Company name is required").max(200),
@@ -411,6 +412,9 @@ export default function SettingsPage() {
                 />
               </CardContent>
             </Card>
+
+            {/* Data Export Section */}
+            <DataExportCard />
           </div>
         </form>
       </Form>
