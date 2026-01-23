@@ -26,9 +26,11 @@ export function useCompanySettings() {
   return useQuery({
     queryKey: ["companySettings", user?.id],
     queryFn: async () => {
+      if (!user) return null;
       const { data, error } = await supabase
         .from("company_settings")
         .select("*")
+        .eq("user_id", user.id)
         .maybeSingle();
       if (error) throw error;
       return data as CompanySettings | null;
