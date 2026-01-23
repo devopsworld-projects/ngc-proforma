@@ -22,9 +22,11 @@ export function useSuppliers() {
   return useQuery({
     queryKey: ["suppliers", user?.id],
     queryFn: async () => {
+      if (!user) return [];
       const { data, error } = await supabase
         .from("suppliers")
         .select("*")
+        .eq("user_id", user.id)
         .eq("is_active", true)
         .order("name");
       if (error) throw error;

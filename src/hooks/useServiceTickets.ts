@@ -35,9 +35,11 @@ export function useServiceTickets(status?: string) {
   return useQuery({
     queryKey: ["service_tickets", status, user?.id],
     queryFn: async () => {
+      if (!user) return [];
       let query = supabase
         .from("service_tickets")
         .select("*, customers(name, phone)")
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
       
       if (status && status !== "all") {
@@ -75,9 +77,11 @@ export function useNextTicketNumber() {
   return useQuery({
     queryKey: ["nextTicketNumber", user?.id],
     queryFn: async () => {
+      if (!user) return "SVC-001";
       const { data, error } = await supabase
         .from("service_tickets")
         .select("ticket_no")
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(1);
       if (error) throw error;

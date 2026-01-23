@@ -49,9 +49,11 @@ export function useInvoices() {
   return useQuery({
     queryKey: ["invoices", user?.id],
     queryFn: async () => {
+      if (!user) return [];
       const { data, error } = await supabase
         .from("invoices")
         .select("*, customers(name)")
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
@@ -164,9 +166,11 @@ export function useNextInvoiceNumber() {
   return useQuery({
     queryKey: ["nextInvoiceNumber", user?.id],
     queryFn: async () => {
+      if (!user) return "1";
       const { data, error } = await supabase
         .from("invoices")
         .select("invoice_no")
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(1);
       if (error) throw error;
