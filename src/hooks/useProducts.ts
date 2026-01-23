@@ -23,9 +23,11 @@ export function useProducts() {
   return useQuery({
     queryKey: ["products", user?.id],
     queryFn: async () => {
+      if (!user) return [];
       const { data, error } = await supabase
         .from("products")
         .select("*")
+        .eq("user_id", user.id)
         .eq("is_active", true)
         .order("name");
       if (error) throw error;
@@ -50,9 +52,11 @@ export function useSearchProducts(searchTerm: string) {
   return useQuery({
     queryKey: ["products", "search", searchTerm, user?.id],
     queryFn: async () => {
+      if (!user) return [];
       let query = supabase
         .from("products")
         .select("*")
+        .eq("user_id", user.id)
         .eq("is_active", true)
         .order("name");
 

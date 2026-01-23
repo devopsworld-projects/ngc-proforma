@@ -22,9 +22,11 @@ export function useStockMovements(productId?: string) {
   return useQuery({
     queryKey: ["stock_movements", productId, user?.id],
     queryFn: async () => {
+      if (!user) return [];
       let query = supabase
         .from("stock_movements")
         .select("*, products(name, sku)")
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(100);
       
@@ -104,9 +106,11 @@ export function useProductSerials(productId?: string, status?: string) {
   return useQuery({
     queryKey: ["product_serials", productId, status, user?.id],
     queryFn: async () => {
+      if (!user) return [];
       let query = supabase
         .from("product_serials")
         .select("*, products(name, sku), suppliers(name)")
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
       
       if (productId) {
