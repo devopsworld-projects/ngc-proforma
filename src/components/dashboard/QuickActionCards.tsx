@@ -3,8 +3,7 @@ import {
   PlusCircle, 
   Users, 
   Package, 
-  FileText, 
-  Boxes,
+  FileText,
   ArrowRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -44,10 +43,10 @@ const quickActions: QuickAction[] = [
     iconColor: "text-purple-600 dark:text-purple-400",
   },
   {
-    title: "Manage Inventory",
-    description: "Track stock and serial numbers",
-    icon: Boxes,
-    href: "/inventory",
+    title: "View Invoices",
+    description: "Browse and manage invoices",
+    icon: FileText,
+    href: "/invoices",
     gradient: "from-orange-500 to-red-600",
     iconColor: "text-orange-600 dark:text-orange-400",
   },

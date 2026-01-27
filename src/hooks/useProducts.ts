@@ -95,7 +95,6 @@ export function useCreateProduct() {
 
 export interface BulkImportOptions {
   stockMode: "replace" | "add"; // replace = set stock to imported value, add = add to existing stock
-  createStockMovements: boolean;
 }
 
 export interface BulkImportResult {
@@ -110,7 +109,7 @@ export function useBulkCreateProducts() {
   return useMutation({
     mutationFn: async ({ 
       products, 
-      options = { stockMode: "replace", createStockMovements: true } 
+      options = { stockMode: "replace" } 
     }: { 
       products: Omit<Product, "id" | "created_at" | "updated_at" | "user_id">[]; 
       options?: BulkImportOptions;
@@ -152,32 +151,6 @@ export function useBulkCreateProducts() {
         .select();
       if (error) throw error;
       
-      // Create stock movements for tracking
-      if (options.createStockMovements && data) {
-        const movements = products
-          .filter(p => p.stock_quantity > 0)
-          .map(p => {
-            const upsertedProduct = data.find(d => d.sku === p.sku || d.name === p.name);
-            if (!upsertedProduct) return null;
-            
-            const wasExisting = p.sku && existingSkuMap.has(p.sku);
-            return {
-              product_id: upsertedProduct.id,
-              user_id: user.id,
-              movement_type: "in" as const,
-              quantity: p.stock_quantity,
-              notes: wasExisting 
-                ? `Excel import (${options.stockMode === "add" ? "added" : "replaced"})` 
-                : "Excel import (new product)",
-            };
-          })
-          .filter(Boolean);
-        
-        if (movements.length > 0) {
-          await supabase.from("stock_movements").insert(movements);
-        }
-      }
-      
       // Calculate stats
       const createdCount = products.filter(p => !p.sku || !existingSkuMap.has(p.sku)).length;
       const updatedCount = products.filter(p => p.sku && existingSkuMap.has(p.sku)).length;
@@ -190,7 +163,6 @@ export function useBulkCreateProducts() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
-      queryClient.invalidateQueries({ queryKey: ["stock_movements"] });
     },
   });
 }
