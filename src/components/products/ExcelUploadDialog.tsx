@@ -45,7 +45,6 @@ export function ExcelUploadDialog({ trigger }: ExcelUploadDialogProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
   const [stockMode, setStockMode] = useState<"replace" | "add">("replace");
-  const [createMovements, setCreateMovements] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const bulkCreate = useBulkCreateProducts();
@@ -124,7 +123,6 @@ export function ExcelUploadDialog({ trigger }: ExcelUploadDialogProps) {
     try {
       const options: BulkImportOptions = {
         stockMode,
-        createStockMovements: createMovements,
       };
       const result = await bulkCreate.mutateAsync({ products: parsedProducts, options });
       
@@ -148,7 +146,6 @@ export function ExcelUploadDialog({ trigger }: ExcelUploadDialogProps) {
     setParsedProducts([]);
     setErrors([]);
     setStockMode("replace");
-    setCreateMovements(true);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -287,18 +284,6 @@ export function ExcelUploadDialog({ trigger }: ExcelUploadDialogProps) {
                       </div>
                     </Label>
                   </RadioGroup>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="track-movements" className="text-sm font-medium">Track Stock Movements</Label>
-                    <p className="text-xs text-muted-foreground">Record import as stock-in movement</p>
-                  </div>
-                  <Switch
-                    id="track-movements"
-                    checked={createMovements}
-                    onCheckedChange={setCreateMovements}
-                  />
                 </div>
               </div>
               

@@ -373,7 +373,7 @@ export default function AdminPage() {
                                     <ul className="list-disc list-inside text-sm">
                                       <li>{u.invoice_count} invoices ({formatCurrency(Number(u.total_revenue))} revenue)</li>
                                       <li>{u.customer_count} customers and their addresses</li>
-                                      <li>All products, inventory, and service tickets</li>
+                                      <li>All products and company settings</li>
                                     </ul>
                                     <p className="font-medium text-destructive">This action cannot be undone.</p>
                                   </AlertDialogDescription>

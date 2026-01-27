@@ -276,31 +276,23 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
         const stockDeductions = lineItems
           .filter(item => item.productId)
           .map(item => ({
-            product_id: item.productId!,
-            movement_type: "out" as const,
+            productId: item.productId!,
             quantity: item.quantity,
-            serial_numbers: item.serialNumbers ? item.serialNumbers.split(",").map(s => s.trim()).filter(Boolean) : [],
-            reference_type: "invoice",
-            reference_id: newInvoice.id,
-            notes: `Invoice #${data.invoiceNo}`,
-            user_id: user.id,
           }));
 
         if (stockDeductions.length > 0) {
-          for (const movement of stockDeductions) {
-            // Insert stock movement
-            await supabase.from("stock_movements").insert(movement);
-            // Update product stock
+          for (const deduction of stockDeductions) {
+            // Update product stock directly
             const { data: product } = await supabase
               .from("products")
               .select("stock_quantity")
-              .eq("id", movement.product_id)
+              .eq("id", deduction.productId)
               .single();
             if (product) {
               await supabase
                 .from("products")
-                .update({ stock_quantity: Math.max(0, (product.stock_quantity || 0) - movement.quantity) })
-                .eq("id", movement.product_id);
+                .update({ stock_quantity: Math.max(0, (product.stock_quantity || 0) - deduction.quantity) })
+                .eq("id", deduction.productId);
             }
           }
         }
