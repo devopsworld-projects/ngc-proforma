@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { 
   Users, LayoutDashboard, RefreshCcw, PlusCircle, BarChart3, 
-  Settings, Package, LogOut, Shield, UserCircle, Boxes, 
+  Settings, Package, LogOut, Shield, UserCircle, 
   Menu, X, ChevronDown, FileText
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -33,7 +33,6 @@ const invoiceItems = [
 const managementItems = [
   { path: "/customers", label: "Customers", icon: Users },
   { path: "/products", label: "Products", icon: Package },
-  { path: "/inventory", label: "Inventory", icon: Boxes },
 ];
 
 export function AppNavigation() {
