@@ -472,16 +472,76 @@ export type Database = {
         }
         Relationships: []
       }
+      user_sessions: {
+        Row: {
+          browser: string | null
+          device_type: string | null
+          id: string
+          ip_address: string | null
+          is_active: boolean
+          logged_in_at: string
+          os: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          browser?: string | null
+          device_type?: string | null
+          id?: string
+          ip_address?: string | null
+          is_active?: boolean
+          logged_in_at?: string
+          os?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          browser?: string | null
+          device_type?: string | null
+          id?: string
+          ip_address?: string | null
+          is_active?: boolean
+          logged_in_at?: string
+          os?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      admin_create_user: {
+        Args: {
+          user_email: string
+          user_full_name?: string
+          user_password: string
+        }
+        Returns: Json
+      }
       approve_user: {
         Args: { approved: boolean; target_user_id: string }
         Returns: boolean
       }
       delete_user: { Args: { target_user_id: string }; Returns: boolean }
+      get_admin_user_sessions: {
+        Args: { target_user_id?: string }
+        Returns: {
+          browser: string
+          device_type: string
+          id: string
+          ip_address: string
+          is_active: boolean
+          logged_in_at: string
+          os: string
+          user_agent: string
+          user_email: string
+          user_id: string
+          user_name: string
+        }[]
+      }
       get_admin_user_stats: {
         Args: never
         Returns: {
