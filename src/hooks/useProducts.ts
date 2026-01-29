@@ -72,13 +72,12 @@ function sanitizeSearchTerm(term: string): string {
 export function useSearchProducts(searchTerm: string) {
   const { user } = useAuth();
   return useQuery({
-    queryKey: ["products", "search", searchTerm, user?.id],
+    queryKey: ["products", "search", searchTerm],
     queryFn: async () => {
       if (!user) return [];
       let query = supabase
         .from("products")
         .select("*")
-        .eq("user_id", user.id)
         .eq("is_active", true)
         .order("name");
 
