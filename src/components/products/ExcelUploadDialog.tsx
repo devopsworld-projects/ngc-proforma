@@ -31,6 +31,9 @@ interface ParsedProduct {
   category: string | null;
   stock_quantity: number;
   is_active: boolean;
+  model_spec: string | null;
+  gst_percent: number | null;
+  image_url: string | null;
 }
 
 interface ExcelUploadDialogProps {
@@ -90,6 +93,9 @@ export function ExcelUploadDialog({ trigger }: ExcelUploadDialogProps) {
         const hsn_code = String(row.hsn_code || row.HSN || row.hsn || row["HSN Code"] || "").trim().slice(0, 20) || null;
         const category = String(row.category || row.Category || row.CATEGORY || "").trim().slice(0, 100) || null;
 
+        // Parse GST percent if provided
+        const gstPercent = parseFloat(row.gst_percent || row.gst || row.GST || row["GST %"] || 18);
+
         products.push({
           name,
           description,
@@ -100,6 +106,9 @@ export function ExcelUploadDialog({ trigger }: ExcelUploadDialogProps) {
           category,
           stock_quantity: isNaN(stockQty) ? 0 : stockQty,
           is_active: true,
+          model_spec: String(row.model_spec || row.model || row.Model || row["Model/Spec"] || "").trim().slice(0, 500) || null,
+          gst_percent: isNaN(gstPercent) ? 18 : gstPercent,
+          image_url: null,
         });
       });
 

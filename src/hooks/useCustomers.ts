@@ -15,6 +15,7 @@ export interface Customer {
   user_id: string | null;
   created_at: string;
   updated_at: string;
+  customer_type: string;
 }
 
 export interface Address {

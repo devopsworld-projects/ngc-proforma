@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus } from "lucide-react";
+import { Plus, Upload, X, Image as ImageIcon } from "lucide-react";
 import { useCreateProduct, useUpdateProduct, Product } from "@/hooks/useProducts";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 interface ProductFormDialogProps {
@@ -14,7 +16,11 @@ interface ProductFormDialogProps {
 }
 
 export function ProductFormDialog({ product, trigger }: ProductFormDialogProps) {
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const [formData, setFormData] = useState({
     name: product?.name || "",
     description: product?.description || "",
@@ -24,11 +30,22 @@ export function ProductFormDialog({ product, trigger }: ProductFormDialogProps) 
     hsn_code: product?.hsn_code || "",
     category: product?.category || "",
     stock_quantity: product?.stock_quantity?.toString() || "0",
+    model_spec: product?.model_spec || "",
+    gst_percent: product?.gst_percent?.toString() || "18",
+    image_url: product?.image_url || "",
   });
 
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
   const isEditing = !!product;
+
+  // Calculate GST amount and total
+  const rate = parseFloat(formData.rate) || 0;
+  const qty = parseInt(formData.stock_quantity) || 0;
+  const gstPercent = parseFloat(formData.gst_percent) || 0;
+  const baseAmount = rate * qty;
+  const gstAmount = (baseAmount * gstPercent) / 100;
+  const total = baseAmount + gstAmount;
 
   const resetForm = () => {
     setFormData({
@@ -40,7 +57,52 @@ export function ProductFormDialog({ product, trigger }: ProductFormDialogProps) 
       hsn_code: "",
       category: "",
       stock_quantity: "0",
+      model_spec: "",
+      gst_percent: "18",
+      image_url: "",
     });
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be less than 5MB");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from("product-images")
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("product-images")
+        .getPublicUrl(fileName);
+
+      setFormData(prev => ({ ...prev, image_url: publicUrl }));
+      toast.success("Image uploaded");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to upload image");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setFormData(prev => ({ ...prev, image_url: "" }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -60,6 +122,9 @@ export function ProductFormDialog({ product, trigger }: ProductFormDialogProps) 
       hsn_code: formData.hsn_code.trim() || null,
       category: formData.category.trim() || null,
       stock_quantity: parseInt(formData.stock_quantity) || 0,
+      model_spec: formData.model_spec.trim() || null,
+      gst_percent: parseFloat(formData.gst_percent) || 18,
+      image_url: formData.image_url || null,
       is_active: true,
     };
 
@@ -82,6 +147,14 @@ export function ProductFormDialog({ product, trigger }: ProductFormDialogProps) 
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      minimumFractionDigits: 2,
+    }).format(amount);
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -92,11 +165,57 @@ export function ProductFormDialog({ product, trigger }: ProductFormDialogProps) 
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEditing ? "Edit Product" : "Add New Product"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Image Upload */}
+          <div>
+            <Label>Product Image</Label>
+            <div className="mt-2">
+              {formData.image_url ? (
+                <div className="relative inline-block">
+                  <img
+                    src={formData.image_url}
+                    alt="Product"
+                    className="h-24 w-24 object-cover rounded-lg border"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute -top-2 -right-2 h-6 w-6"
+                    onClick={handleRemoveImage}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ) : (
+                <div
+                  className="h-24 w-24 border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-colors"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {uploading ? (
+                    <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+                  ) : (
+                    <>
+                      <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground mt-1">Upload</span>
+                    </>
+                  )}
+                </div>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageUpload}
+              />
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
               <Label htmlFor="name">Product Name *</Label>
@@ -105,6 +224,27 @@ export function ProductFormDialog({ product, trigger }: ProductFormDialogProps) 
                 value={formData.name}
                 onChange={(e) => handleChange("name", e.target.value)}
                 placeholder="Enter product name"
+              />
+            </div>
+            
+            <div className="col-span-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => handleChange("description", e.target.value)}
+                placeholder="Product description"
+                rows={2}
+              />
+            </div>
+            
+            <div className="col-span-2">
+              <Label htmlFor="model_spec">Model / Specification</Label>
+              <Input
+                id="model_spec"
+                value={formData.model_spec}
+                onChange={(e) => handleChange("model_spec", e.target.value)}
+                placeholder="e.g., i5-12400, 16GB RAM, 512GB SSD"
               />
             </div>
             
@@ -129,14 +269,13 @@ export function ProductFormDialog({ product, trigger }: ProductFormDialogProps) 
             </div>
             
             <div>
-              <Label htmlFor="rate">Rate (₹)</Label>
+              <Label htmlFor="stock_quantity">Quantity (Stock)</Label>
               <Input
-                id="rate"
+                id="stock_quantity"
                 type="number"
                 min="0"
-                step="0.01"
-                value={formData.rate}
-                onChange={(e) => handleChange("rate", e.target.value)}
+                value={formData.stock_quantity}
+                onChange={(e) => handleChange("stock_quantity", e.target.value)}
               />
             </div>
             
@@ -151,13 +290,27 @@ export function ProductFormDialog({ product, trigger }: ProductFormDialogProps) 
             </div>
             
             <div>
-              <Label htmlFor="stock_quantity">Stock Quantity</Label>
+              <Label htmlFor="rate">Unit Price (₹)</Label>
               <Input
-                id="stock_quantity"
+                id="rate"
                 type="number"
                 min="0"
-                value={formData.stock_quantity}
-                onChange={(e) => handleChange("stock_quantity", e.target.value)}
+                step="0.01"
+                value={formData.rate}
+                onChange={(e) => handleChange("rate", e.target.value)}
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="gst_percent">GST %</Label>
+              <Input
+                id="gst_percent"
+                type="number"
+                min="0"
+                max="100"
+                step="0.01"
+                value={formData.gst_percent}
+                onChange={(e) => handleChange("gst_percent", e.target.value)}
               />
             </div>
             
@@ -170,16 +323,17 @@ export function ProductFormDialog({ product, trigger }: ProductFormDialogProps) 
                 placeholder="e.g., Electronics"
               />
             </div>
-            
-            <div className="col-span-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => handleChange("description", e.target.value)}
-                placeholder="Product description"
-                rows={2}
-              />
+          </div>
+
+          {/* Calculated Fields */}
+          <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">GST Amount (₹):</span>
+              <span className="font-medium">{formatCurrency(gstAmount)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Total (₹):</span>
+              <span className="font-bold">{formatCurrency(total)}</span>
             </div>
           </div>
           

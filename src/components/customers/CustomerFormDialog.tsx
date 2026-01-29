@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCreateCustomer, useUpdateCustomer, Customer } from "@/hooks/useCustomers";
 import { toast } from "sonner";
 import { Plus, Pencil } from "lucide-react";
@@ -19,6 +20,7 @@ const customerSchema = z.object({
   state: z.string().max(50).optional().or(z.literal("")),
   state_code: z.string().max(5).optional().or(z.literal("")),
   notes: z.string().max(500).optional().or(z.literal("")),
+  customer_type: z.enum(["customer", "dealer"]),
 });
 
 type CustomerFormData = z.infer<typeof customerSchema>;
@@ -45,6 +47,7 @@ export function CustomerFormDialog({ customer, trigger, onSuccess }: CustomerFor
       state: customer?.state || "",
       state_code: customer?.state_code || "",
       notes: customer?.notes || "",
+      customer_type: (customer?.customer_type as "customer" | "dealer") || "customer",
     },
   });
 
@@ -58,6 +61,7 @@ export function CustomerFormDialog({ customer, trigger, onSuccess }: CustomerFor
         state: data.state || null,
         state_code: data.state_code || null,
         notes: data.notes || null,
+        customer_type: data.customer_type,
         is_active: true,
       };
 
@@ -94,6 +98,28 @@ export function CustomerFormDialog({ customer, trigger, onSuccess }: CustomerFor
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="customer_type"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Type *</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="bg-popover">
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className="bg-popover z-50">
+                      <SelectItem value="customer">Customer</SelectItem>
+                      <SelectItem value="dealer">Dealer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <FormField
               control={form.control}
               name="name"

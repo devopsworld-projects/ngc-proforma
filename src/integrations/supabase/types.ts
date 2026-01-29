@@ -130,6 +130,7 @@ export type Database = {
       customers: {
         Row: {
           created_at: string
+          customer_type: string | null
           email: string | null
           gstin: string | null
           id: string
@@ -144,6 +145,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          customer_type?: string | null
           email?: string | null
           gstin?: string | null
           id?: string
@@ -158,6 +160,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          customer_type?: string | null
           email?: string | null
           gstin?: string | null
           id?: string
@@ -328,14 +331,44 @@ export type Database = {
           },
         ]
       }
+      pricing_settings: {
+        Row: {
+          created_at: string
+          customer_markup_percent: number | null
+          dealer_markup_percent: number | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          customer_markup_percent?: number | null
+          dealer_markup_percent?: number | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          customer_markup_percent?: number | null
+          dealer_markup_percent?: number | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           category: string | null
           created_at: string
           description: string | null
+          gst_percent: number | null
           hsn_code: string | null
           id: string
+          image_url: string | null
           is_active: boolean
+          model_spec: string | null
           name: string
           purchase_price: number | null
           rate: number
@@ -352,9 +385,12 @@ export type Database = {
           category?: string | null
           created_at?: string
           description?: string | null
+          gst_percent?: number | null
           hsn_code?: string | null
           id?: string
+          image_url?: string | null
           is_active?: boolean
+          model_spec?: string | null
           name: string
           purchase_price?: number | null
           rate?: number
@@ -371,9 +407,12 @@ export type Database = {
           category?: string | null
           created_at?: string
           description?: string | null
+          gst_percent?: number | null
           hsn_code?: string | null
           id?: string
+          image_url?: string | null
           is_active?: boolean
+          model_spec?: string | null
           name?: string
           purchase_price?: number | null
           rate?: number
@@ -484,6 +523,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      customer_type: "customer" | "dealer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -612,6 +652,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      customer_type: ["customer", "dealer"],
     },
   },
 } as const

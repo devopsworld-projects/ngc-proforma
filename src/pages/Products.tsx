@@ -123,12 +123,13 @@ export default function ProductsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-12">Image</TableHead>
                       <TableHead>Name</TableHead>
+                      <TableHead>Model/Spec</TableHead>
                       <TableHead>SKU</TableHead>
-                      <TableHead>Category</TableHead>
                       <TableHead className="text-right">Stock</TableHead>
-                      <TableHead>Unit</TableHead>
                       <TableHead className="text-right">Rate</TableHead>
+                      <TableHead className="text-right">GST %</TableHead>
                       <TableHead className="w-10"></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -136,14 +137,34 @@ export default function ProductsPage() {
                     {filteredProducts.map((product) => (
                       <TableRow key={product.id}>
                         <TableCell>
+                          {product.image_url ? (
+                            <img 
+                              src={product.image_url} 
+                              alt={product.name}
+                              className="h-10 w-10 object-cover rounded"
+                            />
+                          ) : (
+                            <div className="h-10 w-10 bg-muted rounded flex items-center justify-center">
+                              <Package className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell>
                           <div>
                             <p className="font-medium">{product.name}</p>
                             {product.description && (
-                              <p className="text-sm text-muted-foreground truncate max-w-[300px]">
+                              <p className="text-sm text-muted-foreground truncate max-w-[200px]">
                                 {product.description}
                               </p>
                             )}
                           </div>
+                        </TableCell>
+                        <TableCell>
+                          {product.model_spec ? (
+                            <span className="text-sm">{product.model_spec}</span>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
                         </TableCell>
                         <TableCell>
                           {product.sku ? (
@@ -154,23 +175,16 @@ export default function ProductsPage() {
                             <span className="text-muted-foreground">—</span>
                           )}
                         </TableCell>
-                        <TableCell>
-                          {product.category ? (
-                            <Badge variant="secondary" className="text-xs">
-                              {product.category}
-                            </Badge>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </TableCell>
                         <TableCell className="text-right">
                           <span className={product.stock_quantity <= 0 ? "text-destructive font-medium" : product.stock_quantity <= 10 ? "text-amber-600 font-medium" : ""}>
                             {product.stock_quantity}
                           </span>
                         </TableCell>
-                        <TableCell>{product.unit}</TableCell>
                         <TableCell className="text-right font-medium">
                           {formatCurrency(product.rate)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {product.gst_percent != null ? `${product.gst_percent}%` : "18%"}
                         </TableCell>
                         <TableCell>
                           <DropdownMenu>
