@@ -65,6 +65,22 @@ interface InvoiceData {
   shipping_address?: AddressInfo | null;
 }
 
+// Helper to load image as base64
+async function loadImageAsBase64(url: string): Promise<string | null> {
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
 export async function generateInvoicePDF(
   invoice: InvoiceData,
   company: CompanyInfo,
@@ -73,224 +89,441 @@ export async function generateInvoicePDF(
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 20;
-  let yPos = 25;
+  const margin = 15;
+  let yPos = margin;
 
-  // Colors
-  const darkColor: [number, number, number] = [51, 51, 51]; // Dark gray for text
-  const accentColor: [number, number, number] = [245, 189, 50]; // Yellow/gold accent
-  const mutedColor: [number, number, number] = [128, 128, 128]; // Gray for secondary text
-  const lightGray: [number, number, number] = [245, 245, 245]; // Light gray for alternating rows
+  // Colors - Professional blue theme
+  const primaryColor: [number, number, number] = [41, 65, 114]; // Deep blue
+  const secondaryColor: [number, number, number] = [59, 130, 246]; // Bright blue
+  const darkText: [number, number, number] = [31, 41, 55]; // Near black
+  const mutedText: [number, number, number] = [107, 114, 128]; // Gray
+  const lightBg: [number, number, number] = [248, 250, 252]; // Light gray
+  const borderColor: [number, number, number] = [226, 232, 240]; // Light border
 
-  // Helper function to add text
-  const addText = (text: string, x: number, y: number, options: { fontSize?: number; fontStyle?: string; color?: [number, number, number]; align?: "left" | "center" | "right" } = {}) => {
-    const { fontSize = 10, fontStyle = "normal", color = darkColor, align = "left" } = options;
+  // Helper to add text with proper sizing
+  const addText = (
+    text: string,
+    x: number,
+    y: number,
+    opts: {
+      fontSize?: number;
+      fontStyle?: string;
+      color?: [number, number, number];
+      align?: "left" | "center" | "right";
+      maxWidth?: number;
+    } = {}
+  ) => {
+    const { fontSize = 10, fontStyle = "normal", color = darkText, align = "left", maxWidth } = opts;
     doc.setFontSize(fontSize);
     doc.setFont("helvetica", fontStyle);
     doc.setTextColor(...color);
+    
+    if (maxWidth) {
+      const lines = doc.splitTextToSize(text, maxWidth);
+      doc.text(lines, x, y, { align });
+      return lines.length * (fontSize * 0.4); // Return height used
+    }
     doc.text(text, x, y, { align });
+    return fontSize * 0.4;
   };
 
-  // ===== HEADER SECTION =====
-  // Company Name (top left)
-  addText(company.name, margin, yPos, { fontSize: 16, fontStyle: "bold" });
+  // ===== HEADER WITH LOGO AND COMPANY INFO =====
+  const headerHeight = 45;
   
-  // Tagline/GSTIN under company name
-  if (company.gstin) {
-    yPos += 6;
-    addText(`GSTIN: ${company.gstin}`, margin, yPos, { fontSize: 8, color: mutedColor });
+  // Header background
+  doc.setFillColor(...primaryColor);
+  doc.rect(0, 0, pageWidth, headerHeight, "F");
+
+  // Try to load and add company logo
+  let logoEndX = margin;
+  if (company.logo_url) {
+    const logoBase64 = await loadImageAsBase64(company.logo_url);
+    if (logoBase64) {
+      try {
+        const logoSize = 25;
+        doc.addImage(logoBase64, "PNG", margin, 10, logoSize, logoSize);
+        logoEndX = margin + logoSize + 8;
+      } catch (e) {
+        console.warn("Failed to add logo:", e);
+      }
+    }
   }
 
-  // Yellow accent bar with INVOICE title (right side)
-  const accentBarWidth = 80;
-  const accentBarHeight = 12;
-  doc.setFillColor(...accentColor);
-  doc.rect(pageWidth - margin - accentBarWidth - 10, 18, accentBarWidth + 10, accentBarHeight, "F");
-  // Small accent square
-  doc.rect(pageWidth - margin - 8, 18, 8, accentBarHeight, "F");
-  
-  addText("INVOICE", pageWidth - margin - accentBarWidth / 2 - 5, 26, { 
-    fontSize: 18, 
-    fontStyle: "bold", 
-    color: darkColor, 
-    align: "center" 
+  // Company name
+  addText(company.name.toUpperCase(), logoEndX, 20, {
+    fontSize: 16,
+    fontStyle: "bold",
+    color: [255, 255, 255],
   });
 
-  yPos = 50;
+  // Company tagline/GSTIN under name
+  if (company.gstin) {
+    addText(`GSTIN: ${company.gstin}`, logoEndX, 28, {
+      fontSize: 9,
+      color: [200, 210, 230],
+    });
+  }
 
-  // ===== CUSTOMER & INVOICE DETAILS SECTION =====
-  // Yellow accent bar (left side only)
-  doc.setFillColor(...accentColor);
-  doc.rect(margin, yPos - 5, 4, 40, "F");
+  // Company contact on right side of header
+  const rightX = pageWidth - margin;
+  let contactY = 15;
+  
+  if (company.phone && company.phone.length > 0) {
+    addText(company.phone[0], rightX, contactY, {
+      fontSize: 9,
+      color: [200, 210, 230],
+      align: "right",
+    });
+    contactY += 5;
+  }
+  if (company.email) {
+    addText(company.email, rightX, contactY, {
+      fontSize: 9,
+      color: [200, 210, 230],
+      align: "right",
+    });
+    contactY += 5;
+  }
+  if (company.website) {
+    addText(company.website, rightX, contactY, {
+      fontSize: 9,
+      color: [200, 210, 230],
+      align: "right",
+    });
+    contactY += 5;
+  }
+  
+  // Company address in header
+  const addressParts = [company.address_line1, company.city, company.state, company.postal_code].filter(Boolean);
+  if (addressParts.length > 0) {
+    addText(addressParts.join(", "), rightX, contactY, {
+      fontSize: 8,
+      color: [180, 190, 210],
+      align: "right",
+    });
+  }
 
-  // Invoice to section
-  addText("Invoice to:", margin + 12, yPos, { fontSize: 10, fontStyle: "bold", color: darkColor });
-  yPos += 6;
+  yPos = headerHeight + 15;
 
+  // ===== INVOICE TITLE BAR =====
+  doc.setFillColor(...secondaryColor);
+  doc.rect(margin, yPos - 5, pageWidth - margin * 2, 14, "F");
+  
+  addText("TAX INVOICE", margin + 8, yPos + 4, {
+    fontSize: 12,
+    fontStyle: "bold",
+    color: [255, 255, 255],
+  });
+
+  // Invoice number and date on right
+  addText(`#${invoice.invoice_no}`, rightX - 8, yPos + 4, {
+    fontSize: 11,
+    fontStyle: "bold",
+    color: [255, 255, 255],
+    align: "right",
+  });
+
+  yPos += 20;
+
+  // ===== BILLING INFO SECTION =====
+  const colWidth = (pageWidth - margin * 2 - 10) / 2;
+  const leftColX = margin;
+  const rightColX = margin + colWidth + 10;
+
+  // Bill To Box
+  doc.setFillColor(...lightBg);
+  doc.setDrawColor(...borderColor);
+  doc.roundedRect(leftColX, yPos, colWidth, 45, 3, 3, "FD");
+
+  addText("BILL TO", leftColX + 8, yPos + 8, {
+    fontSize: 8,
+    fontStyle: "bold",
+    color: secondaryColor,
+  });
+
+  let billY = yPos + 16;
   if (invoice.customer) {
-    addText(invoice.customer.name, margin + 12, yPos, { fontSize: 11, fontStyle: "bold" });
-    yPos += 5;
-    
+    addText(invoice.customer.name, leftColX + 8, billY, {
+      fontSize: 11,
+      fontStyle: "bold",
+      color: darkText,
+      maxWidth: colWidth - 16,
+    });
+    billY += 7;
+
     if (invoice.billing_address) {
-      if (invoice.billing_address.address_line1) {
-        addText(invoice.billing_address.address_line1, margin + 12, yPos, { fontSize: 9, color: mutedColor });
-        yPos += 4;
+      const addr = invoice.billing_address;
+      if (addr.address_line1) {
+        addText(addr.address_line1, leftColX + 8, billY, {
+          fontSize: 9,
+          color: mutedText,
+          maxWidth: colWidth - 16,
+        });
+        billY += 5;
       }
-      if (invoice.billing_address.address_line2) {
-        addText(invoice.billing_address.address_line2, margin + 12, yPos, { fontSize: 9, color: mutedColor });
-        yPos += 4;
+      if (addr.address_line2) {
+        addText(addr.address_line2, leftColX + 8, billY, {
+          fontSize: 9,
+          color: mutedText,
+          maxWidth: colWidth - 16,
+        });
+        billY += 5;
       }
-      const cityLine = [invoice.billing_address.city, invoice.billing_address.state, invoice.billing_address.postal_code].filter(Boolean).join(", ");
+      const cityLine = [addr.city, addr.state, addr.postal_code].filter(Boolean).join(", ");
       if (cityLine) {
-        addText(cityLine, margin + 12, yPos, { fontSize: 9, color: mutedColor });
-        yPos += 4;
+        addText(cityLine, leftColX + 8, billY, {
+          fontSize: 9,
+          color: mutedText,
+          maxWidth: colWidth - 16,
+        });
+        billY += 5;
       }
     }
-    
+
     if (invoice.customer.gstin) {
-      addText(`GSTIN: ${invoice.customer.gstin}`, margin + 12, yPos, { fontSize: 9, color: mutedColor });
+      addText(`GSTIN: ${invoice.customer.gstin}`, leftColX + 8, billY, {
+        fontSize: 9,
+        color: mutedText,
+      });
     }
   }
 
-  // Invoice # and Date (right side)
-  const rightColX = pageWidth - margin - 50;
-  const rightValX = pageWidth - margin;
-  let rightY = 50;
-  
-  addText("Invoice#", rightColX, rightY, { fontSize: 10, fontStyle: "bold", color: darkColor });
-  addText(invoice.invoice_no, rightValX, rightY, { fontSize: 10, align: "right" });
-  rightY += 8;
-  
-  addText("Date", rightColX, rightY, { fontSize: 10, fontStyle: "bold", color: darkColor });
-  addText(new Date(invoice.date).toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" }), rightValX, rightY, { fontSize: 10, align: "right" });
+  // Invoice Details Box
+  doc.setFillColor(...lightBg);
+  doc.roundedRect(rightColX, yPos, colWidth, 45, 3, 3, "FD");
 
+  addText("INVOICE DETAILS", rightColX + 8, yPos + 8, {
+    fontSize: 8,
+    fontStyle: "bold",
+    color: secondaryColor,
+  });
+
+  const detailLabelX = rightColX + 8;
+  const detailValueX = rightColX + colWidth - 8;
+  let detailY = yPos + 18;
+
+  const addDetailRow = (label: string, value: string) => {
+    addText(label, detailLabelX, detailY, { fontSize: 9, color: mutedText });
+    addText(value, detailValueX, detailY, { fontSize: 9, fontStyle: "bold", color: darkText, align: "right" });
+    detailY += 7;
+  };
+
+  addDetailRow("Invoice Date:", new Date(invoice.date).toLocaleDateString("en-IN", { 
+    day: "2-digit", 
+    month: "short", 
+    year: "numeric" 
+  }));
+  
   if (invoice.e_way_bill_no) {
-    rightY += 8;
-    addText("e-Way Bill", rightColX, rightY, { fontSize: 10, fontStyle: "bold", color: darkColor });
-    addText(invoice.e_way_bill_no, rightValX, rightY, { fontSize: 10, align: "right" });
+    addDetailRow("e-Way Bill:", invoice.e_way_bill_no);
+  }
+  
+  if (invoice.supplier_invoice_no) {
+    addDetailRow("Supplier Inv:", invoice.supplier_invoice_no);
   }
 
-  yPos = Math.max(yPos, rightY) + 20;
+  if (invoice.other_references) {
+    addDetailRow("Reference:", invoice.other_references.substring(0, 20));
+  }
+
+  yPos += 55;
 
   // ===== ITEMS TABLE =====
-  const tableData = invoice.items.map((item) => [
-    item.sl_no.toString(),
-    item.description + (item.serial_numbers?.length ? `\nS/N: ${item.serial_numbers.join(", ")}` : ""),
-    formatCurrency(item.rate),
-    item.quantity.toString(),
-    formatCurrency(item.amount),
-  ]);
+  const tableData = invoice.items.map((item, idx) => {
+    let desc = item.description;
+    if (item.serial_numbers?.length) {
+      desc += `\n(S/N: ${item.serial_numbers.slice(0, 2).join(", ")}${item.serial_numbers.length > 2 ? "..." : ""})`;
+    }
+    return [
+      (idx + 1).toString(),
+      desc,
+      item.quantity.toString(),
+      item.unit,
+      formatCurrency(item.rate),
+      item.discount_percent > 0 ? `${item.discount_percent}%` : "-",
+      formatCurrency(item.amount),
+    ];
+  });
 
   autoTable(doc, {
     startY: yPos,
-    head: [["SL.", "Item Description", "Price", "Qty.", "Total"]],
+    head: [["#", "Description", "Qty", "Unit", "Rate", "Disc", "Amount"]],
     body: tableData,
     theme: "plain",
     headStyles: {
-      fillColor: accentColor,
-      textColor: darkColor,
+      fillColor: primaryColor,
+      textColor: [255, 255, 255],
       fontStyle: "bold",
-      fontSize: 10,
-      cellPadding: 6,
+      fontSize: 9,
+      cellPadding: 5,
+      halign: "center",
     },
     bodyStyles: {
       fontSize: 9,
-      textColor: darkColor,
-      cellPadding: 6,
+      textColor: darkText,
+      cellPadding: 5,
+      lineColor: borderColor,
+      lineWidth: 0.1,
     },
     alternateRowStyles: {
-      fillColor: lightGray,
+      fillColor: [252, 252, 253],
     },
     columnStyles: {
-      0: { cellWidth: 15, halign: "center" },
-      1: { cellWidth: "auto" },
-      2: { cellWidth: 30, halign: "right" },
-      3: { cellWidth: 20, halign: "center" },
-      4: { cellWidth: 35, halign: "right" },
+      0: { cellWidth: 12, halign: "center" },
+      1: { cellWidth: "auto", halign: "left" },
+      2: { cellWidth: 18, halign: "center" },
+      3: { cellWidth: 18, halign: "center" },
+      4: { cellWidth: 28, halign: "right" },
+      5: { cellWidth: 18, halign: "center" },
+      6: { cellWidth: 32, halign: "right", fontStyle: "bold" },
     },
     margin: { left: margin, right: margin },
-    tableLineColor: [220, 220, 220],
-    tableLineWidth: 0.1,
+    didDrawPage: (data) => {
+      // Add page number on each page
+      const pageNum = doc.getCurrentPageInfo().pageNumber;
+      doc.setFontSize(8);
+      doc.setTextColor(...mutedText);
+      doc.text(`Page ${pageNum}`, pageWidth / 2, pageHeight - 10, { align: "center" });
+    },
   });
 
-  // Get final Y position after table
-  yPos = (doc as any).lastAutoTable.finalY + 15;
+  yPos = (doc as any).lastAutoTable.finalY + 10;
 
-  // ===== THANK YOU & TOTALS SECTION =====
-  const leftContentX = margin;
-  const totalsLabelX = pageWidth - margin - 70;
-  const totalsValueX = pageWidth - margin;
+  // Check if we need a new page for totals
+  if (yPos > pageHeight - 100) {
+    doc.addPage();
+    yPos = margin;
+  }
 
-  // Left side - Thank you message
-  addText("Thank you for your business", leftContentX, yPos, { fontSize: 11, fontStyle: "italic", color: darkColor });
+  // ===== TOTALS SECTION =====
+  const totalsWidth = 90;
+  const totalsX = pageWidth - margin - totalsWidth;
+  const totalsLabelX = totalsX + 5;
+  const totalsValueX = pageWidth - margin - 5;
 
-  // Right side - Subtotal
-  addText("Sub Total:", totalsLabelX, yPos, { fontSize: 10, color: mutedColor });
-  addText(formatCurrency(invoice.subtotal), totalsValueX, yPos, { fontSize: 10, align: "right" });
-  yPos += 7;
+  // Totals box background
+  doc.setFillColor(...lightBg);
+  doc.setDrawColor(...borderColor);
+  const totalsBoxHeight = invoice.discount_amount > 0 ? 60 : 50;
+  doc.roundedRect(totalsX, yPos, totalsWidth, totalsBoxHeight, 2, 2, "FD");
 
-  // Discount (if any)
+  let totalsY = yPos + 10;
+
+  const addTotalRow = (label: string, value: string, bold = false) => {
+    addText(label, totalsLabelX, totalsY, {
+      fontSize: 9,
+      color: mutedText,
+    });
+    addText(value, totalsValueX, totalsY, {
+      fontSize: bold ? 11 : 9,
+      fontStyle: bold ? "bold" : "normal",
+      color: bold ? primaryColor : darkText,
+      align: "right",
+    });
+    totalsY += 8;
+  };
+
+  addTotalRow("Subtotal:", formatCurrency(invoice.subtotal));
+  
   if (invoice.discount_amount > 0) {
-    addText(`Discount (${invoice.discount_percent}%):`, totalsLabelX, yPos, { fontSize: 10, color: mutedColor });
-    addText(`-${formatCurrency(invoice.discount_amount)}`, totalsValueX, yPos, { fontSize: 10, align: "right" });
-    yPos += 7;
+    addTotalRow(`Discount (${invoice.discount_percent}%):`, `-${formatCurrency(invoice.discount_amount)}`);
+  }
+  
+  addTotalRow(`Tax (${invoice.tax_rate}%):`, formatCurrency(invoice.tax_amount));
+
+  if (Math.abs(invoice.round_off) > 0.001) {
+    addTotalRow("Round Off:", formatCurrency(invoice.round_off));
   }
 
-  // Tax
-  addText(`Tax (${invoice.tax_rate}%):`, totalsLabelX, yPos, { fontSize: 10, color: mutedColor });
-  addText(formatCurrency(invoice.tax_amount), totalsValueX, yPos, { fontSize: 10, align: "right" });
-  yPos += 10;
+  // Grand total highlight
+  totalsY += 2;
+  doc.setFillColor(...primaryColor);
+  doc.roundedRect(totalsX, totalsY - 5, totalsWidth, 14, 2, 2, "F");
+  
+  addText("TOTAL:", totalsLabelX, totalsY + 3, {
+    fontSize: 10,
+    fontStyle: "bold",
+    color: [255, 255, 255],
+  });
+  addText(formatCurrency(invoice.grand_total), totalsValueX, totalsY + 3, {
+    fontSize: 11,
+    fontStyle: "bold",
+    color: [255, 255, 255],
+    align: "right",
+  });
 
-  // Total with yellow accent
-  doc.setFillColor(...accentColor);
-  doc.rect(totalsLabelX - 5, yPos - 5, pageWidth - margin - totalsLabelX + 5, 12, "F");
-  addText("Total:", totalsLabelX, yPos + 3, { fontSize: 11, fontStyle: "bold", color: darkColor });
-  addText(formatCurrency(invoice.grand_total), totalsValueX, yPos + 3, { fontSize: 11, fontStyle: "bold", color: darkColor, align: "right" });
-
-  yPos += 25;
-
-  // ===== TERMS & CONDITIONS =====
-  addText("Terms & Conditions:", leftContentX, yPos, { fontSize: 10, fontStyle: "bold", color: darkColor });
-  yPos += 5;
-  addText("1. Goods once sold will not be taken back.", leftContentX, yPos, { fontSize: 8, color: mutedColor });
-  yPos += 4;
-  addText("2. Subject to jurisdiction of local courts only.", leftContentX, yPos, { fontSize: 8, color: mutedColor });
-
-  // Amount in words
-  yPos += 10;
+  // Amount in words (left side)
   const amountWords = invoice.amount_in_words || numberToWords(invoice.grand_total);
-  addText("Amount in Words:", leftContentX, yPos, { fontSize: 9, fontStyle: "bold", color: darkColor });
-  yPos += 5;
-  addText(amountWords, leftContentX, yPos, { fontSize: 9, fontStyle: "italic", color: mutedColor });
+  addText("Amount in Words:", margin, yPos + 5, {
+    fontSize: 8,
+    fontStyle: "bold",
+    color: secondaryColor,
+  });
+  addText(amountWords, margin, yPos + 12, {
+    fontSize: 9,
+    fontStyle: "italic",
+    color: darkText,
+    maxWidth: totalsX - margin - 15,
+  });
 
-  // ===== FOOTER =====
-  const footerY = pageHeight - 30;
-  
-  // Separator line
-  doc.setDrawColor(220, 220, 220);
-  doc.setLineWidth(0.5);
-  doc.line(margin, footerY - 10, pageWidth - margin, footerY - 10);
+  yPos += totalsBoxHeight + 20;
 
-  // Contact info (centered)
-  const contactParts = [];
-  if (company.phone && company.phone.length > 0) contactParts.push(company.phone[0]);
-  if (company.city && company.state) contactParts.push(`${company.city}, ${company.state}`);
-  if (company.website) contactParts.push(company.website);
-  
-  if (contactParts.length > 0) {
-    addText(contactParts.join("  |  "), pageWidth / 2, footerY, { fontSize: 8, color: mutedColor, align: "center" });
+  // Check for new page
+  if (yPos > pageHeight - 60) {
+    doc.addPage();
+    yPos = margin;
   }
 
-  // Authorized signature (right side)
-  doc.setDrawColor(...darkColor);
+  // ===== FOOTER SECTION =====
+  const footerY = pageHeight - 45;
+
+  // Separator line
+  doc.setDrawColor(...borderColor);
+  doc.setLineWidth(0.5);
+  doc.line(margin, footerY - 15, pageWidth - margin, footerY - 15);
+
+  // Terms & Conditions
+  addText("Terms & Conditions:", margin, footerY - 8, {
+    fontSize: 8,
+    fontStyle: "bold",
+    color: darkText,
+  });
+  addText("1. Goods once sold will not be taken back.", margin, footerY - 2, {
+    fontSize: 7,
+    color: mutedText,
+  });
+  addText("2. Subject to local jurisdiction only.", margin, footerY + 3, {
+    fontSize: 7,
+    color: mutedText,
+  });
+  addText("3. E&OE - Errors and Omissions Excepted.", margin, footerY + 8, {
+    fontSize: 7,
+    color: mutedText,
+  });
+
+  // Signature section
+  const sigX = pageWidth - margin - 50;
+  doc.setDrawColor(...darkText);
   doc.setLineWidth(0.3);
-  doc.line(pageWidth - margin - 50, footerY - 5, pageWidth - margin, footerY - 5);
-  addText("Authorised Sign", pageWidth - margin - 25, footerY + 2, { fontSize: 8, color: mutedColor, align: "center" });
+  doc.line(sigX - 10, footerY + 5, pageWidth - margin, footerY + 5);
+  addText("Authorized Signatory", sigX, footerY + 12, {
+    fontSize: 8,
+    color: mutedText,
+    align: "center",
+  });
+
+  // Company name in footer
+  addText(`For ${company.name}`, sigX, footerY - 5, {
+    fontSize: 8,
+    fontStyle: "bold",
+    color: darkText,
+    align: "center",
+  });
 
   // Return base64 or save PDF
   if (options.returnBase64) {
     return doc.output("datauristring").split(",")[1];
   }
-  
+
   doc.save(`Invoice-${invoice.invoice_no}.pdf`);
 }
