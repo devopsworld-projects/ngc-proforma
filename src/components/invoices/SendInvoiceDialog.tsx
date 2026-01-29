@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { generateInvoicePDF } from "@/lib/pdf-generator";
 import { CompanySettings } from "@/hooks/useCompanySettings";
+import { PdfTemplateSettings } from "@/hooks/usePdfTemplateSettings";
 import { formatCurrency } from "@/lib/invoice-utils";
 
 const emailFormSchema = z.object({
@@ -61,6 +62,7 @@ interface SendInvoiceDialogProps {
   onOpenChange: (open: boolean) => void;
   invoice: InvoiceData | null;
   companySettings: CompanySettings | null;
+  templateSettings?: PdfTemplateSettings | null;
 }
 
 export function SendInvoiceDialog({
@@ -68,6 +70,7 @@ export function SendInvoiceDialog({
   onOpenChange,
   invoice,
   companySettings,
+  templateSettings,
 }: SendInvoiceDialogProps) {
   const [isSending, setIsSending] = useState(false);
 
@@ -122,7 +125,7 @@ export function SendInvoiceDialog({
           shipping_address: invoice.shipping_address,
         },
         companySettings,
-        { returnBase64: true }
+        { returnBase64: true, templateSettings }
       );
 
       if (!pdfBase64) {

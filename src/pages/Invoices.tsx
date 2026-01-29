@@ -2,6 +2,7 @@ import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useInvoices, useUpdateInvoiceStatus, useDeleteInvoice, Invoice } from "@/hooks/useInvoices";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
+import { usePdfTemplateSettings } from "@/hooks/usePdfTemplateSettings";
 import { useInvoiceFilters } from "@/hooks/useInvoiceFilters";
 import { useSendStatusNotification } from "@/hooks/useStatusNotification";
 import { InvoiceFilters } from "@/components/invoices/InvoiceFilters";
@@ -92,6 +93,7 @@ export default function InvoicesPage() {
   const navigate = useNavigate();
   const { data: invoices, isLoading } = useInvoices();
   const { data: companySettings } = useCompanySettings();
+  const { data: templateSettings } = usePdfTemplateSettings();
   const updateStatus = useUpdateInvoiceStatus();
   const deleteInvoice = useDeleteInvoice();
   const sendNotification = useSendStatusNotification();
@@ -224,7 +226,7 @@ export default function InvoicesPage() {
         return;
       }
 
-      await generateInvoicePDF(fullInvoice!, companySettings);
+      await generateInvoicePDF(fullInvoice!, companySettings, { templateSettings });
       toast.success("PDF downloaded successfully");
     } catch (error: any) {
       console.error("PDF export error:", error);
@@ -440,6 +442,7 @@ export default function InvoicesPage() {
         onOpenChange={setSendDialogOpen}
         invoice={selectedInvoice}
         companySettings={companySettings || null}
+        templateSettings={templateSettings}
       />
 
       {/* Status Change Confirmation Dialog */}
