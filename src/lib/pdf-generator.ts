@@ -1,6 +1,7 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { formatCurrency, numberToWords } from "./invoice-utils";
+import { PdfTemplateSettings, defaultPdfTemplateSettings } from "@/hooks/usePdfTemplateSettings";
 
 interface InvoiceItem {
   sl_no: number;
@@ -65,6 +66,14 @@ interface InvoiceData {
   shipping_address?: AddressInfo | null;
 }
 
+// Helper to convert hex to RGB
+function hexToRgb(hex: string): [number, number, number] {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result
+    ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)]
+    : [41, 65, 114]; // fallback to default primary
+}
+
 // Helper to load image as base64
 async function loadImageAsBase64(url: string): Promise<string | null> {
   try {
@@ -84,7 +93,7 @@ async function loadImageAsBase64(url: string): Promise<string | null> {
 export async function generateInvoicePDF(
   invoice: InvoiceData,
   company: CompanyInfo,
-  options: { returnBase64?: boolean } = {}
+  options: { returnBase64?: boolean; templateSettings?: Partial<PdfTemplateSettings> | null } = {}
 ): Promise<string | void> {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -92,13 +101,17 @@ export async function generateInvoicePDF(
   const margin = 15;
   let yPos = margin;
 
-  // Colors - Professional blue theme
-  const primaryColor: [number, number, number] = [41, 65, 114]; // Deep blue
-  const secondaryColor: [number, number, number] = [59, 130, 246]; // Bright blue
-  const darkText: [number, number, number] = [31, 41, 55]; // Near black
-  const mutedText: [number, number, number] = [107, 114, 128]; // Gray
-  const lightBg: [number, number, number] = [248, 250, 252]; // Light gray
-  const borderColor: [number, number, number] = [226, 232, 240]; // Light border
+  // Merge template settings with defaults
+  const template = { ...defaultPdfTemplateSettings, ...options.templateSettings };
+
+  // Colors from template settings
+  const primaryColor = hexToRgb(template.primary_color);
+  const secondaryColor = hexToRgb(template.secondary_color);
+  const headerTextColor = hexToRgb(template.header_text_color);
+  const darkText: [number, number, number] = [31, 41, 55];
+  const mutedText: [number, number, number] = [107, 114, 128];
+  const lightBg: [number, number, number] = [248, 250, 252];
+  const borderColor: [number, number, number] = [226, 232, 240];
 
   // Helper to add text with proper sizing
   const addText = (
@@ -121,7 +134,7 @@ export async function generateInvoicePDF(
     if (maxWidth) {
       const lines = doc.splitTextToSize(text, maxWidth);
       doc.text(lines, x, y, { align });
-      return lines.length * (fontSize * 0.4); // Return height used
+      return lines.length * (fontSize * 0.4);
     }
     doc.text(text, x, y, { align });
     return fontSize * 0.4;
@@ -136,7 +149,7 @@ export async function generateInvoicePDF(
 
   // Try to load and add company logo
   let logoEndX = margin;
-  if (company.logo_url) {
+  if (template.show_logo && company.logo_url) {
     const logoBase64 = await loadImageAsBase64(company.logo_url);
     if (logoBase64) {
       try {
@@ -153,54 +166,57 @@ export async function generateInvoicePDF(
   addText(company.name.toUpperCase(), logoEndX, 20, {
     fontSize: 16,
     fontStyle: "bold",
-    color: [255, 255, 255],
+    color: headerTextColor,
   });
 
-  // Company tagline/GSTIN under name
-  if (company.gstin) {
+  // Company GSTIN under name
+  if (template.show_gstin_header && company.gstin) {
     addText(`GSTIN: ${company.gstin}`, logoEndX, 28, {
       fontSize: 9,
-      color: [200, 210, 230],
+      color: [Math.min(headerTextColor[0] + 40, 255), Math.min(headerTextColor[1] + 40, 255), Math.min(headerTextColor[2] + 40, 255)],
     });
   }
 
   // Company contact on right side of header
-  const rightX = pageWidth - margin;
-  let contactY = 15;
-  
-  if (company.phone && company.phone.length > 0) {
-    addText(company.phone[0], rightX, contactY, {
-      fontSize: 9,
-      color: [200, 210, 230],
-      align: "right",
-    });
-    contactY += 5;
-  }
-  if (company.email) {
-    addText(company.email, rightX, contactY, {
-      fontSize: 9,
-      color: [200, 210, 230],
-      align: "right",
-    });
-    contactY += 5;
-  }
-  if (company.website) {
-    addText(company.website, rightX, contactY, {
-      fontSize: 9,
-      color: [200, 210, 230],
-      align: "right",
-    });
-    contactY += 5;
-  }
-  
-  // Company address in header
-  const addressParts = [company.address_line1, company.city, company.state, company.postal_code].filter(Boolean);
-  if (addressParts.length > 0) {
-    addText(addressParts.join(", "), rightX, contactY, {
-      fontSize: 8,
-      color: [180, 190, 210],
-      align: "right",
-    });
+  if (template.show_contact_header) {
+    const rightX = pageWidth - margin;
+    let contactY = 15;
+    const contactColor: [number, number, number] = [Math.min(headerTextColor[0] + 40, 255), Math.min(headerTextColor[1] + 40, 255), Math.min(headerTextColor[2] + 40, 255)];
+    
+    if (company.phone && company.phone.length > 0) {
+      addText(company.phone[0], rightX, contactY, {
+        fontSize: 9,
+        color: contactColor,
+        align: "right",
+      });
+      contactY += 5;
+    }
+    if (company.email) {
+      addText(company.email, rightX, contactY, {
+        fontSize: 9,
+        color: contactColor,
+        align: "right",
+      });
+      contactY += 5;
+    }
+    if (company.website) {
+      addText(company.website, rightX, contactY, {
+        fontSize: 9,
+        color: contactColor,
+        align: "right",
+      });
+      contactY += 5;
+    }
+    
+    // Company address in header
+    const addressParts = [company.address_line1, company.city, company.state, company.postal_code].filter(Boolean);
+    if (addressParts.length > 0) {
+      addText(addressParts.join(", "), rightX, contactY, {
+        fontSize: 8,
+        color: [Math.min(headerTextColor[0] + 60, 255), Math.min(headerTextColor[1] + 60, 255), Math.min(headerTextColor[2] + 60, 255)],
+        align: "right",
+      });
+    }
   }
 
   yPos = headerHeight + 15;
@@ -216,7 +232,7 @@ export async function generateInvoicePDF(
   });
 
   // Invoice number and date on right
-  addText(`#${invoice.invoice_no}`, rightX - 8, yPos + 4, {
+  addText(`#${invoice.invoice_no}`, pageWidth - margin - 8, yPos + 4, {
     fontSize: 11,
     fontStyle: "bold",
     color: [255, 255, 255],
@@ -329,25 +345,53 @@ export async function generateInvoicePDF(
   yPos += 55;
 
   // ===== ITEMS TABLE =====
+  const showDiscount = template.show_discount_column;
+  const showSerial = template.show_serial_numbers;
+
   const tableData = invoice.items.map((item, idx) => {
     let desc = item.description;
-    if (item.serial_numbers?.length) {
+    if (showSerial && item.serial_numbers?.length) {
       desc += `\n(S/N: ${item.serial_numbers.slice(0, 2).join(", ")}${item.serial_numbers.length > 2 ? "..." : ""})`;
     }
-    return [
+    
+    const row: string[] = [
       (idx + 1).toString(),
       desc,
       item.quantity.toString(),
       item.unit,
       formatCurrency(item.rate),
-      item.discount_percent > 0 ? `${item.discount_percent}%` : "-",
-      formatCurrency(item.amount),
     ];
+    
+    if (showDiscount) {
+      row.push(item.discount_percent > 0 ? `${item.discount_percent}%` : "-");
+    }
+    row.push(formatCurrency(item.amount));
+    
+    return row;
   });
+
+  const tableHead = showDiscount 
+    ? [["#", "Description", "Qty", "Unit", "Rate", "Disc", "Amount"]]
+    : [["#", "Description", "Qty", "Unit", "Rate", "Amount"]];
+
+  const columnStyles: any = {
+    0: { cellWidth: 12, halign: "center" },
+    1: { cellWidth: "auto", halign: "left" },
+    2: { cellWidth: 18, halign: "center" },
+    3: { cellWidth: 18, halign: "center" },
+    4: { cellWidth: 28, halign: "right" },
+  };
+
+  if (showDiscount) {
+    columnStyles[5] = { cellWidth: 18, halign: "center" };
+    columnStyles[6] = { cellWidth: 32, halign: "right", fontStyle: "bold" };
+  } else {
+    columnStyles[5] = { cellWidth: 32, halign: "right", fontStyle: "bold" };
+  }
 
   autoTable(doc, {
     startY: yPos,
-    head: [["#", "Description", "Qty", "Unit", "Rate", "Disc", "Amount"]],
+    head: tableHead,
     body: tableData,
     theme: "plain",
     headStyles: {
@@ -368,18 +412,9 @@ export async function generateInvoicePDF(
     alternateRowStyles: {
       fillColor: [252, 252, 253],
     },
-    columnStyles: {
-      0: { cellWidth: 12, halign: "center" },
-      1: { cellWidth: "auto", halign: "left" },
-      2: { cellWidth: 18, halign: "center" },
-      3: { cellWidth: 18, halign: "center" },
-      4: { cellWidth: 28, halign: "right" },
-      5: { cellWidth: 18, halign: "center" },
-      6: { cellWidth: 32, halign: "right", fontStyle: "bold" },
-    },
+    columnStyles,
     margin: { left: margin, right: margin },
     didDrawPage: (data) => {
-      // Add page number on each page
       const pageNum = doc.getCurrentPageInfo().pageNumber;
       doc.setFontSize(8);
       doc.setTextColor(...mutedText);
@@ -453,23 +488,54 @@ export async function generateInvoicePDF(
   });
 
   // Amount in words (left side)
-  const amountWords = invoice.amount_in_words || numberToWords(invoice.grand_total);
-  addText("Amount in Words:", margin, yPos + 5, {
-    fontSize: 8,
-    fontStyle: "bold",
-    color: secondaryColor,
-  });
-  addText(amountWords, margin, yPos + 12, {
-    fontSize: 9,
-    fontStyle: "italic",
-    color: darkText,
-    maxWidth: totalsX - margin - 15,
-  });
+  if (template.show_amount_words) {
+    const amountWords = invoice.amount_in_words || numberToWords(invoice.grand_total);
+    addText("Amount in Words:", margin, yPos + 5, {
+      fontSize: 8,
+      fontStyle: "bold",
+      color: secondaryColor,
+    });
+    addText(amountWords, margin, yPos + 12, {
+      fontSize: 9,
+      fontStyle: "italic",
+      color: darkText,
+      maxWidth: totalsX - margin - 15,
+    });
+  }
 
-  yPos += totalsBoxHeight + 20;
+  yPos += totalsBoxHeight + 15;
+
+  // ===== BANK DETAILS =====
+  if (template.bank_name) {
+    doc.setFillColor(...lightBg);
+    doc.setDrawColor(...borderColor);
+    doc.roundedRect(margin, yPos, pageWidth - margin * 2, 25, 2, 2, "FD");
+    
+    addText("BANK DETAILS", margin + 8, yPos + 8, {
+      fontSize: 8,
+      fontStyle: "bold",
+      color: secondaryColor,
+    });
+
+    let bankY = yPos + 16;
+    const bankDetails = [
+      template.bank_name,
+      template.bank_account_no ? `A/C: ${template.bank_account_no}` : null,
+      template.bank_ifsc ? `IFSC: ${template.bank_ifsc}` : null,
+      template.bank_branch ? `Branch: ${template.bank_branch}` : null,
+    ].filter(Boolean).join(" | ");
+
+    addText(bankDetails, margin + 8, bankY, {
+      fontSize: 9,
+      color: darkText,
+      maxWidth: pageWidth - margin * 2 - 16,
+    });
+
+    yPos += 30;
+  }
 
   // Check for new page
-  if (yPos > pageHeight - 60) {
+  if (yPos > pageHeight - 50) {
     doc.addPage();
     yPos = margin;
   }
@@ -483,42 +549,56 @@ export async function generateInvoicePDF(
   doc.line(margin, footerY - 15, pageWidth - margin, footerY - 15);
 
   // Terms & Conditions
-  addText("Terms & Conditions:", margin, footerY - 8, {
-    fontSize: 8,
-    fontStyle: "bold",
-    color: darkText,
-  });
-  addText("1. Goods once sold will not be taken back.", margin, footerY - 2, {
-    fontSize: 7,
-    color: mutedText,
-  });
-  addText("2. Subject to local jurisdiction only.", margin, footerY + 3, {
-    fontSize: 7,
-    color: mutedText,
-  });
-  addText("3. E&OE - Errors and Omissions Excepted.", margin, footerY + 8, {
-    fontSize: 7,
-    color: mutedText,
-  });
+  if (template.show_terms) {
+    addText("Terms & Conditions:", margin, footerY - 8, {
+      fontSize: 8,
+      fontStyle: "bold",
+      color: darkText,
+    });
+    
+    let termY = footerY - 2;
+    if (template.terms_line1) {
+      addText(`1. ${template.terms_line1}`, margin, termY, { fontSize: 7, color: mutedText });
+      termY += 4;
+    }
+    if (template.terms_line2) {
+      addText(`2. ${template.terms_line2}`, margin, termY, { fontSize: 7, color: mutedText });
+      termY += 4;
+    }
+    if (template.terms_line3) {
+      addText(`3. ${template.terms_line3}`, margin, termY, { fontSize: 7, color: mutedText });
+    }
+  }
+
+  // Custom footer text
+  if (template.custom_footer_text) {
+    addText(template.custom_footer_text, margin, footerY + 15, {
+      fontSize: 8,
+      fontStyle: "italic",
+      color: mutedText,
+    });
+  }
 
   // Signature section
-  const sigX = pageWidth - margin - 50;
-  doc.setDrawColor(...darkText);
-  doc.setLineWidth(0.3);
-  doc.line(sigX - 10, footerY + 5, pageWidth - margin, footerY + 5);
-  addText("Authorized Signatory", sigX, footerY + 12, {
-    fontSize: 8,
-    color: mutedText,
-    align: "center",
-  });
+  if (template.show_signature) {
+    const sigX = pageWidth - margin - 50;
+    doc.setDrawColor(...darkText);
+    doc.setLineWidth(0.3);
+    doc.line(sigX - 10, footerY + 5, pageWidth - margin, footerY + 5);
+    addText("Authorized Signatory", sigX, footerY + 12, {
+      fontSize: 8,
+      color: mutedText,
+      align: "center",
+    });
 
-  // Company name in footer
-  addText(`For ${company.name}`, sigX, footerY - 5, {
-    fontSize: 8,
-    fontStyle: "bold",
-    color: darkText,
-    align: "center",
-  });
+    // Company name in footer
+    addText(`For ${company.name}`, sigX, footerY - 5, {
+      fontSize: 8,
+      fontStyle: "bold",
+      color: darkText,
+      align: "center",
+    });
+  }
 
   // Return base64 or save PDF
   if (options.returnBase64) {

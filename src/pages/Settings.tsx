@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { Link } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useCompanySettings, useUpdateCompanySettings, uploadCompanyLogo, deleteCompanyLogo } from "@/hooks/useCompanySettings";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Building2, Save, Upload, X, Loader2 } from "lucide-react";
+import { Building2, Save, Upload, X, Loader2, FileText, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { DataExportCard } from "@/components/settings/DataExportCard";
 
@@ -410,6 +411,27 @@ export default function SettingsPage() {
                     </FormItem>
                   )}
                 />
+              </CardContent>
+            </Card>
+
+            {/* PDF Template Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  PDF Template
+                </CardTitle>
+                <CardDescription>
+                  Customize invoice PDF appearance, colors, and content
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button variant="outline" className="w-full justify-between" asChild>
+                  <Link to="/settings/pdf-template">
+                    Edit PDF Template
+                    <ChevronRight className="h-4 w-4" />
+                  </Link>
+                </Button>
               </CardContent>
             </Card>
 

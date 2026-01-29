@@ -3,6 +3,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Invoice } from "@/components/invoice/Invoice";
 import { useInvoice } from "@/hooks/useInvoices";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
+import { usePdfTemplateSettings } from "@/hooks/usePdfTemplateSettings";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, Edit, Download, Printer } from "lucide-react";
@@ -16,8 +17,9 @@ export default function InvoicePreview() {
   const navigate = useNavigate();
   const { data: invoice, isLoading: invoiceLoading } = useInvoice(id);
   const { data: companySettings, isLoading: settingsLoading } = useCompanySettings();
+  const { data: templateSettings, isLoading: templateLoading } = usePdfTemplateSettings();
 
-  const isLoading = invoiceLoading || settingsLoading;
+  const isLoading = invoiceLoading || settingsLoading || templateLoading;
 
   const handleExportPDF = async () => {
     if (!invoice || !companySettings) {
@@ -34,7 +36,8 @@ export default function InvoicePreview() {
           billing_address: invoice.billing_address,
           shipping_address: invoice.shipping_address,
         },
-        companySettings
+        companySettings,
+        { templateSettings }
       );
       toast.success("PDF downloaded successfully");
     } catch (error: any) {
