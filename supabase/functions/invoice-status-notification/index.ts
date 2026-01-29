@@ -4,11 +4,28 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+// Allowed origins for CORS - restrict to known domains
+const allowedOrigins = [
+  "https://ngc-proforma.lovable.app",
+  "https://id-preview--27d0addb-0e86-4cfe-ba91-58eb00bddc41.lovable.app",
+];
+
+// Add localhost for development if needed
+if (Deno.env.get("DENO_ENV") !== "production") {
+  allowedOrigins.push("http://localhost:5173", "http://localhost:3000");
+}
+
+function getCorsHeaders(origin: string | null): Record<string, string> {
+  const allowedOrigin = origin && allowedOrigins.some(allowed => 
+    origin === allowed || origin.endsWith('.lovable.app')
+  ) ? origin : allowedOrigins[0];
+  
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Credentials": "true",
+  };
+}
 
 interface StatusNotificationRequest {
   invoiceId: string;
@@ -69,6 +86,9 @@ function getStatusConfig(status: string): { color: string; icon: string; message
 }
 
 const handler = async (req: Request): Promise<Response> => {
+  const origin = req.headers.get("Origin");
+  const corsHeaders = getCorsHeaders(origin);
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -205,7 +225,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.error("Error in invoice-status-notification:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      { status: 500, headers: { "Content-Type": "application/json", ...getCorsHeaders(null) } }
     );
   }
 };
