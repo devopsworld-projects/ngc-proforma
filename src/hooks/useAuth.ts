@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext, useRef } from "react";
+import { useState, useEffect, createContext, useContext } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -69,29 +69,31 @@ async function trackUserSession(userId: string) {
   }
 }
 
+// Track if we already tracked the current session (module-level to avoid hook issues)
+let sessionTracked = false;
+
 export function useAuthProvider(): AuthContextType {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const hasTrackedSession = useRef(false);
 
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         setIsLoading(false);
         
         // Track session on sign in
-        if (event === "SIGNED_IN" && session?.user && !hasTrackedSession.current) {
-          hasTrackedSession.current = true;
+        if (event === "SIGNED_IN" && session?.user && !sessionTracked) {
+          sessionTracked = true;
           // Defer to avoid blocking auth flow
           setTimeout(() => trackUserSession(session.user.id), 100);
         }
         
         if (event === "SIGNED_OUT") {
-          hasTrackedSession.current = false;
+          sessionTracked = false;
         }
       }
     );
