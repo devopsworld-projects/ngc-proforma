@@ -127,6 +127,7 @@ export default function ProductsPage() {
                       <TableHead>Name</TableHead>
                       <TableHead>Model/Spec</TableHead>
                       <TableHead>SKU</TableHead>
+                      <TableHead>Added By</TableHead>
                       <TableHead className="text-right">Stock</TableHead>
                       <TableHead className="text-right">Rate</TableHead>
                       <TableHead className="text-right">GST %</TableHead>
@@ -174,6 +175,11 @@ export default function ProductsPage() {
                           ) : (
                             <span className="text-muted-foreground">—</span>
                           )}
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm text-muted-foreground">
+                            {product.profiles?.full_name || "Unknown"}
+                          </span>
                         </TableCell>
                         <TableCell className="text-right">
                           <span className={product.stock_quantity <= 0 ? "text-destructive font-medium" : product.stock_quantity <= 10 ? "text-amber-600 font-medium" : ""}>
