@@ -340,6 +340,87 @@ export type Database = {
           },
         ]
       }
+      pdf_template_settings: {
+        Row: {
+          bank_account_no: string | null
+          bank_branch: string | null
+          bank_ifsc: string | null
+          bank_name: string | null
+          created_at: string
+          custom_footer_text: string | null
+          header_text_color: string
+          id: string
+          primary_color: string
+          secondary_color: string
+          show_amount_words: boolean
+          show_contact_header: boolean
+          show_discount_column: boolean
+          show_gstin_header: boolean
+          show_logo: boolean
+          show_serial_numbers: boolean
+          show_shipping_address: boolean
+          show_signature: boolean
+          show_terms: boolean
+          terms_line1: string | null
+          terms_line2: string | null
+          terms_line3: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bank_account_no?: string | null
+          bank_branch?: string | null
+          bank_ifsc?: string | null
+          bank_name?: string | null
+          created_at?: string
+          custom_footer_text?: string | null
+          header_text_color?: string
+          id?: string
+          primary_color?: string
+          secondary_color?: string
+          show_amount_words?: boolean
+          show_contact_header?: boolean
+          show_discount_column?: boolean
+          show_gstin_header?: boolean
+          show_logo?: boolean
+          show_serial_numbers?: boolean
+          show_shipping_address?: boolean
+          show_signature?: boolean
+          show_terms?: boolean
+          terms_line1?: string | null
+          terms_line2?: string | null
+          terms_line3?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bank_account_no?: string | null
+          bank_branch?: string | null
+          bank_ifsc?: string | null
+          bank_name?: string | null
+          created_at?: string
+          custom_footer_text?: string | null
+          header_text_color?: string
+          id?: string
+          primary_color?: string
+          secondary_color?: string
+          show_amount_words?: boolean
+          show_contact_header?: boolean
+          show_discount_column?: boolean
+          show_gstin_header?: boolean
+          show_logo?: boolean
+          show_serial_numbers?: boolean
+          show_shipping_address?: boolean
+          show_signature?: boolean
+          show_terms?: boolean
+          terms_line1?: string | null
+          terms_line2?: string | null
+          terms_line3?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       pricing_settings: {
         Row: {
           created_at: string

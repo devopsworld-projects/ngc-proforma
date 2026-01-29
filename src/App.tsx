@@ -16,6 +16,7 @@ import EditInvoice from "./pages/EditInvoice";
 import InvoicePreview from "./pages/InvoicePreview";
 import Settings from "./pages/Settings";
 import Products from "./pages/Products";
+import PdfTemplateEditor from "./pages/PdfTemplateEditor";
 
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -51,6 +52,7 @@ const App = () => (
               <Route path="/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />
               
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+              <Route path="/settings/pdf-template" element={<ProtectedRoute><PdfTemplateEditor /></ProtectedRoute>} />
               <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
