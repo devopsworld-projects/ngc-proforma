@@ -228,9 +228,11 @@ export type Database = {
       invoices: {
         Row: {
           amount_in_words: string | null
+          applied_markup_percent: number | null
           billing_address_id: string | null
           created_at: string
           customer_id: string | null
+          customer_snapshot: Json | null
           date: string
           discount_amount: number | null
           discount_percent: number | null
@@ -241,6 +243,7 @@ export type Database = {
           is_recurring: boolean
           next_invoice_date: string | null
           other_references: string | null
+          quote_for: string | null
           recurring_frequency: string | null
           round_off: number | null
           shipping_address_id: string | null
@@ -255,9 +258,11 @@ export type Database = {
         }
         Insert: {
           amount_in_words?: string | null
+          applied_markup_percent?: number | null
           billing_address_id?: string | null
           created_at?: string
           customer_id?: string | null
+          customer_snapshot?: Json | null
           date?: string
           discount_amount?: number | null
           discount_percent?: number | null
@@ -268,6 +273,7 @@ export type Database = {
           is_recurring?: boolean
           next_invoice_date?: string | null
           other_references?: string | null
+          quote_for?: string | null
           recurring_frequency?: string | null
           round_off?: number | null
           shipping_address_id?: string | null
@@ -282,9 +288,11 @@ export type Database = {
         }
         Update: {
           amount_in_words?: string | null
+          applied_markup_percent?: number | null
           billing_address_id?: string | null
           created_at?: string
           customer_id?: string | null
+          customer_snapshot?: Json | null
           date?: string
           discount_amount?: number | null
           discount_percent?: number | null
@@ -295,6 +303,7 @@ export type Database = {
           is_recurring?: boolean
           next_invoice_date?: string | null
           other_references?: string | null
+          quote_for?: string | null
           recurring_frequency?: string | null
           round_off?: number | null
           shipping_address_id?: string | null

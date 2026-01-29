@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
+import type { Json } from "@/integrations/supabase/types";
 
 export interface Invoice {
   id: string;
@@ -28,6 +29,9 @@ export interface Invoice {
   user_id: string | null;
   created_at: string;
   updated_at: string;
+  quote_for?: string | null;
+  applied_markup_percent?: number | null;
+  customer_snapshot?: Json;
 }
 
 export interface InvoiceItem {
