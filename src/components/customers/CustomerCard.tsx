@@ -49,7 +49,15 @@ export function CustomerCard({ customer, addresses = [], onSelect, showActions =
               <Building2 className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <CardTitle className="text-lg font-serif">{customer.name}</CardTitle>
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-lg font-serif">{customer.name}</CardTitle>
+                <Badge 
+                  variant={customer.customer_type === "dealer" ? "default" : "secondary"} 
+                  className="text-xs capitalize"
+                >
+                  {customer.customer_type || "customer"}
+                </Badge>
+              </div>
               {customer.gstin && (
                 <p className="text-xs text-muted-foreground font-mono mt-1">
                   GSTIN: {customer.gstin}

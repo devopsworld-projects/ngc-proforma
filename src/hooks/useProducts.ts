@@ -16,6 +16,9 @@ export interface Product {
   user_id: string | null;
   created_at: string;
   updated_at: string;
+  model_spec: string | null;
+  gst_percent: number | null;
+  image_url: string | null;
 }
 
 export function useProducts() {

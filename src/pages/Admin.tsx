@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -27,9 +28,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Users, FileText, DollarSign, Shield, ShieldOff, Eye, Loader2, CheckCircle, XCircle, Mail, MailX, UserCheck, UserX, Trash2 } from "lucide-react";
+import { Users, FileText, DollarSign, Shield, ShieldOff, Eye, Loader2, CheckCircle, XCircle, Mail, MailX, UserCheck, UserX, Trash2, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { PricingSettingsCard } from "@/components/admin/PricingSettingsCard";
+import { QuotationTrackingCard } from "@/components/admin/QuotationTrackingCard";
 
 const statusColors: Record<string, string> = {
   draft: "bg-muted text-muted-foreground",
@@ -133,11 +136,21 @@ export default function AdminPage() {
   return (
     <AppLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-          <p className="text-muted-foreground">Manage users and view system-wide statistics</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+            <p className="text-muted-foreground">Manage users, pricing, and view system-wide statistics</p>
+          </div>
         </div>
+
+        <Tabs defaultValue="overview" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="pricing">Pricing Settings</TabsTrigger>
+            <TabsTrigger value="quotations">Quotation Tracking</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-6">
 
         {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-4">
@@ -402,7 +415,17 @@ export default function AdminPage() {
               </Table>
             )}
           </CardContent>
-        </Card>
+          </Card>
+          </TabsContent>
+
+          <TabsContent value="pricing">
+            <PricingSettingsCard />
+          </TabsContent>
+
+          <TabsContent value="quotations">
+            <QuotationTrackingCard />
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* User Invoices Dialog */}
