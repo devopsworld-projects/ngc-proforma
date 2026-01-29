@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
+import { useIsAdmin } from "./useAdmin";
 import type { Json } from "@/integrations/supabase/types";
 
 export interface Invoice {
@@ -50,10 +51,24 @@ export interface InvoiceItem {
 
 export function useInvoices() {
   const { user } = useAuth();
+  const { data: isAdmin } = useIsAdmin();
+  
   return useQuery({
-    queryKey: ["invoices", user?.id],
+    queryKey: ["invoices", user?.id, isAdmin],
     queryFn: async () => {
       if (!user) return [];
+      
+      // Admin sees all invoices with user profile info
+      if (isAdmin) {
+        const { data, error } = await supabase
+          .from("invoices")
+          .select("*, customers(name), profiles:user_id(full_name)")
+          .order("created_at", { ascending: false });
+        if (error) throw error;
+        return data;
+      }
+      
+      // Regular user sees only their own invoices
       const { data, error } = await supabase
         .from("invoices")
         .select("*, customers(name)")
