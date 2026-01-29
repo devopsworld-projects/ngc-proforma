@@ -58,6 +58,8 @@ export function PdfPreviewMini({ settings }: Props) {
             <div className="font-medium">Customer Name</div>
             <div className="text-black/60">123 Street, City</div>
             <div className="text-black/60">State 123456</div>
+            <div className="text-[5px] mt-0.5">GSTIN: 29AXXXX1234X1ZX</div>
+            <div className="text-[5px] text-black/60">State: Karnataka (29)</div>
           </div>
         </div>
       </div>
