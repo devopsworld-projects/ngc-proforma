@@ -121,6 +121,30 @@ export function useDeleteInvoiceItems() {
   });
 }
 
+export function useDeleteInvoice() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (invoiceId: string) => {
+      // First delete invoice items (cascade)
+      const { error: itemsError } = await supabase
+        .from("invoice_items")
+        .delete()
+        .eq("invoice_id", invoiceId);
+      if (itemsError) throw itemsError;
+      
+      // Then delete the invoice
+      const { error } = await supabase
+        .from("invoices")
+        .delete()
+        .eq("id", invoiceId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+    },
+  });
+}
+
 export function useCreateInvoice() {
   const queryClient = useQueryClient();
   const { user } = useAuth();

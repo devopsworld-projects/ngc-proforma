@@ -58,9 +58,16 @@ export interface LineItem {
   productId?: string;
 }
 
+interface PricingMarkup {
+  customerMarkupPercent: number;
+  dealerMarkupPercent: number;
+}
+
 interface LineItemsEditorProps {
   items: LineItem[];
   onChange: (items: LineItem[]) => void;
+  customerType?: string | null;
+  pricingSettings?: PricingMarkup | null;
 }
 
 interface SortableLineItemProps {
@@ -296,7 +303,7 @@ function DragOverlayItem({ item }: { item: LineItem }) {
   );
 }
 
-export function LineItemsEditor({ items, onChange }: LineItemsEditorProps) {
+export function LineItemsEditor({ items, onChange, customerType, pricingSettings }: LineItemsEditorProps) {
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -359,6 +366,19 @@ export function LineItemsEditor({ items, onChange }: LineItemsEditorProps) {
 
   const addProductAsItem = (product: Product) => {
     const qty = 1;
+    
+    // Apply markup based on customer type
+    let finalRate = product.rate;
+    if (pricingSettings) {
+      const markupPercent = customerType === "dealer" 
+        ? pricingSettings.dealerMarkupPercent 
+        : pricingSettings.customerMarkupPercent;
+      
+      if (markupPercent > 0) {
+        finalRate = product.rate * (1 + markupPercent / 100);
+      }
+    }
+    
     const newItem: LineItem = {
       id: crypto.randomUUID(),
       slNo: items.length + 1,
@@ -366,9 +386,9 @@ export function LineItemsEditor({ items, onChange }: LineItemsEditorProps) {
       serialNumbers: "",
       quantity: qty,
       unit: product.unit,
-      rate: product.rate,
+      rate: Math.round(finalRate * 100) / 100, // Round to 2 decimal places
       discountPercent: 0,
-      amount: qty * product.rate,
+      amount: qty * Math.round(finalRate * 100) / 100,
       productId: product.id,
     };
     onChange([...items, newItem]);
@@ -505,43 +525,63 @@ export function LineItemsEditor({ items, onChange }: LineItemsEditorProps) {
                       </div>
                     ) : (
                       <div className="py-1">
-                        {products.map((product, index) => (
-                          <button
-                            key={product.id}
-                            type="button"
-                            onClick={() => addProductAsItem(product)}
-                            className={cn(
-                              "w-full px-3 py-2.5 text-left flex items-center gap-3 hover:bg-accent transition-colors",
-                              index === highlightedIndex && "bg-accent"
-                            )}
-                          >
-                            <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
-                              <Plus className="h-4 w-4 text-primary" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium truncate">{product.name}</span>
-                                {product.stock_quantity <= 0 && (
-                                  <Badge variant="destructive" className="text-[10px] h-4">
-                                    Out of stock
-                                  </Badge>
+                        {products.map((product, index) => {
+                          // Calculate marked up price
+                          let displayRate = product.rate;
+                          let hasMarkup = false;
+                          if (pricingSettings) {
+                            const markupPercent = customerType === "dealer" 
+                              ? pricingSettings.dealerMarkupPercent 
+                              : pricingSettings.customerMarkupPercent;
+                            if (markupPercent > 0) {
+                              displayRate = product.rate * (1 + markupPercent / 100);
+                              hasMarkup = true;
+                            }
+                          }
+                          
+                          return (
+                            <button
+                              key={product.id}
+                              type="button"
+                              onClick={() => addProductAsItem(product)}
+                              className={cn(
+                                "w-full px-3 py-2.5 text-left flex items-center gap-3 hover:bg-accent transition-colors",
+                                index === highlightedIndex && "bg-accent"
+                              )}
+                            >
+                              <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                <Plus className="h-4 w-4 text-primary" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium truncate">{product.name}</span>
+                                  {product.stock_quantity <= 0 && (
+                                    <Badge variant="destructive" className="text-[10px] h-4">
+                                      Out of stock
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
+                                  {product.sku && (
+                                    <span className="font-mono bg-muted px-1 rounded">{product.sku}</span>
+                                  )}
+                                  <span>{product.unit}</span>
+                                  <span className={product.stock_quantity <= 0 ? "text-destructive" : "text-green-600"}>
+                                    {product.stock_quantity} in stock
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="text-right flex-shrink-0">
+                                <div className="font-semibold text-primary">{formatCurrency(Math.round(displayRate * 100) / 100)}</div>
+                                {hasMarkup && (
+                                  <div className="text-xs text-muted-foreground line-through">
+                                    {formatCurrency(product.rate)}
+                                  </div>
                                 )}
                               </div>
-                              <div className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
-                                {product.sku && (
-                                  <span className="font-mono bg-muted px-1 rounded">{product.sku}</span>
-                                )}
-                                <span>{product.unit}</span>
-                                <span className={product.stock_quantity <= 0 ? "text-destructive" : "text-green-600"}>
-                                  {product.stock_quantity} in stock
-                                </span>
-                              </div>
-                            </div>
-                            <div className="text-right flex-shrink-0">
-                              <div className="font-semibold text-primary">{formatCurrency(product.rate)}</div>
-                            </div>
-                          </button>
-                        ))}
+                            </button>
+                          );
+                        })}
                       </div>
                     )}
                   </ScrollArea>

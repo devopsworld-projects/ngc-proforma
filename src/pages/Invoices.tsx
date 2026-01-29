@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { useInvoices, useUpdateInvoiceStatus, Invoice } from "@/hooks/useInvoices";
+import { useInvoices, useUpdateInvoiceStatus, useDeleteInvoice, Invoice } from "@/hooks/useInvoices";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { useInvoiceFilters } from "@/hooks/useInvoiceFilters";
 import { useSendStatusNotification } from "@/hooks/useStatusNotification";
@@ -27,7 +27,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { FileText, Plus, Edit, RefreshCcw, MoreVertical, Send, CheckCircle, XCircle, Clock, Download, Eye, SearchX, Mail, Loader2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { FileText, Plus, Edit, RefreshCcw, MoreVertical, Send, CheckCircle, XCircle, Clock, Download, Eye, SearchX, Mail, Loader2, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { generateInvoicePDF } from "@/lib/pdf-generator";
@@ -83,6 +93,7 @@ export default function InvoicesPage() {
   const { data: invoices, isLoading } = useInvoices();
   const { data: companySettings } = useCompanySettings();
   const updateStatus = useUpdateInvoiceStatus();
+  const deleteInvoice = useDeleteInvoice();
   const sendNotification = useSendStatusNotification();
   
   const { filters, setFilters, filteredInvoices, clearFilters, hasActiveFilters } = useInvoiceFilters(invoices);
@@ -94,6 +105,10 @@ export default function InvoicesPage() {
   const [statusConfirmation, setStatusConfirmation] = useState<StatusChangeConfirmation | null>(null);
   const [sendNotificationEmail, setSendNotificationEmail] = useState(true);
   const [isChangingStatus, setIsChangingStatus] = useState(false);
+
+  // Delete confirmation
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{ id: string; invoiceNo: string; grandTotal: number } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-IN", {
@@ -157,6 +172,20 @@ export default function InvoicesPage() {
   const confirmStatusChange = async () => {
     if (!statusConfirmation) return;
     await handleStatusChange(statusConfirmation.invoiceId, statusConfirmation.newStatus, sendNotificationEmail);
+  };
+
+  const handleDeleteInvoice = async () => {
+    if (!deleteConfirmation) return;
+    setIsDeleting(true);
+    try {
+      await deleteInvoice.mutateAsync(deleteConfirmation.id);
+      toast.success(`Invoice #${deleteConfirmation.invoiceNo} deleted successfully`);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete invoice");
+    } finally {
+      setIsDeleting(false);
+      setDeleteConfirmation(null);
+    }
   };
 
   const fetchFullInvoice = async (invoiceId: string): Promise<FullInvoiceData | null> => {
@@ -383,6 +412,18 @@ export default function InvoicesPage() {
                           <XCircle className="h-4 w-4 mr-2" />
                           Mark as Cancelled
                         </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => setDeleteConfirmation({
+                            id: invoice.id,
+                            invoiceNo: invoice.invoice_no,
+                            grandTotal: Number(invoice.grand_total),
+                          })}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete Invoice
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
@@ -446,6 +487,39 @@ export default function InvoicesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteConfirmation} onOpenChange={(open) => !open && setDeleteConfirmation(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Invoice</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete Invoice #{deleteConfirmation?.invoiceNo}? This will permanently remove the invoice and all associated line items. 
+              <br /><br />
+              <strong>Amount: {formatCurrency(deleteConfirmation?.grandTotal || 0)}</strong>
+              <br /><br />
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteInvoice}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 }

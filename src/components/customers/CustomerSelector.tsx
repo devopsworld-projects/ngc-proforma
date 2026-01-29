@@ -1,15 +1,16 @@
 import { useState } from "react";
-import { Customer, Address, useCustomers } from "@/hooks/useCustomers";
+import { Customer, Address, useCustomers, useCreateCustomer } from "@/hooks/useCustomers";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Search, Building2, MapPin, Star } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Search, Building2, MapPin, Star, Plus, UserPlus, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 interface CustomerSelectorProps {
   selectedCustomerId?: string | null;
@@ -28,12 +29,22 @@ export function CustomerSelector({
 }: CustomerSelectorProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [step, setStep] = useState<"customer" | "billing" | "shipping">("customer");
+  const [step, setStep] = useState<"customer" | "billing" | "shipping" | "create">("customer");
   const [tempCustomer, setTempCustomer] = useState<Customer | null>(null);
   const [tempBillingAddress, setTempBillingAddress] = useState<Address | null>(null);
   const [tempShippingAddress, setTempShippingAddress] = useState<Address | null>(null);
 
-  const { data: customers } = useCustomers();
+  // New customer form state
+  const [newCustomerName, setNewCustomerName] = useState("");
+  const [newCustomerType, setNewCustomerType] = useState<"customer" | "dealer">("customer");
+  const [newCustomerGstin, setNewCustomerGstin] = useState("");
+  const [newCustomerEmail, setNewCustomerEmail] = useState("");
+  const [newCustomerPhone, setNewCustomerPhone] = useState("");
+  const [newCustomerState, setNewCustomerState] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+
+  const { data: customers, refetch: refetchCustomers } = useCustomers();
+  const createCustomer = useCreateCustomer();
 
   const { data: addresses } = useQuery({
     queryKey: ["customer-addresses", tempCustomer?.id],
@@ -83,12 +94,59 @@ export function CustomerSelector({
     resetState();
   };
 
+  const handleCreateCustomer = async () => {
+    if (!newCustomerName.trim()) {
+      toast.error("Customer name is required");
+      return;
+    }
+
+    setIsCreating(true);
+    try {
+      const newCustomer = await createCustomer.mutateAsync({
+        name: newCustomerName.trim(),
+        customer_type: newCustomerType,
+        gstin: newCustomerGstin.trim() || null,
+        email: newCustomerEmail.trim() || null,
+        phone: newCustomerPhone.trim() || null,
+        state: newCustomerState.trim() || null,
+        state_code: null,
+        is_active: true,
+        notes: null,
+      });
+
+      toast.success(`${newCustomerType === "dealer" ? "Dealer" : "Customer"} created successfully`);
+      await refetchCustomers();
+      
+      // Auto-select the new customer
+      setTempCustomer(newCustomer as Customer);
+      setStep("billing");
+      
+      // Reset form fields
+      setNewCustomerName("");
+      setNewCustomerType("customer");
+      setNewCustomerGstin("");
+      setNewCustomerEmail("");
+      setNewCustomerPhone("");
+      setNewCustomerState("");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to create customer");
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   const resetState = () => {
     setStep("customer");
     setTempCustomer(null);
     setTempBillingAddress(null);
     setTempShippingAddress(null);
     setSearch("");
+    setNewCustomerName("");
+    setNewCustomerType("customer");
+    setNewCustomerGstin("");
+    setNewCustomerEmail("");
+    setNewCustomerPhone("");
+    setNewCustomerState("");
   };
 
   const handleOpenChange = (isOpen: boolean) => {
@@ -112,6 +170,7 @@ export function CustomerSelector({
         <DialogHeader>
           <DialogTitle className="font-serif">
             {step === "customer" && "Select Customer"}
+            {step === "create" && "Create New Customer / Dealer"}
             {step === "billing" && "Select Billing Address"}
             {step === "shipping" && "Select Shipping Address"}
           </DialogTitle>
@@ -119,14 +178,20 @@ export function CustomerSelector({
 
         {step === "customer" && (
           <>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search customers..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-10"
-              />
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search customers..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Button variant="outline" onClick={() => setStep("create")} className="gap-2">
+                <UserPlus className="h-4 w-4" />
+                New
+              </Button>
             </div>
             <div className="flex-1 overflow-y-auto space-y-2 max-h-[400px] pr-2">
               {filteredCustomers?.map((customer) => (
@@ -143,21 +208,122 @@ export function CustomerSelector({
                         <Building2 className="w-4 h-4 text-primary" />
                       </div>
                       <div className="flex-1">
-                        <p className="font-medium">{customer.name}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{customer.name}</p>
+                          <Badge variant={customer.customer_type === "dealer" ? "default" : "secondary"} className="text-xs">
+                            {customer.customer_type === "dealer" ? "Dealer" : "Customer"}
+                          </Badge>
+                        </div>
                         {customer.gstin && (
                           <p className="text-xs text-muted-foreground font-mono">GSTIN: {customer.gstin}</p>
                         )}
                       </div>
-                      {customer.state && <Badge variant="secondary" className="text-xs">{customer.state}</Badge>}
+                      {customer.state && <Badge variant="outline" className="text-xs">{customer.state}</Badge>}
                     </div>
                   </CardContent>
                 </Card>
               ))}
               {filteredCustomers?.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">No customers found</div>
+                <div className="text-center py-8 text-muted-foreground">
+                  <p className="mb-4">No customers found</p>
+                  <Button variant="outline" onClick={() => setStep("create")} className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Create New Customer
+                  </Button>
+                </div>
               )}
             </div>
           </>
+        )}
+
+        {step === "create" && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2 space-y-2">
+                <Label htmlFor="customerName">Name *</Label>
+                <Input
+                  id="customerName"
+                  placeholder="Enter customer/dealer name"
+                  value={newCustomerName}
+                  onChange={(e) => setNewCustomerName(e.target.value)}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="customerType">Type *</Label>
+                <Select value={newCustomerType} onValueChange={(v) => setNewCustomerType(v as "customer" | "dealer")}>
+                  <SelectTrigger id="customerType" className="bg-background">
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    <SelectItem value="customer">Customer</SelectItem>
+                    <SelectItem value="dealer">Dealer</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {newCustomerType === "dealer" ? "Dealer pricing will apply" : "Customer pricing will apply"}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="customerGstin">GSTIN</Label>
+                <Input
+                  id="customerGstin"
+                  placeholder="22AAAAA0000A1Z5"
+                  value={newCustomerGstin}
+                  onChange={(e) => setNewCustomerGstin(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="customerEmail">Email</Label>
+                <Input
+                  id="customerEmail"
+                  type="email"
+                  placeholder="email@example.com"
+                  value={newCustomerEmail}
+                  onChange={(e) => setNewCustomerEmail(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="customerPhone">Phone</Label>
+                <Input
+                  id="customerPhone"
+                  placeholder="+91 98765 43210"
+                  value={newCustomerPhone}
+                  onChange={(e) => setNewCustomerPhone(e.target.value)}
+                />
+              </div>
+
+              <div className="col-span-2 space-y-2">
+                <Label htmlFor="customerState">State</Label>
+                <Input
+                  id="customerState"
+                  placeholder="e.g., Karnataka"
+                  value={newCustomerState}
+                  onChange={(e) => setNewCustomerState(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <Button variant="outline" onClick={() => setStep("customer")}>Back</Button>
+              <Button onClick={handleCreateCustomer} disabled={isCreating} className="flex-1">
+                {isCreating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create {newCustomerType === "dealer" ? "Dealer" : "Customer"}
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         )}
 
         {step === "billing" && (
@@ -165,6 +331,9 @@ export function CustomerSelector({
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Building2 className="h-4 w-4" />
               <span>{tempCustomer?.name}</span>
+              <Badge variant={tempCustomer?.customer_type === "dealer" ? "default" : "secondary"} className="text-xs">
+                {tempCustomer?.customer_type === "dealer" ? "Dealer" : "Customer"}
+              </Badge>
             </div>
 
             {billingAddresses.length === 0 ? (
