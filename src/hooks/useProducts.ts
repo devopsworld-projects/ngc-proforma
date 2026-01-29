@@ -24,13 +24,12 @@ export interface Product {
 export function useProducts() {
   const { user } = useAuth();
   return useQuery({
-    queryKey: ["products", user?.id],
+    queryKey: ["products"],
     queryFn: async () => {
       if (!user) return [];
       const { data, error } = await supabase
         .from("products")
         .select("*")
-        .eq("user_id", user.id)
         .eq("is_active", true)
         .order("name");
       if (error) throw error;
