@@ -26,20 +26,23 @@ export function useAdminCreateUser() {
       password: string; 
       fullName?: string;
     }) => {
-      const { data, error } = await (supabase.rpc as any)("admin_create_user", {
-        user_email: email,
-        user_password: password,
-        user_full_name: fullName || null,
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+
+      const response = await supabase.functions.invoke("admin-create-user", {
+        body: { email, password, fullName },
       });
       
-      if (error) throw error;
-      
-      // Check the result from the function
-      if (!data.success) {
-        throw new Error(data.error || "Failed to create user");
+      if (response.error) {
+        throw new Error(response.error.message || "Failed to create user");
       }
       
-      return data;
+      const result = response.data;
+      if (!result.success) {
+        throw new Error(result.error || "Failed to create user");
+      }
+      
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["adminUserStats"] });
