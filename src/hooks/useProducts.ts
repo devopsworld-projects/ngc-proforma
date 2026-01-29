@@ -19,6 +19,9 @@ export interface Product {
   model_spec: string | null;
   gst_percent: number | null;
   image_url: string | null;
+  profiles?: {
+    full_name: string | null;
+  } | null;
 }
 
 export function useProducts() {
@@ -27,13 +30,30 @@ export function useProducts() {
     queryKey: ["products"],
     queryFn: async () => {
       if (!user) return [];
-      const { data, error } = await supabase
+      // Get products first
+      const { data: productsData, error: productsError } = await supabase
         .from("products")
         .select("*")
         .eq("is_active", true)
         .order("name");
-      if (error) throw error;
-      return data as Product[];
+      if (productsError) throw productsError;
+      
+      // Get unique user_ids and fetch their profiles
+      const userIds = [...new Set(productsData.map(p => p.user_id).filter(Boolean))] as string[];
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", userIds);
+      
+      const profilesMap = new Map(profilesData?.map(p => [p.id, p.full_name]) || []);
+      
+      // Attach profile info to products
+      const productsWithProfiles = productsData.map(product => ({
+        ...product,
+        profiles: product.user_id ? { full_name: profilesMap.get(product.user_id) || null } : null
+      }));
+      
+      return productsWithProfiles as Product[];
     },
     enabled: !!user,
   });
