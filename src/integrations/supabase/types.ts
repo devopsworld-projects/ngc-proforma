@@ -460,6 +460,27 @@ export type Database = {
         }
         Relationships: []
       }
+      revenue_settings: {
+        Row: {
+          baseline_date: string | null
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          baseline_date?: string | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          baseline_date?: string | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -522,6 +543,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_archive_all_invoices: { Args: never; Returns: Json }
       admin_create_user: {
         Args: {
           user_email: string
@@ -530,6 +552,8 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_delete_all_invoices: { Args: never; Returns: Json }
+      admin_set_revenue_baseline: { Args: { baseline: string }; Returns: Json }
       approve_user: {
         Args: { approved: boolean; target_user_id: string }
         Returns: boolean
