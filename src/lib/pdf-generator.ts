@@ -98,21 +98,18 @@ export async function generateInvoicePDF(
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 12;
+  const margin = 15;
   let yPos = margin;
 
   // Merge template settings with defaults
   const template = { ...defaultPdfTemplateSettings, ...options.templateSettings };
 
-  // Colors from template settings
+  // Colors - simple palette
   const primaryColor = hexToRgb(template.primary_color);
-  const secondaryColor = hexToRgb(template.secondary_color);
-  const headerTextColor = hexToRgb(template.header_text_color);
   const tableTextColor = hexToRgb(template.table_text_color);
   const darkText: [number, number, number] = [33, 37, 41];
   const mutedText: [number, number, number] = [108, 117, 125];
-  const lightBg: [number, number, number] = [248, 249, 250];
-  const borderColor: [number, number, number] = [222, 226, 230];
+  const borderColor: [number, number, number] = [200, 200, 200];
 
   // Helper to add text
   const addText = (
@@ -141,197 +138,165 @@ export async function generateInvoicePDF(
     return fontSize * 0.4;
   };
 
-  // ===== COMPACT HEADER =====
-  const headerHeight = 32;
+  // ===== HEADER - SIMPLE WHITE LAYOUT =====
   
-  // Header background - full width with subtle gradient effect
-  doc.setFillColor(...primaryColor);
-  doc.rect(0, 0, pageWidth, headerHeight, "F");
-
-  // Try to load and add company logo
-  let contentStartX = margin + 4;
+  // Logo on left
+  let logoEndX = margin;
   if (template.show_logo && company.logo_url) {
     const logoBase64 = await loadImageAsBase64(company.logo_url);
     if (logoBase64) {
       try {
-        const logoSize = 20;
-        doc.addImage(logoBase64, "PNG", margin + 4, 6, logoSize, logoSize);
-        contentStartX = margin + 4 + logoSize + 6;
+        const logoSize = 22;
+        doc.addImage(logoBase64, "PNG", margin, yPos, logoSize, logoSize);
+        logoEndX = margin + logoSize + 8;
       } catch (e) {
         console.warn("Failed to add logo:", e);
       }
     }
   }
 
-  // Company name - prominent
-  addText(company.name.toUpperCase(), contentStartX, 15, {
-    fontSize: 14,
+  // Company name
+  addText(company.name.toUpperCase(), logoEndX, yPos + 8, {
+    fontSize: 16,
     fontStyle: "bold",
-    color: headerTextColor,
+    color: primaryColor,
   });
 
-  // Company tagline/GSTIN under name
+  // Company details under name
+  let companyY = yPos + 14;
   if (template.show_gstin_header && company.gstin) {
-    addText(`GSTIN: ${company.gstin}`, contentStartX, 22, {
-      fontSize: 8,
-      color: [Math.min(headerTextColor[0] + 60, 255), Math.min(headerTextColor[1] + 60, 255), Math.min(headerTextColor[2] + 60, 255)],
+    addText(`GSTIN: ${company.gstin}`, logoEndX, companyY, {
+      fontSize: 9,
+      color: mutedText,
     });
+    companyY += 5;
   }
 
-  // Contact info on right - compact single line
+  // Contact info on right
   if (template.show_contact_header) {
-    const rightX = pageWidth - margin - 4;
-    const contactParts: string[] = [];
+    const rightX = pageWidth - margin;
+    let contactY = yPos + 5;
     
-    if (company.phone && company.phone.length > 0) contactParts.push(company.phone[0]);
-    if (company.email) contactParts.push(company.email);
-    
-    if (contactParts.length > 0) {
-      addText(contactParts.join(" • "), rightX, 14, {
-        fontSize: 8,
-        color: [Math.min(headerTextColor[0] + 40, 255), Math.min(headerTextColor[1] + 40, 255), Math.min(headerTextColor[2] + 40, 255)],
+    if (company.phone && company.phone.length > 0) {
+      addText(`Phone: ${company.phone[0]}`, rightX, contactY, {
+        fontSize: 9,
+        color: darkText,
         align: "right",
       });
+      contactY += 5;
+    }
+    if (company.email) {
+      addText(company.email, rightX, contactY, {
+        fontSize: 9,
+        color: darkText,
+        align: "right",
+      });
+      contactY += 5;
     }
     
-    // Address line
     const addressParts = [company.city, company.state, company.postal_code].filter(Boolean);
     if (addressParts.length > 0) {
-      addText(addressParts.join(", "), rightX, 21, {
-        fontSize: 7,
-        color: [Math.min(headerTextColor[0] + 80, 255), Math.min(headerTextColor[1] + 80, 255), Math.min(headerTextColor[2] + 80, 255)],
+      addText(addressParts.join(", "), rightX, contactY, {
+        fontSize: 9,
+        color: mutedText,
         align: "right",
       });
     }
   }
 
-  yPos = headerHeight + 8;
+  yPos += 30;
 
-  // ===== INVOICE TITLE STRIP =====
-  doc.setFillColor(...secondaryColor);
-  doc.rect(margin, yPos, pageWidth - margin * 2, 10, "F");
+  // Separator line
+  doc.setDrawColor(...borderColor);
+  doc.setLineWidth(0.5);
+  doc.line(margin, yPos, pageWidth - margin, yPos);
   
-  addText("TAX INVOICE", margin + 6, yPos + 6.5, {
-    fontSize: 10,
+  yPos += 8;
+
+  // ===== TAX INVOICE TITLE =====
+  addText("TAX INVOICE", pageWidth / 2, yPos, {
+    fontSize: 14,
     fontStyle: "bold",
-    color: [255, 255, 255],
+    color: primaryColor,
+    align: "center",
   });
 
-  // Invoice number and date on right
+  yPos += 12;
+
+  // ===== INVOICE DETAILS & BILL TO - TWO COLUMNS =====
+  const colWidth = (pageWidth - margin * 2 - 20) / 2;
+  const leftColX = margin;
+  const rightColX = margin + colWidth + 20;
+
+  // Invoice Details (Left)
+  addText("Invoice Details", leftColX, yPos, {
+    fontSize: 10,
+    fontStyle: "bold",
+    color: darkText,
+  });
+
+  let detailY = yPos + 7;
   const invoiceDate = new Date(invoice.date).toLocaleDateString("en-IN", { 
     day: "2-digit", 
     month: "short", 
     year: "numeric" 
   });
-  addText(`${invoice.invoice_no} | ${invoiceDate}`, pageWidth - margin - 6, yPos + 6.5, {
-    fontSize: 9,
+
+  const addDetailLine = (label: string, value: string) => {
+    addText(label, leftColX, detailY, { fontSize: 9, color: mutedText });
+    addText(value, leftColX + 35, detailY, { fontSize: 9, fontStyle: "bold", color: darkText });
+    detailY += 5;
+  };
+
+  addDetailLine("Invoice No:", invoice.invoice_no);
+  addDetailLine("Date:", invoiceDate);
+  if (invoice.e_way_bill_no) addDetailLine("e-Way Bill:", invoice.e_way_bill_no);
+  if (invoice.supplier_invoice_no) addDetailLine("Supplier Inv:", invoice.supplier_invoice_no);
+  if (invoice.other_references) addDetailLine("Reference:", invoice.other_references.substring(0, 30));
+
+  // Bill To (Right)
+  addText("Bill To", rightColX, yPos, {
+    fontSize: 10,
     fontStyle: "bold",
-    color: [255, 255, 255],
-    align: "right",
+    color: darkText,
   });
 
-  yPos += 16;
-
-  // ===== TWO COLUMN LAYOUT - BILL TO & INVOICE DETAILS =====
-  const colWidth = (pageWidth - margin * 2 - 8) / 2;
-  const leftColX = margin;
-  const rightColX = margin + colWidth + 8;
-  const boxHeight = 42;
-
-  // Bill To Box
-  doc.setFillColor(...lightBg);
-  doc.setDrawColor(...borderColor);
-  doc.setLineWidth(0.3);
-  doc.roundedRect(leftColX, yPos, colWidth, boxHeight, 2, 2, "FD");
-
-  // Section header with accent
-  doc.setFillColor(...secondaryColor);
-  doc.rect(leftColX, yPos, colWidth, 8, "F");
-  // Round top corners manually
-  doc.setFillColor(...lightBg);
-  
-  addText("BILL TO", leftColX + 6, yPos + 5.5, {
-    fontSize: 7,
-    fontStyle: "bold",
-    color: [255, 255, 255],
-  });
-
-  let billY = yPos + 14;
+  let billY = yPos + 7;
   if (invoice.customer) {
-    addText(invoice.customer.name, leftColX + 6, billY, {
+    addText(invoice.customer.name, rightColX, billY, {
       fontSize: 10,
       fontStyle: "bold",
       color: darkText,
-      maxWidth: colWidth - 12,
+      maxWidth: colWidth,
     });
     billY += 6;
 
     if (invoice.billing_address) {
       const addr = invoice.billing_address;
-      const addressLines: string[] = [];
-      if (addr.address_line1) addressLines.push(addr.address_line1);
-      if (addr.address_line2) addressLines.push(addr.address_line2);
+      if (addr.address_line1) {
+        addText(addr.address_line1, rightColX, billY, { fontSize: 9, color: mutedText, maxWidth: colWidth });
+        billY += 5;
+      }
+      if (addr.address_line2) {
+        addText(addr.address_line2, rightColX, billY, { fontSize: 9, color: mutedText, maxWidth: colWidth });
+        billY += 5;
+      }
       const cityLine = [addr.city, addr.state, addr.postal_code].filter(Boolean).join(", ");
-      if (cityLine) addressLines.push(cityLine);
-      
-      addressLines.forEach(line => {
-        addText(line, leftColX + 6, billY, {
-          fontSize: 8,
-          color: mutedText,
-          maxWidth: colWidth - 12,
-        });
-        billY += 4;
-      });
+      if (cityLine) {
+        addText(cityLine, rightColX, billY, { fontSize: 9, color: mutedText, maxWidth: colWidth });
+        billY += 5;
+      }
     }
 
     if (invoice.customer.gstin) {
-      addText(`GSTIN: ${invoice.customer.gstin}`, leftColX + 6, billY + 1, {
-        fontSize: 8,
-        fontStyle: "bold",
-        color: secondaryColor,
+      addText(`GSTIN: ${invoice.customer.gstin}`, rightColX, billY, {
+        fontSize: 9,
+        color: darkText,
       });
     }
   }
 
-  // Invoice Details Box
-  doc.setFillColor(...lightBg);
-  doc.roundedRect(rightColX, yPos, colWidth, boxHeight, 2, 2, "FD");
-  
-  doc.setFillColor(...secondaryColor);
-  doc.rect(rightColX, yPos, colWidth, 8, "F");
-
-  addText("INVOICE DETAILS", rightColX + 6, yPos + 5.5, {
-    fontSize: 7,
-    fontStyle: "bold",
-    color: [255, 255, 255],
-  });
-
-  const detailLabelX = rightColX + 6;
-  const detailValueX = rightColX + colWidth - 6;
-  let detailY = yPos + 15;
-
-  const addDetailRow = (label: string, value: string) => {
-    addText(label, detailLabelX, detailY, { fontSize: 8, color: mutedText });
-    addText(value, detailValueX, detailY, { fontSize: 8, fontStyle: "bold", color: darkText, align: "right" });
-    detailY += 5.5;
-  };
-
-  addDetailRow("Invoice No:", invoice.invoice_no);
-  addDetailRow("Date:", invoiceDate);
-  
-  if (invoice.e_way_bill_no) {
-    addDetailRow("e-Way Bill:", invoice.e_way_bill_no);
-  }
-  
-  if (invoice.supplier_invoice_no) {
-    addDetailRow("Supplier Inv:", invoice.supplier_invoice_no);
-  }
-
-  if (invoice.other_references) {
-    addDetailRow("Reference:", invoice.other_references.substring(0, 25));
-  }
-
-  yPos += boxHeight + 8;
+  yPos = Math.max(detailY, billY) + 10;
 
   // ===== ITEMS TABLE =====
   const showDiscount = template.show_discount_column;
@@ -368,14 +333,14 @@ export async function generateInvoicePDF(
     1: { cellWidth: "auto", halign: "left" },
     2: { cellWidth: 16, halign: "center" },
     3: { cellWidth: 16, halign: "center" },
-    4: { cellWidth: 26, halign: "right" },
+    4: { cellWidth: 28, halign: "right" },
   };
 
   if (showDiscount) {
     columnStyles[5] = { cellWidth: 16, halign: "center" };
-    columnStyles[6] = { cellWidth: 30, halign: "right", fontStyle: "bold" };
+    columnStyles[6] = { cellWidth: 32, halign: "right", fontStyle: "bold" };
   } else {
-    columnStyles[5] = { cellWidth: 30, halign: "right", fontStyle: "bold" };
+    columnStyles[5] = { cellWidth: 32, halign: "right", fontStyle: "bold" };
   }
 
   autoTable(doc, {
@@ -384,90 +349,62 @@ export async function generateInvoicePDF(
     body: tableData,
     theme: "plain",
     headStyles: {
-      fillColor: primaryColor,
-      textColor: [255, 255, 255],
+      fillColor: [255, 255, 255],
+      textColor: darkText,
       fontStyle: "bold",
-      fontSize: 8,
+      fontSize: 9,
       cellPadding: 4,
       halign: "center",
+      lineWidth: 0.3,
+      lineColor: borderColor,
     },
     bodyStyles: {
-      fontSize: 8,
+      fontSize: 9,
       textColor: tableTextColor,
       cellPadding: 4,
       lineColor: borderColor,
       lineWidth: 0.2,
     },
     alternateRowStyles: {
-      fillColor: [252, 253, 254],
+      fillColor: [255, 255, 255],
     },
     columnStyles,
     margin: { left: margin, right: margin },
     tableLineColor: borderColor,
-    tableLineWidth: 0.2,
+    tableLineWidth: 0.3,
     didDrawPage: (data) => {
       const pageNum = doc.getCurrentPageInfo().pageNumber;
-      doc.setFontSize(7);
+      doc.setFontSize(8);
       doc.setTextColor(...mutedText);
-      doc.text(`Page ${pageNum}`, pageWidth / 2, pageHeight - 8, { align: "center" });
+      doc.text(`Page ${pageNum}`, pageWidth / 2, pageHeight - 10, { align: "center" });
     },
   });
 
-  yPos = (doc as any).lastAutoTable.finalY + 8;
+  yPos = (doc as any).lastAutoTable.finalY + 10;
 
-  // Check if we need a new page for totals section
-  if (yPos > pageHeight - 90) {
+  // Check if we need a new page
+  if (yPos > pageHeight - 80) {
     doc.addPage();
     yPos = margin;
   }
 
-  // ===== TOTALS & AMOUNT IN WORDS SECTION =====
-  const totalsWidth = 85;
-  const totalsX = pageWidth - margin - totalsWidth;
-  const wordsWidth = pageWidth - margin * 2 - totalsWidth - 8;
+  // ===== TOTALS SECTION (Right aligned) =====
+  const totalsX = pageWidth - margin - 80;
+  const totalsValueX = pageWidth - margin;
+  let totalsY = yPos;
 
-  // Amount in words box (left side)
-  if (template.show_amount_words) {
-    doc.setFillColor(...lightBg);
-    doc.setDrawColor(...borderColor);
-    doc.roundedRect(margin, yPos, wordsWidth, 36, 2, 2, "FD");
-    
-    addText("AMOUNT IN WORDS", margin + 6, yPos + 8, {
-      fontSize: 7,
-      fontStyle: "bold",
-      color: secondaryColor,
-    });
-    
-    const amountWords = invoice.amount_in_words || numberToWords(invoice.grand_total);
-    addText(amountWords, margin + 6, yPos + 16, {
-      fontSize: 9,
-      fontStyle: "italic",
-      color: darkText,
-      maxWidth: wordsWidth - 12,
-    });
-  }
-
-  // Totals box (right side)
-  doc.setFillColor(...lightBg);
+  // Separator line above totals
   doc.setDrawColor(...borderColor);
-  
-  const hasDiscount = invoice.discount_amount > 0;
-  const hasRoundOff = Math.abs(invoice.round_off) > 0.001;
-  const totalsBoxHeight = 36 + (hasDiscount ? 6 : 0) + (hasRoundOff ? 6 : 0);
-  
-  doc.roundedRect(totalsX, yPos, totalsWidth, totalsBoxHeight, 2, 2, "FD");
+  doc.setLineWidth(0.3);
+  doc.line(totalsX - 10, totalsY - 3, pageWidth - margin, totalsY - 3);
 
-  const totalsLabelX = totalsX + 6;
-  const totalsValueX = totalsX + totalsWidth - 6;
-  let totalsY = yPos + 8;
-
-  const addTotalRow = (label: string, value: string, isBold = false) => {
-    addText(label, totalsLabelX, totalsY, {
-      fontSize: 8,
+  const addTotalLine = (label: string, value: string, isBold = false) => {
+    addText(label, totalsX, totalsY, {
+      fontSize: 9,
       color: mutedText,
     });
     addText(value, totalsValueX, totalsY, {
-      fontSize: isBold ? 9 : 8,
+      fontSize: isBold ? 11 : 9,
       fontStyle: isBold ? "bold" : "normal",
       color: isBold ? primaryColor : darkText,
       align: "right",
@@ -475,123 +412,123 @@ export async function generateInvoicePDF(
     totalsY += 6;
   };
 
-  addTotalRow("Subtotal:", formatCurrency(invoice.subtotal));
+  addTotalLine("Subtotal:", formatCurrency(invoice.subtotal));
   
-  if (hasDiscount) {
-    addTotalRow(`Discount (${invoice.discount_percent}%):`, `-${formatCurrency(invoice.discount_amount)}`);
+  if (invoice.discount_amount > 0) {
+    addTotalLine(`Discount (${invoice.discount_percent}%):`, `-${formatCurrency(invoice.discount_amount)}`);
   }
   
-  addTotalRow(`GST (${invoice.tax_rate}%):`, formatCurrency(invoice.tax_amount));
+  addTotalLine(`GST (${invoice.tax_rate}%):`, formatCurrency(invoice.tax_amount));
 
-  if (hasRoundOff) {
-    addTotalRow("Round Off:", formatCurrency(invoice.round_off));
+  if (Math.abs(invoice.round_off) > 0.001) {
+    addTotalLine("Round Off:", formatCurrency(invoice.round_off));
   }
 
-  // Grand total highlight bar
+  // Grand total with line
   totalsY += 2;
-  doc.setFillColor(...primaryColor);
-  doc.roundedRect(totalsX, totalsY - 3, totalsWidth, 12, 0, 0, "F");
-  
-  addText("GRAND TOTAL", totalsLabelX, totalsY + 4, {
-    fontSize: 8,
-    fontStyle: "bold",
-    color: [255, 255, 255],
-  });
-  addText(formatCurrency(invoice.grand_total), totalsValueX, totalsY + 4, {
-    fontSize: 10,
-    fontStyle: "bold",
-    color: [255, 255, 255],
-    align: "right",
-  });
+  doc.setDrawColor(...borderColor);
+  doc.line(totalsX - 10, totalsY - 3, pageWidth - margin, totalsY - 3);
+  addTotalLine("GRAND TOTAL:", formatCurrency(invoice.grand_total), true);
 
-  yPos += Math.max(totalsBoxHeight, 36) + 8;
+  // Amount in words (left side, same row as totals start)
+  if (template.show_amount_words) {
+    const amountWords = invoice.amount_in_words || numberToWords(invoice.grand_total);
+    addText("Amount in Words:", margin, yPos, {
+      fontSize: 9,
+      fontStyle: "bold",
+      color: darkText,
+    });
+    addText(amountWords, margin, yPos + 6, {
+      fontSize: 9,
+      fontStyle: "italic",
+      color: mutedText,
+      maxWidth: totalsX - margin - 20,
+    });
+  }
+
+  yPos = totalsY + 10;
 
   // ===== BANK DETAILS =====
   if (template.bank_name) {
-    doc.setFillColor(...lightBg);
     doc.setDrawColor(...borderColor);
-    doc.roundedRect(margin, yPos, pageWidth - margin * 2, 20, 2, 2, "FD");
+    doc.line(margin, yPos - 3, pageWidth - margin, yPos - 3);
     
-    addText("BANK DETAILS", margin + 6, yPos + 7, {
-      fontSize: 7,
+    addText("Bank Details:", margin, yPos + 3, {
+      fontSize: 9,
       fontStyle: "bold",
-      color: secondaryColor,
+      color: darkText,
     });
 
-    const bankDetails = [
+    const bankInfo = [
       template.bank_name,
       template.bank_account_no ? `A/C: ${template.bank_account_no}` : null,
       template.bank_ifsc ? `IFSC: ${template.bank_ifsc}` : null,
       template.bank_branch ? `Branch: ${template.bank_branch}` : null,
     ].filter(Boolean).join("  |  ");
 
-    addText(bankDetails, margin + 6, yPos + 14, {
-      fontSize: 8,
-      color: darkText,
-      maxWidth: pageWidth - margin * 2 - 12,
+    addText(bankInfo, margin, yPos + 10, {
+      fontSize: 9,
+      color: mutedText,
+      maxWidth: pageWidth - margin * 2,
     });
 
-    yPos += 24;
+    yPos += 20;
   }
 
   // ===== FOOTER SECTION =====
-  const footerStartY = pageHeight - 38;
+  const footerY = pageHeight - 35;
 
-  // Only draw footer if we have space
-  if (yPos < footerStartY - 10) {
-    // Separator line
-    doc.setDrawColor(...borderColor);
-    doc.setLineWidth(0.4);
-    doc.line(margin, footerStartY - 6, pageWidth - margin, footerStartY - 6);
+  // Separator line
+  doc.setDrawColor(...borderColor);
+  doc.setLineWidth(0.3);
+  doc.line(margin, footerY - 8, pageWidth - margin, footerY - 8);
 
-    // Terms & Conditions (left side)
-    if (template.show_terms) {
-      addText("Terms & Conditions", margin, footerStartY, {
-        fontSize: 7,
-        fontStyle: "bold",
-        color: darkText,
-      });
-      
-      let termY = footerStartY + 5;
-      const terms = [template.terms_line1, template.terms_line2, template.terms_line3].filter(Boolean);
-      terms.forEach((term, idx) => {
-        addText(`${idx + 1}. ${term}`, margin, termY, { fontSize: 6, color: mutedText });
-        termY += 4;
-      });
-    }
+  // Terms & Conditions
+  if (template.show_terms) {
+    addText("Terms & Conditions:", margin, footerY - 2, {
+      fontSize: 8,
+      fontStyle: "bold",
+      color: darkText,
+    });
+    
+    let termY = footerY + 4;
+    const terms = [template.terms_line1, template.terms_line2, template.terms_line3].filter(Boolean);
+    terms.forEach((term, idx) => {
+      addText(`${idx + 1}. ${term}`, margin, termY, { fontSize: 7, color: mutedText });
+      termY += 4;
+    });
+  }
 
-    // Signature section (right side)
-    if (template.show_signature) {
-      const sigX = pageWidth - margin - 45;
-      
-      addText(`For ${company.name}`, sigX + 22, footerStartY - 2, {
-        fontSize: 7,
-        fontStyle: "bold",
-        color: darkText,
-        align: "center",
-      });
+  // Signature section (right side)
+  if (template.show_signature) {
+    const sigX = pageWidth - margin - 40;
+    
+    addText(`For ${company.name}`, sigX + 20, footerY - 4, {
+      fontSize: 8,
+      fontStyle: "bold",
+      color: darkText,
+      align: "center",
+    });
 
-      // Signature line
-      doc.setDrawColor(...darkText);
-      doc.setLineWidth(0.3);
-      doc.line(sigX, footerStartY + 12, pageWidth - margin, footerStartY + 12);
-      
-      addText("Authorized Signatory", sigX + 22, footerStartY + 17, {
-        fontSize: 6,
-        color: mutedText,
-        align: "center",
-      });
-    }
+    doc.setDrawColor(...darkText);
+    doc.setLineWidth(0.3);
+    doc.line(sigX, footerY + 10, pageWidth - margin, footerY + 10);
+    
+    addText("Authorized Signatory", sigX + 20, footerY + 15, {
+      fontSize: 7,
+      color: mutedText,
+      align: "center",
+    });
+  }
 
-    // Custom footer text (centered at bottom)
-    if (template.custom_footer_text) {
-      addText(template.custom_footer_text, pageWidth / 2, pageHeight - 12, {
-        fontSize: 7,
-        fontStyle: "italic",
-        color: mutedText,
-        align: "center",
-      });
-    }
+  // Custom footer text
+  if (template.custom_footer_text) {
+    addText(template.custom_footer_text, pageWidth / 2, pageHeight - 12, {
+      fontSize: 8,
+      fontStyle: "italic",
+      color: mutedText,
+      align: "center",
+    });
   }
 
   // Return base64 or save PDF
