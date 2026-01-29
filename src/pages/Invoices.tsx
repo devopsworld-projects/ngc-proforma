@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useInvoices, useUpdateInvoiceStatus, useDeleteInvoice, Invoice } from "@/hooks/useInvoices";
+import { useIsAdmin } from "@/hooks/useAdmin";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { usePdfTemplateSettings } from "@/hooks/usePdfTemplateSettings";
 import { useInvoiceFilters } from "@/hooks/useInvoiceFilters";
@@ -38,7 +39,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { FileText, Plus, Edit, RefreshCcw, MoreVertical, Send, CheckCircle, XCircle, Clock, Download, Eye, SearchX, Mail, Loader2, Trash2 } from "lucide-react";
+import { FileText, Plus, Edit, RefreshCcw, MoreVertical, Send, CheckCircle, XCircle, Clock, Download, Eye, SearchX, Mail, Loader2, Trash2, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { generateInvoicePDF } from "@/lib/pdf-generator";
@@ -92,6 +93,7 @@ interface StatusChangeConfirmation {
 export default function InvoicesPage() {
   const navigate = useNavigate();
   const { data: invoices, isLoading } = useInvoices();
+  const { data: isAdmin } = useIsAdmin();
   const { data: companySettings } = useCompanySettings();
   const { data: templateSettings } = usePdfTemplateSettings();
   const updateStatus = useUpdateInvoiceStatus();
@@ -342,6 +344,15 @@ export default function InvoicesPage() {
                           <>
                             <span>•</span>
                             <span className="truncate">{(invoice as any).customers.name}</span>
+                          </>
+                        )}
+                        {isAdmin && (invoice as any).profiles?.full_name && (
+                          <>
+                            <span>•</span>
+                            <span className="flex items-center gap-1 text-xs bg-muted px-1.5 py-0.5 rounded">
+                              <User className="h-3 w-3" />
+                              {(invoice as any).profiles.full_name}
+                            </span>
                           </>
                         )}
                       </div>
