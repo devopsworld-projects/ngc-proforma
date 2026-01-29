@@ -7,10 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Package, Search, MoreHorizontal, Trash2, Filter, Pencil } from "lucide-react";
+import { Package, Search, MoreHorizontal, Trash2, Filter, Pencil, Eye } from "lucide-react";
 import { useProducts, useDeleteProduct } from "@/hooks/useProducts";
 import { ExcelUploadDialog } from "@/components/products/ExcelUploadDialog";
 import { ProductFormDialog } from "@/components/products/ProductFormDialog";
+import { ProductViewDialog } from "@/components/products/ProductViewDialog";
 import { formatCurrency } from "@/lib/invoice-utils";
 import { toast } from "sonner";
 
@@ -199,7 +200,18 @@ export default function ProductsPage() {
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
+                            <DropdownMenuContent align="end" className="bg-popover z-50">
+                              <DropdownMenuItem asChild>
+                                <ProductViewDialog
+                                  product={product}
+                                  trigger={
+                                    <button className="flex w-full items-center px-2 py-1.5 text-sm">
+                                      <Eye className="h-4 w-4 mr-2" />
+                                      View
+                                    </button>
+                                  }
+                                />
+                              </DropdownMenuItem>
                               <DropdownMenuItem asChild>
                                 <ProductFormDialog
                                   product={product}
