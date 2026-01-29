@@ -12,9 +12,7 @@ const Index = () => {
       <div className="space-y-6">
         <div>
           <h2 className="text-2xl font-serif font-bold">Welcome to Proforma Invoice</h2>
-          <p className="text-muted-foreground">
-            Your premium invoice management system
-          </p>
+          <p className="text-muted-foreground">Your premium invoice management system</p>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
@@ -56,7 +54,9 @@ const Index = () => {
             <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-medium mb-2">Quick Start Guide</h3>
             <div className="max-w-md mx-auto text-sm text-muted-foreground space-y-2">
-              <p>1. Add your customers in the <strong>Customers</strong> section</p>
+              <p>
+                1. Add your customers in the <strong>Customers</strong> section
+              </p>
               <p>2. Create invoices with line items and tax calculations</p>
               <p>3. Track invoice status and manage recurring billing</p>
               <p>4. View analytics in the Dashboard</p>
