@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Customer, Address, useCustomers, useCreateCustomer } from "@/hooks/useCustomers";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,6 +18,7 @@ interface CustomerSelectorProps {
   selectedShippingAddressId?: string | null;
   onSelect: (customer: Customer | null, billingAddress: Address | null, shippingAddress: Address | null) => void;
   trigger?: React.ReactNode;
+  filterType?: "customer" | "dealer" | null; // Filter by customer type
 }
 
 export function CustomerSelector({
@@ -26,6 +27,7 @@ export function CustomerSelector({
   selectedShippingAddressId,
   onSelect,
   trigger,
+  filterType,
 }: CustomerSelectorProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -34,9 +36,9 @@ export function CustomerSelector({
   const [tempBillingAddress, setTempBillingAddress] = useState<Address | null>(null);
   const [tempShippingAddress, setTempShippingAddress] = useState<Address | null>(null);
 
-  // New customer form state
+  // New customer form state - default to filterType if provided
   const [newCustomerName, setNewCustomerName] = useState("");
-  const [newCustomerType, setNewCustomerType] = useState<"customer" | "dealer">("customer");
+  const [newCustomerType, setNewCustomerType] = useState<"customer" | "dealer">(filterType || "customer");
   const [newCustomerGstin, setNewCustomerGstin] = useState("");
   const [newCustomerEmail, setNewCustomerEmail] = useState("");
   const [newCustomerPhone, setNewCustomerPhone] = useState("");
@@ -45,6 +47,13 @@ export function CustomerSelector({
 
   const { data: customers, refetch: refetchCustomers } = useCustomers();
   const createCustomer = useCreateCustomer();
+
+  // Update newCustomerType when filterType changes
+  useEffect(() => {
+    if (filterType) {
+      setNewCustomerType(filterType);
+    }
+  }, [filterType]);
 
   const { data: addresses } = useQuery({
     queryKey: ["customer-addresses", tempCustomer?.id],
@@ -61,12 +70,17 @@ export function CustomerSelector({
     enabled: !!tempCustomer?.id,
   });
 
-  const filteredCustomers = customers?.filter(
-    (c) =>
+  // Filter customers by search AND by type if filterType is provided
+  const filteredCustomers = customers?.filter((c) => {
+    const matchesSearch =
       c.name.toLowerCase().includes(search.toLowerCase()) ||
       c.email?.toLowerCase().includes(search.toLowerCase()) ||
-      c.gstin?.toLowerCase().includes(search.toLowerCase())
-  );
+      c.gstin?.toLowerCase().includes(search.toLowerCase());
+    
+    const matchesType = filterType ? c.customer_type === filterType : true;
+    
+    return matchesSearch && matchesType;
+  });
 
   const billingAddresses = addresses?.filter((a) => a.address_type === "billing") || [];
   const shippingAddresses = addresses?.filter((a) => a.address_type === "shipping") || [];
@@ -123,7 +137,6 @@ export function CustomerSelector({
       
       // Reset form fields
       setNewCustomerName("");
-      setNewCustomerType("customer");
       setNewCustomerGstin("");
       setNewCustomerEmail("");
       setNewCustomerPhone("");
@@ -142,7 +155,7 @@ export function CustomerSelector({
     setTempShippingAddress(null);
     setSearch("");
     setNewCustomerName("");
-    setNewCustomerType("customer");
+    setNewCustomerType(filterType || "customer");
     setNewCustomerGstin("");
     setNewCustomerEmail("");
     setNewCustomerPhone("");
@@ -156,24 +169,32 @@ export function CustomerSelector({
     }
   };
 
+  const typeLabel = filterType === "dealer" ? "Dealer" : filterType === "customer" ? "Customer" : "Customer/Dealer";
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {trigger || (
           <Button variant="outline" size="sm" className="gap-2">
             <Building2 className="h-4 w-4" />
-            Select Customer
+            Select {typeLabel}
           </Button>
         )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[550px] max-h-[80vh] overflow-hidden flex flex-col bg-card">
         <DialogHeader>
           <DialogTitle className="font-serif">
-            {step === "customer" && "Select Customer"}
-            {step === "create" && "Create New Customer / Dealer"}
+            {step === "customer" && `Select ${typeLabel}`}
+            {step === "create" && `Create New ${typeLabel}`}
             {step === "billing" && "Select Billing Address"}
             {step === "shipping" && "Select Shipping Address"}
           </DialogTitle>
+          <DialogDescription>
+            {step === "customer" && `Choose a ${typeLabel.toLowerCase()} for this quotation`}
+            {step === "create" && `Add a new ${typeLabel.toLowerCase()} to your records`}
+            {step === "billing" && "Select or skip billing address"}
+            {step === "shipping" && "Select or skip shipping address"}
+          </DialogDescription>
         </DialogHeader>
 
         {step === "customer" && (
@@ -182,7 +203,7 @@ export function CustomerSelector({
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search customers..."
+                  placeholder={`Search ${typeLabel.toLowerCase()}s...`}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="pl-10"
@@ -225,10 +246,10 @@ export function CustomerSelector({
               ))}
               {filteredCustomers?.length === 0 && (
                 <div className="text-center py-8 text-muted-foreground">
-                  <p className="mb-4">No customers found</p>
+                  <p className="mb-4">No {typeLabel.toLowerCase()}s found</p>
                   <Button variant="outline" onClick={() => setStep("create")} className="gap-2">
                     <Plus className="h-4 w-4" />
-                    Create New Customer
+                    Create New {typeLabel}
                   </Button>
                 </div>
               )}
@@ -243,7 +264,7 @@ export function CustomerSelector({
                 <Label htmlFor="customerName">Name *</Label>
                 <Input
                   id="customerName"
-                  placeholder="Enter customer/dealer name"
+                  placeholder={`Enter ${typeLabel.toLowerCase()} name`}
                   value={newCustomerName}
                   onChange={(e) => setNewCustomerName(e.target.value)}
                 />
@@ -251,7 +272,11 @@ export function CustomerSelector({
               
               <div className="space-y-2">
                 <Label htmlFor="customerType">Type *</Label>
-                <Select value={newCustomerType} onValueChange={(v) => setNewCustomerType(v as "customer" | "dealer")}>
+                <Select 
+                  value={newCustomerType} 
+                  onValueChange={(v) => setNewCustomerType(v as "customer" | "dealer")}
+                  disabled={!!filterType} // Disable if filterType is set
+                >
                   <SelectTrigger id="customerType" className="bg-background">
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>

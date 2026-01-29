@@ -1,14 +1,13 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format, parseISO } from "date-fns";
-import { CalendarIcon, Building2, MapPin, RefreshCcw, Save, X } from "lucide-react";
+import { CalendarIcon, Building2, MapPin, RefreshCcw, Save, X, Users, Store } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -28,6 +27,7 @@ import { usePricingSettings } from "@/hooks/usePricingSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import type { Json } from "@/integrations/supabase/types";
 
 const invoiceFormSchema = z.object({
   invoiceNo: z.string().min(1, "Invoice number is required"),
@@ -67,6 +67,9 @@ export interface InvoiceWithRelations {
   next_invoice_date: string | null;
   created_at: string;
   updated_at: string;
+  quote_for?: string | null;
+  applied_markup_percent?: number | null;
+  customer_snapshot?: Json;
   customers?: Customer | null;
   billing_address?: Record<string, any> | null;
   shipping_address?: Record<string, any> | null;
@@ -89,6 +92,8 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
   
   const isEditing = !!invoice;
   
+  // Quote For selection (mandatory)
+  const [quoteFor, setQuoteFor] = useState<"customer" | "dealer" | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [selectedBillingAddress, setSelectedBillingAddress] = useState<Address | null>(null);
   const [selectedShippingAddress, setSelectedShippingAddress] = useState<Address | null>(null);
@@ -111,6 +116,65 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
     },
   });
 
+  // Get current markup percentage based on quote type
+  const currentMarkupPercent = useMemo(() => {
+    if (!pricingSettings || !quoteFor) return 0;
+    return quoteFor === "dealer" 
+      ? pricingSettings.dealer_markup_percent || 0 
+      : pricingSettings.customer_markup_percent || 0;
+  }, [pricingSettings, quoteFor]);
+
+  // Recalculate line item prices when quote type changes
+  const recalculatePricesForType = useCallback((newType: "customer" | "dealer", items: LineItem[]) => {
+    if (!pricingSettings || items.length === 0) return items;
+
+    const oldMarkup = quoteFor === "dealer" 
+      ? pricingSettings.dealer_markup_percent || 0 
+      : pricingSettings.customer_markup_percent || 0;
+    
+    const newMarkup = newType === "dealer" 
+      ? pricingSettings.dealer_markup_percent || 0 
+      : pricingSettings.customer_markup_percent || 0;
+
+    // Only recalculate if markups are different
+    if (oldMarkup === newMarkup) return items;
+
+    return items.map(item => {
+      // Calculate base rate by removing old markup
+      const baseRate = oldMarkup > 0 ? item.rate / (1 + oldMarkup / 100) : item.rate;
+      // Apply new markup
+      const newRate = newMarkup > 0 ? baseRate * (1 + newMarkup / 100) : baseRate;
+      const finalRate = Math.round(newRate * 100) / 100;
+      const grossAmount = item.quantity * finalRate;
+      const discountAmount = (grossAmount * item.discountPercent) / 100;
+      
+      return {
+        ...item,
+        rate: finalRate,
+        amount: grossAmount - discountAmount,
+      };
+    });
+  }, [pricingSettings, quoteFor]);
+
+  // Handle Quote For change
+  const handleQuoteForChange = (newType: "customer" | "dealer") => {
+    if (quoteFor && lineItems.length > 0) {
+      // Recalculate prices for the new type
+      const recalculatedItems = recalculatePricesForType(newType, lineItems);
+      setLineItems(recalculatedItems);
+      toast.info(`Prices recalculated for ${newType === "dealer" ? "Dealer" : "Customer"} rates`);
+    }
+    
+    // Clear customer selection when type changes
+    if (quoteFor !== newType) {
+      setSelectedCustomer(null);
+      setSelectedBillingAddress(null);
+      setSelectedShippingAddress(null);
+    }
+    
+    setQuoteFor(newType);
+  };
+
   // Initialize form with existing invoice data
   useEffect(() => {
     if (invoice) {
@@ -127,6 +191,13 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
       
       setDiscountPercent(invoice.discount_percent);
       setTaxRate(invoice.tax_rate);
+      
+      // Set quote_for from invoice or infer from customer
+      if (invoice.quote_for) {
+        setQuoteFor(invoice.quote_for as "customer" | "dealer");
+      } else if (invoice.customers?.customer_type) {
+        setQuoteFor(invoice.customers.customer_type as "customer" | "dealer");
+      }
       
       if (invoice.customers) {
         setSelectedCustomer(invoice.customers);
@@ -179,7 +250,46 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
     setSelectedShippingAddress(shippingAddress);
   };
 
+  // Create customer snapshot
+  const createCustomerSnapshot = (customer: Customer | null, billing: Address | null, shipping: Address | null) => {
+    if (!customer) return null;
+    
+    return {
+      id: customer.id,
+      name: customer.name,
+      email: customer.email,
+      phone: customer.phone,
+      gstin: customer.gstin,
+      state: customer.state,
+      state_code: customer.state_code,
+      customer_type: customer.customer_type,
+      billing_address: billing ? {
+        address_line1: billing.address_line1,
+        address_line2: billing.address_line2,
+        city: billing.city,
+        state: billing.state,
+        state_code: billing.state_code,
+        postal_code: billing.postal_code,
+        country: billing.country,
+      } : null,
+      shipping_address: shipping ? {
+        address_line1: shipping.address_line1,
+        address_line2: shipping.address_line2,
+        city: shipping.city,
+        state: shipping.state,
+        state_code: shipping.state_code,
+        postal_code: shipping.postal_code,
+        country: shipping.country,
+      } : null,
+    };
+  };
+
   const onSubmit = async (data: InvoiceFormData) => {
+    if (!quoteFor) {
+      toast.error("Please select Quote For (Customer or Dealer)");
+      return;
+    }
+
     if (lineItems.length === 0) {
       toast.error("Please add at least one line item");
       return;
@@ -196,6 +306,13 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
       if (!user) {
         throw new Error("You must be logged in to create invoices");
       }
+
+      // Create customer snapshot
+      const customerSnapshot = createCustomerSnapshot(
+        selectedCustomer,
+        selectedBillingAddress,
+        selectedShippingAddress
+      );
 
       const invoicePayload = {
         invoice_no: data.invoiceNo,
@@ -219,6 +336,9 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
         recurring_frequency: data.isRecurring ? data.recurringFrequency : null,
         next_invoice_date: null,
         user_id: user.id,
+        quote_for: quoteFor,
+        applied_markup_percent: currentMarkupPercent,
+        customer_snapshot: customerSnapshot,
       };
 
       if (isEditing && invoice) {
@@ -284,7 +404,6 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
 
         if (stockDeductions.length > 0) {
           for (const deduction of stockDeductions) {
-            // Update product stock directly
             const { data: product } = await supabase
               .from("products")
               .select("stock_quantity")
@@ -332,12 +451,82 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
               <X className="h-4 w-4 mr-2" />
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting} className="gap-2">
+            <Button type="submit" disabled={isSubmitting || !quoteFor} className="gap-2">
               <Save className="h-4 w-4" />
               {isSubmitting ? "Saving..." : isEditing ? "Update Invoice" : "Save Invoice"}
             </Button>
           </div>
         </div>
+
+        {/* Quote For Selection - Mandatory */}
+        <Card className={cn(!quoteFor && "border-primary border-2")}>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              Quote For
+              <Badge variant="destructive" className="text-xs">Required</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                type="button"
+                onClick={() => handleQuoteForChange("customer")}
+                className={cn(
+                  "flex items-center gap-3 p-4 rounded-lg border-2 transition-all",
+                  quoteFor === "customer" 
+                    ? "border-primary bg-primary/5" 
+                    : "border-muted hover:border-primary/50"
+                )}
+              >
+                <div className={cn(
+                  "w-10 h-10 rounded-lg flex items-center justify-center",
+                  quoteFor === "customer" ? "bg-primary text-primary-foreground" : "bg-muted"
+                )}>
+                  <Users className="w-5 h-5" />
+                </div>
+                <div className="text-left">
+                  <p className="font-semibold">Customer</p>
+                  <p className="text-xs text-muted-foreground">
+                    {pricingSettings?.customer_markup_percent 
+                      ? `+${pricingSettings.customer_markup_percent}% markup`
+                      : "Standard pricing"}
+                  </p>
+                </div>
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => handleQuoteForChange("dealer")}
+                className={cn(
+                  "flex items-center gap-3 p-4 rounded-lg border-2 transition-all",
+                  quoteFor === "dealer" 
+                    ? "border-primary bg-primary/5" 
+                    : "border-muted hover:border-primary/50"
+                )}
+              >
+                <div className={cn(
+                  "w-10 h-10 rounded-lg flex items-center justify-center",
+                  quoteFor === "dealer" ? "bg-primary text-primary-foreground" : "bg-muted"
+                )}>
+                  <Store className="w-5 h-5" />
+                </div>
+                <div className="text-left">
+                  <p className="font-semibold">Dealer</p>
+                  <p className="text-xs text-muted-foreground">
+                    {pricingSettings?.dealer_markup_percent 
+                      ? `+${pricingSettings.dealer_markup_percent}% markup`
+                      : "Dealer pricing"}
+                  </p>
+                </div>
+              </button>
+            </div>
+            {!quoteFor && (
+              <p className="text-sm text-destructive mt-3">
+                Please select whether this quote is for a Customer or Dealer
+              </p>
+            )}
+          </CardContent>
+        </Card>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content */}
@@ -478,73 +667,93 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
               </CardContent>
             </Card>
 
-            {/* Customer Selection */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Customer</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {selectedCustomer ? (
-                  <div className="space-y-3">
-                    <div className="flex items-start justify-between p-3 bg-invoice-subtle rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                          <Building2 className="w-5 h-5 text-primary" />
+            {/* Customer Selection - Only show after Quote For is selected */}
+            {quoteFor && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    {quoteFor === "dealer" ? "Dealer" : "Customer"}
+                    {currentMarkupPercent > 0 && (
+                      <Badge variant="secondary" className="text-xs">
+                        +{currentMarkupPercent}% markup applied
+                      </Badge>
+                    )}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {selectedCustomer ? (
+                    <div className="space-y-3">
+                      <div className="flex items-start justify-between p-3 bg-invoice-subtle rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <Building2 className="w-5 h-5 text-primary" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="font-semibold">{selectedCustomer.name}</p>
+                              <Badge variant={selectedCustomer.customer_type === "dealer" ? "default" : "secondary"} className="text-xs">
+                                {selectedCustomer.customer_type === "dealer" ? "Dealer" : "Customer"}
+                              </Badge>
+                            </div>
+                            {selectedCustomer.gstin && (
+                              <p className="text-xs text-muted-foreground font-mono">GSTIN: {selectedCustomer.gstin}</p>
+                            )}
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-semibold">{selectedCustomer.name}</p>
-                          {selectedCustomer.gstin && (
-                            <p className="text-xs text-muted-foreground font-mono">GSTIN: {selectedCustomer.gstin}</p>
-                          )}
-                        </div>
+                        <CustomerSelector
+                          selectedCustomerId={selectedCustomer.id}
+                          onSelect={handleCustomerSelect}
+                          filterType={quoteFor}
+                          trigger={<Button type="button" size="sm" variant="outline">Change</Button>}
+                        />
                       </div>
-                      <CustomerSelector
-                        selectedCustomerId={selectedCustomer.id}
-                        onSelect={handleCustomerSelect}
-                        trigger={<Button type="button" size="sm" variant="outline">Change</Button>}
+                      <div className="flex flex-wrap gap-4 text-sm">
+                        {selectedBillingAddress && (
+                          <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <MapPin className="w-3.5 h-3.5" />
+                            <span>Billing: {selectedBillingAddress.city}, {selectedBillingAddress.state}</span>
+                          </div>
+                        )}
+                        {selectedShippingAddress && (
+                          <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <MapPin className="w-3.5 h-3.5" />
+                            <span>Shipping: {selectedShippingAddress.city}, {selectedShippingAddress.state}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between p-4 border-dashed border-2 rounded-lg">
+                      <div className="flex items-center gap-3 text-muted-foreground">
+                        <Building2 className="w-5 h-5" />
+                        <span>No {quoteFor} selected</span>
+                      </div>
+                      <CustomerSelector 
+                        onSelect={handleCustomerSelect} 
+                        filterType={quoteFor}
                       />
                     </div>
-                    <div className="flex flex-wrap gap-4 text-sm">
-                      {selectedBillingAddress && (
-                        <div className="flex items-center gap-1.5 text-muted-foreground">
-                          <MapPin className="w-3.5 h-3.5" />
-                          <span>Billing: {selectedBillingAddress.city}, {selectedBillingAddress.state}</span>
-                        </div>
-                      )}
-                      {selectedShippingAddress && (
-                        <div className="flex items-center gap-1.5 text-muted-foreground">
-                          <MapPin className="w-3.5 h-3.5" />
-                          <span>Shipping: {selectedShippingAddress.city}, {selectedShippingAddress.state}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between p-4 border-dashed border-2 rounded-lg">
-                    <div className="flex items-center gap-3 text-muted-foreground">
-                      <Building2 className="w-5 h-5" />
-                      <span>No customer selected</span>
-                    </div>
-                    <CustomerSelector onSelect={handleCustomerSelect} />
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
-            {/* Line Items */}
-            <Card>
-              <CardContent className="pt-6">
-                <LineItemsEditor 
-                  items={lineItems} 
-                  onChange={setLineItems}
-                  customerType={selectedCustomer?.customer_type}
-                  pricingSettings={pricingSettings ? {
-                    customerMarkupPercent: pricingSettings.customer_markup_percent || 0,
-                    dealerMarkupPercent: pricingSettings.dealer_markup_percent || 0,
-                  } : null}
-                />
-              </CardContent>
-            </Card>
+            {/* Line Items - Only show after Quote For is selected */}
+            {quoteFor && (
+              <Card>
+                <CardContent className="pt-6">
+                  <LineItemsEditor 
+                    items={lineItems} 
+                    onChange={setLineItems}
+                    customerType={quoteFor}
+                    pricingSettings={pricingSettings ? {
+                      customerMarkupPercent: pricingSettings.customer_markup_percent || 0,
+                      dealerMarkupPercent: pricingSettings.dealer_markup_percent || 0,
+                    } : null}
+                  />
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Sidebar */}
