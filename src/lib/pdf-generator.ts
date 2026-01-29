@@ -108,6 +108,7 @@ export async function generateInvoicePDF(
   const primaryColor = hexToRgb(template.primary_color);
   const secondaryColor = hexToRgb(template.secondary_color);
   const headerTextColor = hexToRgb(template.header_text_color);
+  const tableTextColor = hexToRgb(template.table_text_color);
   const darkText: [number, number, number] = [31, 41, 55];
   const mutedText: [number, number, number] = [107, 114, 128];
   const lightBg: [number, number, number] = [248, 250, 252];
@@ -404,7 +405,7 @@ export async function generateInvoicePDF(
     },
     bodyStyles: {
       fontSize: 9,
-      textColor: darkText,
+      textColor: tableTextColor,
       cellPadding: 5,
       lineColor: borderColor,
       lineWidth: 0.1,

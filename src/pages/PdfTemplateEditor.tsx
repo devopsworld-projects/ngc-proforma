@@ -173,6 +173,24 @@ export default function PdfTemplateEditor() {
                           />
                         </div>
                       </div>
+
+                      <div className="flex items-center gap-4">
+                        <Label className="w-40">Table Text Color</Label>
+                        <div className="flex items-center gap-2 flex-1">
+                          <Input
+                            type="color"
+                            value={settings.table_text_color || "#1f2937"}
+                            onChange={(e) => updateField("table_text_color", e.target.value)}
+                            className="w-12 h-10 p-1 cursor-pointer"
+                          />
+                          <Input
+                            value={settings.table_text_color || "#1f2937"}
+                            onChange={(e) => updateField("table_text_color", e.target.value)}
+                            className="flex-1"
+                            placeholder="#1f2937"
+                          />
+                        </div>
+                      </div>
                     </div>
 
                     {/* Color preview */}
@@ -191,6 +209,11 @@ export default function PdfTemplateEditor() {
                         style={{ backgroundColor: settings.secondary_color || "#3b82f6" }}
                       >
                         <span className="text-white text-sm font-medium">Accent Bar</span>
+                      </div>
+                      <div className="h-8 rounded mt-2 flex items-center px-4 bg-muted/30 border">
+                        <span style={{ color: settings.table_text_color || "#1f2937" }} className="text-sm">
+                          Table Item Text
+                        </span>
                       </div>
                     </div>
                   </CardContent>
