@@ -107,8 +107,8 @@ export async function generateInvoicePDF(
   // Colors - simple palette
   const primaryColor = hexToRgb(template.primary_color);
   const tableTextColor = hexToRgb(template.table_text_color);
-  const darkText: [number, number, number] = [33, 37, 41];
-  const mutedText: [number, number, number] = [108, 117, 125];
+  const darkText: [number, number, number] = [0, 0, 0]; // Pure black
+  const mutedText: [number, number, number] = [80, 80, 80]; // Dark gray for secondary text
   const borderColor: [number, number, number] = [200, 200, 200];
 
   // Helper to add text
