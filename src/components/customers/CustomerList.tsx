@@ -1,15 +1,25 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useCustomers, useCustomer, Address, useDeleteAddress } from "@/hooks/useCustomers";
 import { CustomerFormDialog } from "./CustomerFormDialog";
-import { CustomerCard } from "./CustomerCard";
 import { AddressFormDialog } from "./AddressFormDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Users, ArrowLeft, MapPin, Pencil, Trash2, Star } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Search, Users, ArrowLeft, MapPin, Pencil, Trash2, Star, MoreHorizontal, Filter, Eye } from "lucide-react";
 import { toast } from "sonner";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,18 +32,41 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
+const ITEMS_PER_PAGE = 15;
+
 export function CustomerList() {
   const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const { data: customers, isLoading } = useCustomers();
   const { data: selectedCustomer } = useCustomer(selectedCustomerId || undefined);
   const deleteAddress = useDeleteAddress();
 
-  const filteredCustomers = customers?.filter(
-    (c) =>
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.email?.toLowerCase().includes(search.toLowerCase()) ||
-      c.gstin?.toLowerCase().includes(search.toLowerCase())
+  const filteredCustomers = useMemo(() => {
+    return customers?.filter((c) => {
+      const matchesSearch =
+        c.name.toLowerCase().includes(search.toLowerCase()) ||
+        c.email?.toLowerCase().includes(search.toLowerCase()) ||
+        c.gstin?.toLowerCase().includes(search.toLowerCase());
+      
+      const matchesType =
+        typeFilter === "all" ||
+        c.customer_type === typeFilter;
+
+      return matchesSearch && matchesType;
+    }) || [];
+  }, [customers, search, typeFilter]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, typeFilter]);
+
+  const totalPages = Math.ceil(filteredCustomers.length / ITEMS_PER_PAGE);
+  const paginatedCustomers = filteredCustomers.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
   );
 
   const handleDeleteAddress = async (address: Address) => {
@@ -43,6 +76,22 @@ export function CustomerList() {
     } catch (error) {
       toast.error("Failed to delete address");
     }
+  };
+
+  const getPageNumbers = () => {
+    const pages: (number | "ellipsis")[] = [];
+    if (totalPages <= 5) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (currentPage > 3) pages.push("ellipsis");
+      for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+        pages.push(i);
+      }
+      if (currentPage < totalPages - 2) pages.push("ellipsis");
+      pages.push(totalPages);
+    }
+    return pages;
   };
 
   if (selectedCustomerId && selectedCustomer) {
@@ -62,7 +111,12 @@ export function CustomerList() {
           <CardHeader>
             <div className="flex items-start justify-between">
               <div>
-                <CardTitle className="text-2xl font-serif">{selectedCustomer.name}</CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-2xl font-serif">{selectedCustomer.name}</CardTitle>
+                  <Badge variant={selectedCustomer.customer_type === "dealer" ? "default" : "secondary"}>
+                    {selectedCustomer.customer_type === "dealer" ? "Dealer" : "Customer"}
+                  </Badge>
+                </div>
                 {selectedCustomer.gstin && (
                   <p className="text-sm text-muted-foreground font-mono mt-1">GSTIN: {selectedCustomer.gstin}</p>
                 )}
@@ -160,51 +214,186 @@ export function CustomerList() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row gap-4 justify-between">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search customers..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <CustomerFormDialog />
-      </div>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base">Customer List</CardTitle>
+            <Badge variant="secondary">{filteredCustomers.length} customers</Badge>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="mb-4 flex flex-col sm:flex-row gap-3 justify-between">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search customers..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="w-full sm:w-[160px]">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover z-50">
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="customer">Customer</SelectItem>
+                  <SelectItem value="dealer">Dealer</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <CustomerFormDialog />
+          </div>
 
-      {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => (
-            <Card key={i}>
-              <CardHeader>
-                <Skeleton className="h-6 w-3/4" />
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <Skeleton className="h-4 w-1/2" />
-                <Skeleton className="h-4 w-2/3" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : filteredCustomers?.length === 0 ? (
-        <Card className="border-dashed">
-          <CardContent className="py-12 text-center">
-            <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">No customers found</h3>
-            <p className="text-muted-foreground mb-4">
-              {search ? "Try a different search term" : "Get started by adding your first customer"}
-            </p>
-            {!search && <CustomerFormDialog />}
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredCustomers?.map((customer) => (
-            <CustomerCard key={customer.id} customer={customer} onSelect={(c) => setSelectedCustomerId(c.id)} />
-          ))}
-        </div>
-      )}
+          {isLoading ? (
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          ) : filteredCustomers.length === 0 ? (
+            <div className="py-12 text-center">
+              <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">No customers found</h3>
+              <p className="text-muted-foreground mb-4">
+                {search || typeFilter !== "all" ? "Try a different search or filter" : "Get started by adding your first customer"}
+              </p>
+              {!search && typeFilter === "all" && <CustomerFormDialog />}
+            </div>
+          ) : (
+            <>
+              <div className="rounded-lg border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead>GSTIN</TableHead>
+                      <TableHead>State</TableHead>
+                      <TableHead className="w-10"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedCustomers.map((customer) => (
+                      <TableRow key={customer.id}>
+                        <TableCell>
+                          <p className="font-medium">{customer.name}</p>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={customer.customer_type === "dealer" ? "default" : "secondary"} className="text-xs">
+                            {customer.customer_type === "dealer" ? "Dealer" : "Customer"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm text-muted-foreground">{customer.email || "—"}</span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm text-muted-foreground">{customer.phone || "—"}</span>
+                        </TableCell>
+                        <TableCell>
+                          {customer.gstin ? (
+                            <Badge variant="outline" className="font-mono text-xs">
+                              {customer.gstin}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm">
+                            {customer.state ? (
+                              <>
+                                {customer.state}
+                                {customer.state_code && <span className="text-muted-foreground"> ({customer.state_code})</span>}
+                              </>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="bg-popover z-50">
+                              <DropdownMenuItem onClick={() => setSelectedCustomerId(customer.id)}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem asChild>
+                                <CustomerFormDialog
+                                  customer={customer}
+                                  trigger={
+                                    <button className="flex w-full items-center px-2 py-1.5 text-sm">
+                                      <Pencil className="h-4 w-4 mr-2" />
+                                      Edit
+                                    </button>
+                                  }
+                                />
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {totalPages > 1 && (
+                <div className="mt-4 flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">
+                    Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to{" "}
+                    {Math.min(currentPage * ITEMS_PER_PAGE, filteredCustomers.length)} of{" "}
+                    {filteredCustomers.length} customers
+                  </p>
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                          className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        />
+                      </PaginationItem>
+                      {getPageNumbers().map((page, idx) =>
+                        page === "ellipsis" ? (
+                          <PaginationItem key={`ellipsis-${idx}`}>
+                            <span className="px-2">...</span>
+                          </PaginationItem>
+                        ) : (
+                          <PaginationItem key={page}>
+                            <PaginationLink
+                              onClick={() => setCurrentPage(page)}
+                              isActive={currentPage === page}
+                              className="cursor-pointer"
+                            >
+                              {page}
+                            </PaginationLink>
+                          </PaginationItem>
+                        )
+                      )}
+                      <PaginationItem>
+                        <PaginationNext
+                          onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                          className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
