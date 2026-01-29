@@ -361,6 +361,7 @@ export type Database = {
           show_shipping_address: boolean
           show_signature: boolean
           show_terms: boolean
+          table_text_color: string
           terms_line1: string | null
           terms_line2: string | null
           terms_line3: string | null
@@ -387,6 +388,7 @@ export type Database = {
           show_shipping_address?: boolean
           show_signature?: boolean
           show_terms?: boolean
+          table_text_color?: string
           terms_line1?: string | null
           terms_line2?: string | null
           terms_line3?: string | null
@@ -413,6 +415,7 @@ export type Database = {
           show_shipping_address?: boolean
           show_signature?: boolean
           show_terms?: boolean
+          table_text_color?: string
           terms_line1?: string | null
           terms_line2?: string | null
           terms_line3?: string | null

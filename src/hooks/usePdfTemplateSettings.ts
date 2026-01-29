@@ -10,6 +10,7 @@ export interface PdfTemplateSettings {
   primary_color: string;
   secondary_color: string;
   header_text_color: string;
+  table_text_color: string;
   
   // Section visibility
   show_logo: boolean;
@@ -40,6 +41,7 @@ export const defaultPdfTemplateSettings: Omit<PdfTemplateSettings, "id" | "user_
   primary_color: "#294172",
   secondary_color: "#3b82f6",
   header_text_color: "#ffffff",
+  table_text_color: "#1f2937",
   show_logo: true,
   show_gstin_header: true,
   show_contact_header: true,

@@ -8,6 +8,7 @@ export function PdfPreviewMini({ settings }: Props) {
   const primaryColor = settings.primary_color || "#294172";
   const secondaryColor = settings.secondary_color || "#3b82f6";
   const headerTextColor = settings.header_text_color || "#ffffff";
+  const tableTextColor = settings.table_text_color || "#1f2937";
 
   return (
     <div className="w-full aspect-[210/297] border rounded-lg overflow-hidden bg-white shadow-sm text-xs">
@@ -93,13 +94,14 @@ export function PdfPreviewMini({ settings }: Props) {
                 gridTemplateColumns: settings.show_discount_column !== false 
                   ? "1fr 3fr 1fr 1fr 1fr 1.5fr" 
                   : "1fr 3fr 1fr 1fr 1.5fr",
+                color: tableTextColor,
               }}
             >
               <span>{i}</span>
               <span>
                 Product Item {i}
                 {settings.show_serial_numbers !== false && (
-                  <span className="text-muted-foreground"> (S/N: XXX)</span>
+                  <span style={{ opacity: 0.7 }}> (S/N: XXX)</span>
                 )}
               </span>
               <span>{i}</span>
