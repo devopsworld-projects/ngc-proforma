@@ -24,6 +24,7 @@ import { TaxCalculator, useTaxCalculation } from "./TaxCalculator";
 import { CustomerSelector } from "@/components/customers/CustomerSelector";
 import { Customer, Address } from "@/hooks/useCustomers";
 import { useNextInvoiceNumber, useUpdateInvoice, useDeleteInvoiceItems, Invoice, InvoiceItem } from "@/hooks/useInvoices";
+import { usePricingSettings } from "@/hooks/usePricingSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -82,6 +83,7 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
   const navigate = useNavigate();
   const { user } = useAuth();
   const { data: nextInvoiceNo } = useNextInvoiceNumber();
+  const { data: pricingSettings } = usePricingSettings();
   const updateInvoice = useUpdateInvoice();
   const deleteInvoiceItems = useDeleteInvoiceItems();
   
@@ -532,7 +534,15 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
             {/* Line Items */}
             <Card>
               <CardContent className="pt-6">
-                <LineItemsEditor items={lineItems} onChange={setLineItems} />
+                <LineItemsEditor 
+                  items={lineItems} 
+                  onChange={setLineItems}
+                  customerType={selectedCustomer?.customer_type}
+                  pricingSettings={pricingSettings ? {
+                    customerMarkupPercent: pricingSettings.customer_markup_percent || 0,
+                    dealerMarkupPercent: pricingSettings.dealer_markup_percent || 0,
+                  } : null}
+                />
               </CardContent>
             </Card>
           </div>
