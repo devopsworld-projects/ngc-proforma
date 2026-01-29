@@ -213,15 +213,7 @@ export async function generateInvoicePDF(
   
   yPos += 8;
 
-  // ===== TAX INVOICE TITLE =====
-  addText("TAX INVOICE", pageWidth / 2, yPos, {
-    fontSize: 14,
-    fontStyle: "bold",
-    color: primaryColor,
-    align: "center",
-  });
-
-  yPos += 12;
+  // No TAX INVOICE title - clean layout
 
   // ===== INVOICE DETAILS & BILL TO - TWO COLUMNS =====
   const colWidth = (pageWidth - margin * 2 - 20) / 2;

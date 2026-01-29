@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Save, Palette, LayoutGrid, FileText, Building2, RotateCcw } from "lucide-react";
+import { Save, LayoutGrid, FileText, Building2, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { usePdfTemplateSettings, useUpdatePdfTemplateSettings, defaultPdfTemplateSettings, PdfTemplateSettings } from "@/hooks/usePdfTemplateSettings";
 import { PdfPreviewMini } from "@/components/pdf/PdfPreviewMini";
@@ -90,12 +90,8 @@ export default function PdfTemplateEditor() {
         <div className="grid lg:grid-cols-2 gap-6">
           {/* Settings Panel */}
           <div className="space-y-4">
-            <Tabs defaultValue="colors" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="colors" className="text-xs sm:text-sm">
-                  <Palette className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Colors</span>
-                </TabsTrigger>
+            <Tabs defaultValue="sections" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="sections" className="text-xs sm:text-sm">
                   <LayoutGrid className="h-4 w-4 sm:mr-2" />
                   <span className="hidden sm:inline">Sections</span>
@@ -109,116 +105,6 @@ export default function PdfTemplateEditor() {
                   <span className="hidden sm:inline">Bank</span>
                 </TabsTrigger>
               </TabsList>
-
-              <TabsContent value="colors" className="mt-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Color Settings</CardTitle>
-                    <CardDescription>
-                      Customize the colors of your PDF template
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid gap-4">
-                      <div className="flex items-center gap-4">
-                        <Label className="w-40">Primary Color</Label>
-                        <div className="flex items-center gap-2 flex-1">
-                          <Input
-                            type="color"
-                            value={settings.primary_color || "#294172"}
-                            onChange={(e) => updateField("primary_color", e.target.value)}
-                            className="w-12 h-10 p-1 cursor-pointer"
-                          />
-                          <Input
-                            value={settings.primary_color || "#294172"}
-                            onChange={(e) => updateField("primary_color", e.target.value)}
-                            className="flex-1"
-                            placeholder="#294172"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-4">
-                        <Label className="w-40">Secondary Color</Label>
-                        <div className="flex items-center gap-2 flex-1">
-                          <Input
-                            type="color"
-                            value={settings.secondary_color || "#3b82f6"}
-                            onChange={(e) => updateField("secondary_color", e.target.value)}
-                            className="w-12 h-10 p-1 cursor-pointer"
-                          />
-                          <Input
-                            value={settings.secondary_color || "#3b82f6"}
-                            onChange={(e) => updateField("secondary_color", e.target.value)}
-                            className="flex-1"
-                            placeholder="#3b82f6"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-4">
-                        <Label className="w-40">Header Text Color</Label>
-                        <div className="flex items-center gap-2 flex-1">
-                          <Input
-                            type="color"
-                            value={settings.header_text_color || "#ffffff"}
-                            onChange={(e) => updateField("header_text_color", e.target.value)}
-                            className="w-12 h-10 p-1 cursor-pointer"
-                          />
-                          <Input
-                            value={settings.header_text_color || "#ffffff"}
-                            onChange={(e) => updateField("header_text_color", e.target.value)}
-                            className="flex-1"
-                            placeholder="#ffffff"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-4">
-                        <Label className="w-40">Table Text Color</Label>
-                        <div className="flex items-center gap-2 flex-1">
-                          <Input
-                            type="color"
-                            value={settings.table_text_color || "#1f2937"}
-                            onChange={(e) => updateField("table_text_color", e.target.value)}
-                            className="w-12 h-10 p-1 cursor-pointer"
-                          />
-                          <Input
-                            value={settings.table_text_color || "#1f2937"}
-                            onChange={(e) => updateField("table_text_color", e.target.value)}
-                            className="flex-1"
-                            placeholder="#1f2937"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Color preview */}
-                    <div className="mt-6 p-4 rounded-lg border">
-                      <p className="text-sm text-muted-foreground mb-3">Preview</p>
-                      <div
-                        className="h-10 rounded flex items-center px-4"
-                        style={{ backgroundColor: settings.primary_color || "#294172" }}
-                      >
-                        <span style={{ color: settings.header_text_color || "#ffffff" }} className="font-bold">
-                          Header Preview
-                        </span>
-                      </div>
-                      <div
-                        className="h-8 rounded mt-2 flex items-center px-4"
-                        style={{ backgroundColor: settings.secondary_color || "#3b82f6" }}
-                      >
-                        <span className="text-white text-sm font-medium">Accent Bar</span>
-                      </div>
-                      <div className="h-8 rounded mt-2 flex items-center px-4 bg-muted/30 border">
-                        <span style={{ color: settings.table_text_color || "#1f2937" }} className="text-sm">
-                          Table Item Text
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
 
               <TabsContent value="sections" className="mt-4">
                 <Card>
