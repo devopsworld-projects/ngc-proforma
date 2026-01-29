@@ -48,22 +48,23 @@ function parseUserAgent(userAgent: string): {
   return { browser, os, deviceType };
 }
 
-// Track session in database
+// Track session via edge function to capture IP address
 async function trackUserSession(userId: string) {
   const userAgent = navigator.userAgent;
   const { browser, os, deviceType } = parseUserAgent(userAgent);
   
   try {
-    await supabase
-      .from("user_sessions")
-      .insert({
-        user_id: userId,
-        user_agent: userAgent,
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
+    await supabase.functions.invoke("track-session", {
+      body: { 
+        userAgent,
         browser,
         os,
-        device_type: deviceType,
-        ip_address: null, // Would need server-side capture
-      });
+        deviceType,
+      },
+    });
   } catch (error) {
     console.error("Failed to track session:", error);
   }
