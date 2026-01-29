@@ -285,6 +285,17 @@ export async function generateInvoicePDF(
         fontSize: 9,
         color: darkText,
       });
+      billY += 5;
+    }
+
+    if (invoice.customer.state) {
+      const stateInfo = invoice.customer.state_code 
+        ? `${invoice.customer.state} (${invoice.customer.state_code})`
+        : invoice.customer.state;
+      addText(`State: ${stateInfo}`, rightColX, billY, {
+        fontSize: 9,
+        color: mutedText,
+      });
     }
   }
 
