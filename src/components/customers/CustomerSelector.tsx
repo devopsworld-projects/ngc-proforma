@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Customer, Address, useCustomers, useCreateCustomer } from "@/hooks/useCustomers";
+import { Customer, Address, useCustomers, useCreateCustomer, useCreateAddress } from "@/hooks/useCustomers";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,9 +7,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Search, Building2, MapPin, Star, Plus, UserPlus, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 interface CustomerSelectorProps {
@@ -31,10 +32,11 @@ export function CustomerSelector({
 }: CustomerSelectorProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [step, setStep] = useState<"customer" | "billing" | "shipping" | "create">("customer");
+  const [step, setStep] = useState<"customer" | "billing" | "shipping" | "create" | "create-address">("customer");
   const [tempCustomer, setTempCustomer] = useState<Customer | null>(null);
   const [tempBillingAddress, setTempBillingAddress] = useState<Address | null>(null);
   const [tempShippingAddress, setTempShippingAddress] = useState<Address | null>(null);
+  const [addressTypeToCreate, setAddressTypeToCreate] = useState<"billing" | "shipping">("billing");
 
   // New customer form state - default to filterType if provided
   const [newCustomerName, setNewCustomerName] = useState("");
@@ -45,8 +47,21 @@ export function CustomerSelector({
   const [newCustomerState, setNewCustomerState] = useState("");
   const [isCreating, setIsCreating] = useState(false);
 
+  // New address form state
+  const [newAddressLine1, setNewAddressLine1] = useState("");
+  const [newAddressLine2, setNewAddressLine2] = useState("");
+  const [newAddressCity, setNewAddressCity] = useState("");
+  const [newAddressState, setNewAddressState] = useState("");
+  const [newAddressStateCode, setNewAddressStateCode] = useState("");
+  const [newAddressPostalCode, setNewAddressPostalCode] = useState("");
+  const [newAddressCountry, setNewAddressCountry] = useState("India");
+  const [newAddressIsDefault, setNewAddressIsDefault] = useState(true);
+  const [isCreatingAddress, setIsCreatingAddress] = useState(false);
+
+  const queryClient = useQueryClient();
   const { data: customers, refetch: refetchCustomers } = useCustomers();
   const createCustomer = useCreateCustomer();
+  const createAddress = useCreateAddress();
 
   // Update newCustomerType when filterType changes
   useEffect(() => {
@@ -148,6 +163,78 @@ export function CustomerSelector({
     }
   };
 
+  const resetAddressForm = () => {
+    setNewAddressLine1("");
+    setNewAddressLine2("");
+    setNewAddressCity("");
+    setNewAddressState("");
+    setNewAddressStateCode("");
+    setNewAddressPostalCode("");
+    setNewAddressCountry("India");
+    setNewAddressIsDefault(true);
+  };
+
+  const handleCreateAddress = async () => {
+    if (!newAddressLine1.trim()) {
+      toast.error("Address line 1 is required");
+      return;
+    }
+    if (!newAddressCity.trim()) {
+      toast.error("City is required");
+      return;
+    }
+    if (!newAddressState.trim()) {
+      toast.error("State is required");
+      return;
+    }
+    if (!newAddressPostalCode.trim()) {
+      toast.error("Postal code is required");
+      return;
+    }
+    if (!tempCustomer) {
+      toast.error("No customer selected");
+      return;
+    }
+
+    setIsCreatingAddress(true);
+    try {
+      const newAddress = await createAddress.mutateAsync({
+        customer_id: tempCustomer.id,
+        address_type: addressTypeToCreate,
+        address_line1: newAddressLine1.trim(),
+        address_line2: newAddressLine2.trim() || null,
+        city: newAddressCity.trim(),
+        state: newAddressState.trim(),
+        state_code: newAddressStateCode.trim() || null,
+        postal_code: newAddressPostalCode.trim(),
+        country: newAddressCountry.trim(),
+        is_default: newAddressIsDefault,
+      });
+
+      toast.success(`${addressTypeToCreate === "billing" ? "Billing" : "Shipping"} address added`);
+      
+      // Invalidate the addresses query to refetch
+      queryClient.invalidateQueries({ queryKey: ["customer-addresses", tempCustomer.id] });
+      
+      resetAddressForm();
+      
+      // Auto-select the new address and go to next step
+      if (addressTypeToCreate === "billing") {
+        setTempBillingAddress(newAddress as Address);
+        setStep("shipping");
+      } else {
+        setTempShippingAddress(newAddress as Address);
+        onSelect(tempCustomer, tempBillingAddress, newAddress as Address);
+        setOpen(false);
+        resetState();
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to add address");
+    } finally {
+      setIsCreatingAddress(false);
+    }
+  };
+
   const resetState = () => {
     setStep("customer");
     setTempCustomer(null);
@@ -160,6 +247,7 @@ export function CustomerSelector({
     setNewCustomerEmail("");
     setNewCustomerPhone("");
     setNewCustomerState("");
+    resetAddressForm();
   };
 
   const handleOpenChange = (isOpen: boolean) => {
@@ -186,14 +274,16 @@ export function CustomerSelector({
           <DialogTitle className="font-serif">
             {step === "customer" && `Select ${typeLabel}`}
             {step === "create" && `Create New ${typeLabel}`}
+            {step === "create-address" && `Add ${addressTypeToCreate === "billing" ? "Billing" : "Shipping"} Address`}
             {step === "billing" && "Select Billing Address"}
             {step === "shipping" && "Select Shipping Address"}
           </DialogTitle>
           <DialogDescription>
             {step === "customer" && `Choose a ${typeLabel.toLowerCase()} for this quotation`}
             {step === "create" && `Add a new ${typeLabel.toLowerCase()} to your records`}
-            {step === "billing" && "Select or skip billing address"}
-            {step === "shipping" && "Select or skip shipping address"}
+            {step === "create-address" && `Add a new ${addressTypeToCreate} address for ${tempCustomer?.name}`}
+            {step === "billing" && "Select, add, or skip billing address"}
+            {step === "shipping" && "Select, add, or skip shipping address"}
           </DialogDescription>
         </DialogHeader>
 
@@ -365,7 +455,20 @@ export function CustomerSelector({
               <div className="text-center py-8">
                 <MapPin className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
                 <p className="text-muted-foreground mb-4">No billing addresses available</p>
-                <Button onClick={handleSkipAddresses}>Continue without address</Button>
+                <div className="flex gap-2 justify-center">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setAddressTypeToCreate("billing");
+                      setStep("create-address");
+                    }}
+                    className="gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Address
+                  </Button>
+                  <Button onClick={handleSkipAddresses}>Continue without</Button>
+                </div>
               </div>
             ) : (
               <>
@@ -381,6 +484,17 @@ export function CustomerSelector({
                 </div>
                 <div className="flex gap-2 pt-2">
                   <Button variant="outline" onClick={() => setStep("customer")}>Back</Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setAddressTypeToCreate("billing");
+                      setStep("create-address");
+                    }}
+                    className="gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add
+                  </Button>
                   <Button variant="ghost" onClick={() => handleBillingSelect(null)}>Skip</Button>
                 </div>
               </>
@@ -406,7 +520,20 @@ export function CustomerSelector({
               <div className="text-center py-8">
                 <MapPin className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
                 <p className="text-muted-foreground mb-4">No shipping addresses available</p>
-                <Button onClick={() => handleShippingSelect(null)}>Continue</Button>
+                <div className="flex gap-2 justify-center">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setAddressTypeToCreate("shipping");
+                      setStep("create-address");
+                    }}
+                    className="gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Address
+                  </Button>
+                  <Button onClick={() => handleShippingSelect(null)}>Continue without</Button>
+                </div>
               </div>
             ) : (
               <>
@@ -422,10 +549,145 @@ export function CustomerSelector({
                 </div>
                 <div className="flex gap-2 pt-2">
                   <Button variant="outline" onClick={() => setStep("billing")}>Back</Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setAddressTypeToCreate("shipping");
+                      setStep("create-address");
+                    }}
+                    className="gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add
+                  </Button>
                   <Button variant="ghost" onClick={() => handleShippingSelect(null)}>Skip</Button>
                 </div>
               </>
             )}
+          </div>
+        )}
+
+        {step === "create-address" && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Building2 className="h-4 w-4" />
+              <span>{tempCustomer?.name}</span>
+              <Badge variant="outline" className="text-xs">
+                {addressTypeToCreate === "billing" ? "Billing" : "Shipping"}
+              </Badge>
+            </div>
+
+            <div className="grid gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="addressLine1">Address Line 1 *</Label>
+                <Input
+                  id="addressLine1"
+                  placeholder="Street address"
+                  value={newAddressLine1}
+                  onChange={(e) => setNewAddressLine1(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="addressLine2">Address Line 2</Label>
+                <Input
+                  id="addressLine2"
+                  placeholder="Apartment, suite, etc."
+                  value={newAddressLine2}
+                  onChange={(e) => setNewAddressLine2(e.target.value)}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="city">City *</Label>
+                  <Input
+                    id="city"
+                    placeholder="City"
+                    value={newAddressCity}
+                    onChange={(e) => setNewAddressCity(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="postalCode">Postal Code *</Label>
+                  <Input
+                    id="postalCode"
+                    placeholder="Postal code"
+                    value={newAddressPostalCode}
+                    onChange={(e) => setNewAddressPostalCode(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="state">State *</Label>
+                  <Input
+                    id="state"
+                    placeholder="State"
+                    value={newAddressState}
+                    onChange={(e) => setNewAddressState(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="stateCode">State Code</Label>
+                  <Input
+                    id="stateCode"
+                    placeholder="e.g. 37"
+                    value={newAddressStateCode}
+                    onChange={(e) => setNewAddressStateCode(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="country">Country</Label>
+                <Input
+                  id="country"
+                  placeholder="Country"
+                  value={newAddressCountry}
+                  onChange={(e) => setNewAddressCountry(e.target.value)}
+                />
+              </div>
+
+              <div className="flex items-center justify-between rounded-lg border p-3">
+                <Label htmlFor="isDefault" className="text-sm font-normal">Set as default address</Label>
+                <Switch
+                  id="isDefault"
+                  checked={newAddressIsDefault}
+                  onCheckedChange={setNewAddressIsDefault}
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  resetAddressForm();
+                  setStep(addressTypeToCreate);
+                }}
+              >
+                Back
+              </Button>
+              <Button 
+                onClick={handleCreateAddress} 
+                disabled={isCreatingAddress}
+                className="flex-1"
+              >
+                {isCreatingAddress ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Adding...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Address
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         )}
       </DialogContent>
