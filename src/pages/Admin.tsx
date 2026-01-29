@@ -28,11 +28,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Users, FileText, DollarSign, Shield, ShieldOff, Eye, Loader2, CheckCircle, XCircle, Mail, MailX, UserCheck, UserX, Trash2, Settings } from "lucide-react";
+import { Users, FileText, DollarSign, Shield, ShieldOff, Eye, Loader2, CheckCircle, XCircle, Mail, MailX, UserCheck, UserX, Trash2, Settings, Monitor } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { PricingSettingsCard } from "@/components/admin/PricingSettingsCard";
 import { QuotationTrackingCard } from "@/components/admin/QuotationTrackingCard";
+import { CreateUserDialog } from "@/components/admin/CreateUserDialog";
+import { UserSessionsCard } from "@/components/admin/UserSessionsCard";
 
 const statusColors: Record<string, string> = {
   draft: "bg-muted text-muted-foreground",
@@ -141,11 +143,13 @@ export default function AdminPage() {
             <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
             <p className="text-muted-foreground">Manage users, pricing, and view system-wide statistics</p>
           </div>
+          <CreateUserDialog />
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="sessions">Sessions</TabsTrigger>
             <TabsTrigger value="pricing">Pricing Settings</TabsTrigger>
             <TabsTrigger value="quotations">Quotation Tracking</TabsTrigger>
           </TabsList>
@@ -416,6 +420,10 @@ export default function AdminPage() {
             )}
           </CardContent>
           </Card>
+          </TabsContent>
+
+          <TabsContent value="sessions">
+            <UserSessionsCard />
           </TabsContent>
 
           <TabsContent value="pricing">
