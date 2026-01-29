@@ -58,14 +58,29 @@ export function useInvoices() {
     queryFn: async () => {
       if (!user) return [];
       
-      // Admin sees all invoices with user profile info
+      // Admin sees all invoices
       if (isAdmin) {
-        const { data, error } = await supabase
+        const { data: invoices, error } = await supabase
           .from("invoices")
-          .select("*, customers(name), profiles:user_id(full_name)")
+          .select("*, customers(name)")
           .order("created_at", { ascending: false });
         if (error) throw error;
-        return data;
+        
+        // Fetch profiles for all unique user_ids
+        const userIds = [...new Set(invoices.map(inv => inv.user_id).filter(Boolean))] as string[];
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", userIds);
+        
+        // Create lookup map
+        const profileMap = new Map(profiles?.map(p => [p.id, p.full_name]) || []);
+        
+        // Attach profile info to invoices
+        return invoices.map(inv => ({
+          ...inv,
+          owner_name: inv.user_id ? profileMap.get(inv.user_id) || null : null
+        }));
       }
       
       // Regular user sees only their own invoices

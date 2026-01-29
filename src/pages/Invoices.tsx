@@ -346,12 +346,12 @@ export default function InvoicesPage() {
                             <span className="truncate">{(invoice as any).customers.name}</span>
                           </>
                         )}
-                        {isAdmin && (invoice as any).profiles?.full_name && (
+                        {isAdmin && (invoice as any).owner_name && (
                           <>
                             <span>•</span>
                             <span className="flex items-center gap-1 text-xs bg-muted px-1.5 py-0.5 rounded">
                               <User className="h-3 w-3" />
-                              {(invoice as any).profiles.full_name}
+                              {(invoice as any).owner_name}
                             </span>
                           </>
                         )}
