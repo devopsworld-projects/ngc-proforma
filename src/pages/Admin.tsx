@@ -35,6 +35,7 @@ import { PricingSettingsCard } from "@/components/admin/PricingSettingsCard";
 import { QuotationTrackingCard } from "@/components/admin/QuotationTrackingCard";
 import { CreateUserDialog } from "@/components/admin/CreateUserDialog";
 import { UserSessionsCard } from "@/components/admin/UserSessionsCard";
+import { RevenueManagementCard } from "@/components/admin/RevenueManagementCard";
 
 const statusColors: Record<string, string> = {
   draft: "bg-muted text-muted-foreground",
@@ -150,6 +151,7 @@ export default function AdminPage() {
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="sessions">Sessions</TabsTrigger>
+            <TabsTrigger value="revenue">Revenue</TabsTrigger>
             <TabsTrigger value="pricing">Pricing Settings</TabsTrigger>
             <TabsTrigger value="quotations">Quotation Tracking</TabsTrigger>
           </TabsList>
@@ -424,6 +426,10 @@ export default function AdminPage() {
 
           <TabsContent value="sessions">
             <UserSessionsCard />
+          </TabsContent>
+
+          <TabsContent value="revenue">
+            <RevenueManagementCard />
           </TabsContent>
 
           <TabsContent value="pricing">
