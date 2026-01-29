@@ -1,12 +1,11 @@
 import { AppNavigation } from "@/components/layout/AppNavigation";
-
 interface AppLayoutProps {
   children: React.ReactNode;
 }
-
-export function AppLayout({ children }: AppLayoutProps) {
-  return (
-    <div className="min-h-screen flex flex-col bg-background">
+export function AppLayout({
+  children
+}: AppLayoutProps) {
+  return <div className="min-h-screen flex flex-col bg-background">
       {/* Horizontal Navigation */}
       <AppNavigation />
 
@@ -20,9 +19,8 @@ export function AppLayout({ children }: AppLayoutProps) {
       {/* Footer */}
       <footer className="no-print border-t bg-background py-3 px-4">
         <div className="container max-w-7xl mx-auto text-center text-xs text-muted-foreground">
-          Premium Invoice System • Secure & Reliable
+          Global Shopee • Invoice System • Secure & Reliable    
         </div>
       </footer>
-    </div>
-  );
+    </div>;
 }
