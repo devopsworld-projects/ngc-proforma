@@ -6,7 +6,7 @@ interface Props {
 
 export function PdfPreviewMini({ settings }: Props) {
   const primaryColor = settings.primary_color || "#294172";
-  const tableTextColor = settings.table_text_color || "#1f2937";
+  const tableTextColor = settings.table_text_color || "#000000";
 
   return (
     <div className="w-full aspect-[210/297] border rounded-lg overflow-hidden bg-white shadow-sm text-xs">
