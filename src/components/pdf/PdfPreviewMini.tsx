@@ -70,31 +70,22 @@ export function PdfPreviewMini({ settings }: Props) {
           <thead>
             <tr className="border-y border-black/20">
               <th className="py-1 text-left font-bold">#</th>
+              <th className="py-1 text-left font-bold">Brand</th>
               <th className="py-1 text-left font-bold">Description</th>
               <th className="py-1 text-center font-bold">Qty</th>
-              <th className="py-1 text-right font-bold">Rate</th>
-              {settings.show_discount_column !== false && (
-                <th className="py-1 text-center font-bold">Disc</th>
-              )}
-              <th className="py-1 text-right font-bold">Amount</th>
+              <th className="py-1 text-right font-bold">Unit Price</th>
+              <th className="py-1 text-center font-bold">Image</th>
             </tr>
           </thead>
           <tbody>
             {[1, 2, 3].map((i) => (
               <tr key={i} className="border-b border-black/10">
                 <td className="py-1">{i}</td>
-                <td className="py-1">
-                  Product Item {i}
-                  {settings.show_serial_numbers !== false && (
-                    <span className="text-black/50"> S/N: XXX</span>
-                  )}
-                </td>
-                <td className="py-1 text-center">{i}</td>
+                <td className="py-1">Brand {i}</td>
+                <td className="py-1">Product Item {i}</td>
+                <td className="py-1 text-center">{i} Nos</td>
                 <td className="py-1 text-right">₹1,000</td>
-                {settings.show_discount_column !== false && (
-                  <td className="py-1 text-center">5%</td>
-                )}
-                <td className="py-1 text-right font-medium">₹{(1000 * i * 0.95).toFixed(0)}</td>
+                <td className="py-1 text-center">-</td>
               </tr>
             ))}
           </tbody>
