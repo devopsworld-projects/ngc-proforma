@@ -48,20 +48,38 @@ export function useCustomers() {
     queryKey: ["customers"],
     queryFn: async () => {
       if (!user) return [];
-      const { data, error } = await supabase
-        .from("customers")
-        .select(`
-          *,
-          profiles:user_id (full_name)
-        `)
-        .order("name");
-      if (error) throw error;
       
-      // Map to include creator_name
-      return (data || []).map((c: any) => ({
+      // Fetch customers
+      const { data: customers, error: customersError } = await supabase
+        .from("customers")
+        .select("*")
+        .order("name");
+      if (customersError) throw customersError;
+      if (!customers || customers.length === 0) return [];
+
+      // Get unique user_ids to fetch profiles
+      const userIds = [...new Set(customers.map(c => c.user_id).filter(Boolean))] as string[];
+      
+      // Fetch profiles for creator names
+      let profilesMap: Record<string, string> = {};
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", userIds);
+        
+        if (profiles) {
+          profilesMap = profiles.reduce((acc, p) => {
+            acc[p.id] = p.full_name || "Unknown";
+            return acc;
+          }, {} as Record<string, string>);
+        }
+      }
+
+      // Map customers with creator names
+      return customers.map((c) => ({
         ...c,
-        creator_name: c.profiles?.full_name || null,
-        profiles: undefined,
+        creator_name: c.user_id ? profilesMap[c.user_id] || null : null,
       })) as CustomerWithCreator[];
     },
     enabled: !!user,
