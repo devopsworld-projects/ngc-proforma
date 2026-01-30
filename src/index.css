@@ -133,8 +133,12 @@
 
 @layer components {
   .invoice-container {
-    @apply bg-white shadow-xl rounded-lg overflow-hidden;
+    @apply bg-white shadow-xl rounded-lg overflow-hidden mx-auto;
     box-shadow: 0 25px 50px -12px hsl(var(--invoice-shadow) / 0.15);
+    /* A4 dimensions: 210mm x 297mm (ratio 1:1.414) */
+    width: 210mm;
+    min-height: 297mm;
+    max-width: 100%;
   }
 
   .invoice-header {
