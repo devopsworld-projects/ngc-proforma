@@ -48,6 +48,7 @@ import { cn } from "@/lib/utils";
 export interface LineItem {
   id: string;
   slNo: number;
+  brand: string;
   description: string;
   serialNumbers: string;
   quantity: number;
@@ -56,6 +57,7 @@ export interface LineItem {
   discountPercent: number;
   amount: number;
   productId?: string;
+  productImage?: string;
 }
 
 interface PricingMarkup {
@@ -352,6 +354,7 @@ export function LineItemsEditor({ items, onChange, customerType, pricingSettings
     const newItem: LineItem = {
       id: crypto.randomUUID(),
       slNo: items.length + 1,
+      brand: "",
       description: "",
       serialNumbers: "",
       quantity: 1,
@@ -359,6 +362,7 @@ export function LineItemsEditor({ items, onChange, customerType, pricingSettings
       rate: 0,
       discountPercent: 0,
       amount: 0,
+      productImage: "",
     };
     onChange([...items, newItem]);
     setExpandedItem(newItem.id);
@@ -382,14 +386,16 @@ export function LineItemsEditor({ items, onChange, customerType, pricingSettings
     const newItem: LineItem = {
       id: crypto.randomUUID(),
       slNo: items.length + 1,
-      description: product.name + (product.description ? ` - ${product.description}` : ""),
+      brand: product.name, // Use product name as brand
+      description: product.description || product.model_spec || "", // Use description or model spec
       serialNumbers: "",
       quantity: qty,
       unit: product.unit,
-      rate: Math.round(finalRate * 100) / 100, // Round to 2 decimal places
+      rate: Math.round(finalRate * 100) / 100,
       discountPercent: 0,
       amount: qty * Math.round(finalRate * 100) / 100,
       productId: product.id,
+      productImage: product.image_url || "", // Store product image
     };
     onChange([...items, newItem]);
     setSearchTerm("");

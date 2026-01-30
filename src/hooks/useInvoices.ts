@@ -39,6 +39,7 @@ export interface InvoiceItem {
   id: string;
   invoice_id: string;
   sl_no: number;
+  brand: string | null;
   description: string;
   serial_numbers: string[] | null;
   quantity: number;
@@ -46,6 +47,7 @@ export interface InvoiceItem {
   rate: number;
   discount_percent: number;
   amount: number;
+  product_image: string | null;
   created_at: string;
 }
 
