@@ -65,14 +65,15 @@ export function usePdfTemplateSettings() {
   const { user } = useAuth();
   
   return useQuery({
-    queryKey: ["pdfTemplateSettings", user?.id],
+    queryKey: ["pdfTemplateSettings"],
     queryFn: async () => {
       if (!user) return null;
       
+      // Fetch the single global PDF template settings record
       const { data, error } = await supabase
         .from("pdf_template_settings")
         .select("*")
-        .eq("user_id", user.id)
+        .limit(1)
         .maybeSingle();
       
       if (error) throw error;
@@ -91,7 +92,7 @@ export function useUpdatePdfTemplateSettings() {
       if (!user) throw new Error("Not authenticated");
       
       if (settings.id) {
-        // Update existing
+        // Update existing global settings
         const { id, user_id, created_at, updated_at, ...updateData } = settings as PdfTemplateSettings;
         const { data, error } = await supabase
           .from("pdf_template_settings")
@@ -103,7 +104,7 @@ export function useUpdatePdfTemplateSettings() {
         if (error) throw error;
         return data;
       } else {
-        // Insert new
+        // Insert new global settings (user_id stored for audit trail)
         const { id, user_id, created_at, updated_at, ...insertData } = settings as any;
         const { data, error } = await supabase
           .from("pdf_template_settings")
