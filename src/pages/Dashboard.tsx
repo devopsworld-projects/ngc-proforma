@@ -145,7 +145,7 @@ export default function DashboardPage() {
       <div className="space-y-6">
         <div>
           <h2 className="text-2xl font-serif font-bold">Dashboard</h2>
-          <p className="text-muted-foreground">Overview of your invoicing activity</p>
+          <p className="text-muted-foreground">Overview of your proforma invoice activity</p>
         </div>
 
         {/* Quick Actions */}
@@ -161,7 +161,7 @@ export default function DashboardPage() {
             <CardContent>
               <div className="text-2xl font-bold">{formatCurrency(stats?.totalRevenue || 0)}</div>
               <p className="text-xs text-muted-foreground">
-                From {stats?.totalInvoices || 0} invoices
+                From {stats?.totalInvoices || 0} proforma invoices
               </p>
             </CardContent>
           </Card>
@@ -176,7 +176,7 @@ export default function DashboardPage() {
                 {formatCurrency(stats?.paidAmount || 0)}
               </div>
               <p className="text-xs text-muted-foreground">
-                {stats?.statusCounts.paid || 0} paid invoices
+                {stats?.statusCounts.paid || 0} paid proformas
               </p>
             </CardContent>
           </Card>
@@ -191,7 +191,7 @@ export default function DashboardPage() {
                 {formatCurrency(stats?.pendingAmount || 0)}
               </div>
               <p className="text-xs text-muted-foreground">
-                {stats?.statusCounts.sent || 0} sent invoices
+                {stats?.statusCounts.sent || 0} sent proformas
               </p>
             </CardContent>
           </Card>
@@ -245,19 +245,19 @@ export default function DashboardPage() {
                 <div className="h-[250px] flex items-center justify-center text-muted-foreground">
                   <div className="text-center">
                     <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                    <p>No invoice data yet</p>
+                    <p>No proforma data yet</p>
                   </div>
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {/* Invoice Status */}
+          {/* Proforma Status */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <FileText className="h-4 w-4" />
-                Invoice Status
+                Proforma Status
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -292,7 +292,7 @@ export default function DashboardPage() {
                 <div className="h-[250px] flex items-center justify-center text-muted-foreground">
                   <div className="text-center">
                     <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                    <p>No invoices created yet</p>
+                    <p>No proformas created yet</p>
                   </div>
                 </div>
               )}
@@ -367,7 +367,7 @@ export default function DashboardPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats?.statusCounts.draft || 0}</p>
-                <p className="text-xs text-muted-foreground">Draft Invoices</p>
+                <p className="text-xs text-muted-foreground">Draft Proformas</p>
               </div>
             </CardContent>
           </Card>
@@ -379,7 +379,7 @@ export default function DashboardPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-blue-600">{stats?.statusCounts.sent || 0}</p>
-                <p className="text-xs text-muted-foreground">Sent Invoices</p>
+                <p className="text-xs text-muted-foreground">Sent Proformas</p>
               </div>
             </CardContent>
           </Card>
@@ -391,7 +391,7 @@ export default function DashboardPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-green-600">{stats?.statusCounts.paid || 0}</p>
-                <p className="text-xs text-muted-foreground">Paid Invoices</p>
+                <p className="text-xs text-muted-foreground">Paid Proformas</p>
               </div>
             </CardContent>
           </Card>

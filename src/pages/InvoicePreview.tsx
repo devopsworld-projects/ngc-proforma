@@ -150,11 +150,11 @@ export default function InvoicePreview() {
     return (
       <AppLayout>
         <div className="text-center py-12">
-          <h2 className="text-xl font-semibold mb-2">Invoice not found</h2>
+          <h2 className="text-xl font-semibold mb-2">Proforma Invoice not found</h2>
           <p className="text-muted-foreground mb-4">
-            The invoice you're looking for doesn't exist.
+            The proforma invoice you're looking for doesn't exist.
           </p>
-          <Button onClick={() => navigate("/invoices")}>Back to Invoices</Button>
+          <Button onClick={() => navigate("/invoices")}>Back to Proformas</Button>
         </div>
       </AppLayout>
     );
@@ -166,7 +166,7 @@ export default function InvoicePreview() {
         <div className="text-center py-12">
           <h2 className="text-xl font-semibold mb-2">Company settings required</h2>
           <p className="text-muted-foreground mb-4">
-            Please configure your company settings to view invoices.
+            Please configure your company settings to view proforma invoices.
           </p>
           <Button onClick={() => navigate("/settings")}>Configure Settings</Button>
         </div>
@@ -189,9 +189,9 @@ export default function InvoicePreview() {
             </Button>
             <div>
               <h2 className="text-2xl font-serif font-bold">
-                Invoice #{invoice.invoice_no}
+                Proforma #{invoice.invoice_no}
               </h2>
-              <p className="text-muted-foreground">Preview and manage invoice</p>
+              <p className="text-muted-foreground">Preview and manage proforma invoice</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
