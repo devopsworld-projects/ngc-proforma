@@ -52,10 +52,12 @@ export function InvoiceHeader({
           </div>
 
           <div className="flex flex-wrap gap-4 text-xs opacity-80">
-            <div className="flex items-center gap-1.5">
-              <Phone className="w-3.5 h-3.5" />
-              <span>{company.phone[0]}</span>
-            </div>
+            {company.phone.length > 0 && (
+              <div className="flex items-center gap-1.5">
+                <Phone className="w-3.5 h-3.5" />
+                <span>{company.phone.join(", ")}</span>
+              </div>
+            )}
             <div className="flex items-center gap-1.5">
               <Mail className="w-3.5 h-3.5" />
               <span>{company.email}</span>
