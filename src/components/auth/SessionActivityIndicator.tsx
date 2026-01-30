@@ -1,5 +1,6 @@
 import { Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSessionTimeoutContext } from "./SessionTimeoutProvider";
 import {
   Tooltip,
   TooltipContent,
@@ -7,15 +8,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-interface SessionActivityIndicatorProps {
-  totalRemainingSeconds: number;
-  timeoutMinutes: number;
-}
-
-export function SessionActivityIndicator({
-  totalRemainingSeconds,
-  timeoutMinutes,
-}: SessionActivityIndicatorProps) {
+export function SessionActivityIndicator() {
+  const { totalRemainingSeconds, timeoutMinutes } = useSessionTimeoutContext();
+  
   const totalSeconds = timeoutMinutes * 60;
   const percentage = (totalRemainingSeconds / totalSeconds) * 100;
   
@@ -35,6 +30,8 @@ export function SessionActivityIndicator({
     if (percentage > 25) return "bg-yellow-500";
     return "bg-red-500";
   };
+
+  if (totalRemainingSeconds <= 0) return null;
 
   return (
     <TooltipProvider>
