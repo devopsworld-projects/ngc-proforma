@@ -19,6 +19,8 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsAdmin } from "@/hooks/useAdmin";
+import { useSessionTimeoutContext } from "@/components/auth/SessionTimeoutProvider";
+import { SessionActivityIndicator } from "@/components/auth/SessionActivityIndicator";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import {
@@ -72,6 +74,7 @@ export function AppNavigation() {
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
   const { data: isAdmin } = useIsAdmin();
+  const { totalRemainingSeconds, timeoutMinutes } = useSessionTimeoutContext();
   const handleLogout = async () => {
     await signOut();
     toast.success("Logged out successfully");
@@ -170,6 +173,14 @@ export function AppNavigation() {
 
           {/* Right Section */}
           <div className="flex items-center gap-2">
+            {/* Session Activity Indicator */}
+            {user && totalRemainingSeconds > 0 && (
+              <SessionActivityIndicator
+                totalRemainingSeconds={totalRemainingSeconds}
+                timeoutMinutes={timeoutMinutes}
+              />
+            )}
+            
             <ThemeToggle />
 
             {/* User Menu - Desktop */}
