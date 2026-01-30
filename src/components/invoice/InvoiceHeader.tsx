@@ -15,6 +15,8 @@ interface InvoiceHeaderProps {
     gstin: string;
     state: string;
     stateCode: string;
+    email?: string;
+    phone?: string;
   };
 }
 
@@ -105,6 +107,12 @@ export function InvoiceHeader({
             <div className="space-y-0.5">
               <p className="text-sm font-semibold">{customer.name}</p>
               <p className="text-xs opacity-80">{customer.address}</p>
+              {customer.phone && (
+                <p className="text-xs opacity-80">Phone: {customer.phone}</p>
+              )}
+              {customer.email && (
+                <p className="text-xs opacity-80">Email: {customer.email}</p>
+              )}
               {customer.gstin && (
                 <p className="text-xs">
                   <span className="opacity-60">GSTIN: </span>
