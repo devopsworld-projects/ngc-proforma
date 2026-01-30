@@ -36,6 +36,8 @@ interface CustomerInfo {
   gstin?: string | null;
   state?: string | null;
   state_code?: string | null;
+  email?: string | null;
+  phone?: string | null;
 }
 
 interface AddressInfo {
@@ -280,6 +282,22 @@ export async function generateInvoicePDF(
       }
     }
 
+    if (invoice.customer.phone) {
+      addText(`Phone: ${invoice.customer.phone}`, leftColX, billY, {
+        fontSize: 9,
+        color: mutedText,
+      });
+      billY += 5;
+    }
+
+    if (invoice.customer.email) {
+      addText(`Email: ${invoice.customer.email}`, leftColX, billY, {
+        fontSize: 9,
+        color: mutedText,
+      });
+      billY += 5;
+    }
+
     if (invoice.customer.gstin) {
       addText(`GSTIN: ${invoice.customer.gstin}`, leftColX, billY, {
         fontSize: 9,
@@ -476,7 +494,14 @@ export async function generateInvoicePDF(
     });
     
     let termY = yPos + 10;
-    const terms = [template.terms_line1, template.terms_line2, template.terms_line3].filter(Boolean);
+    // Use hardcoded terms to match the view proforma
+    const defaultTerms = [
+      "Customer Should register the product with respective company.",
+      "In case of Warranty the customer should bare the courier charges.",
+      "Validity of this quotation is for 7 days.",
+      "Payment should be made in 100% Advance, No warranty for Burning."
+    ];
+    const terms = template.terms_line1 ? [template.terms_line1, template.terms_line2, template.terms_line3].filter(Boolean) : defaultTerms;
     terms.forEach((term, idx) => {
       addText(`${idx + 1}. ${term}`, margin, termY, { fontSize: 8, color: mutedText });
       termY += 5;
@@ -485,35 +510,31 @@ export async function generateInvoicePDF(
   }
 
   // ===== BANK DETAILS =====
-  if (template.bank_name) {
-    doc.setDrawColor(...borderColor);
-    doc.line(margin, yPos - 3, pageWidth - margin, yPos - 3);
-    
-    addText("Bank Details:", margin, yPos + 3, {
-      fontSize: 9,
-      fontStyle: "bold",
-      color: darkText,
-    });
+  // Use hardcoded bank details to match the view proforma
+  const bankName = template.bank_name || "TAMILNAD MERCANTILE BANK LTD";
+  const bankAccountNo = template.bank_account_no || "171700150950039";
+  const bankIfsc = template.bank_ifsc || "TMBL0000171";
+  const bankBranch = template.bank_branch || "NEW GLOBAL COMPUTERS";
 
-    let bankY = yPos + 10;
-    if (template.bank_name) {
-      addText(`Bank: ${template.bank_name}`, margin, bankY, { fontSize: 8, color: mutedText });
-      bankY += 5;
-    }
-    if (template.bank_account_no) {
-      addText(`Account No: ${template.bank_account_no}`, margin, bankY, { fontSize: 8, color: mutedText });
-      bankY += 5;
-    }
-    if (template.bank_ifsc) {
-      addText(`IFSC: ${template.bank_ifsc}`, margin, bankY, { fontSize: 8, color: mutedText });
-      bankY += 5;
-    }
-    if (template.bank_branch) {
-      addText(`Branch: ${template.bank_branch}`, margin, bankY, { fontSize: 8, color: mutedText });
-      bankY += 5;
-    }
-    yPos = bankY + 5;
-  }
+  doc.setDrawColor(...borderColor);
+  doc.line(margin, yPos - 3, pageWidth - margin, yPos - 3);
+  
+  addText("Bank Details:", margin, yPos + 3, {
+    fontSize: 9,
+    fontStyle: "bold",
+    color: darkText,
+  });
+
+  let bankY = yPos + 10;
+  addText(`Name: ${bankBranch}`, margin, bankY, { fontSize: 8, color: mutedText });
+  bankY += 5;
+  addText(`Bank: ${bankName}`, margin, bankY, { fontSize: 8, color: mutedText });
+  bankY += 5;
+  addText(`A/C No: ${bankAccountNo}`, margin, bankY, { fontSize: 8, color: mutedText });
+  bankY += 5;
+  addText(`IFSC: ${bankIfsc}`, margin, bankY, { fontSize: 8, color: mutedText });
+  bankY += 5;
+  yPos = bankY + 5;
 
   // ===== SIGNATURE SECTION =====
   if (template.show_signature) {
