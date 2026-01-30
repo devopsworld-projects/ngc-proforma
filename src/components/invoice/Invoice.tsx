@@ -11,6 +11,9 @@ interface InvoiceProps {
 export function Invoice({ data }: InvoiceProps) {
   return (
     <div className="invoice-container animate-fade-in">
+      {/* Page break indicator - shows where page 2 would start */}
+      <div className="invoice-page-indicator no-print" aria-hidden="true" />
+      
       {/* Gold Accent Bar */}
       <div className="invoice-accent-bar" />
       

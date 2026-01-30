@@ -133,12 +133,35 @@
 
 @layer components {
   .invoice-container {
-    @apply bg-white shadow-xl rounded-lg overflow-hidden mx-auto;
+    @apply bg-white shadow-xl rounded-lg overflow-hidden mx-auto relative;
     box-shadow: 0 25px 50px -12px hsl(var(--invoice-shadow) / 0.15);
     /* A4 dimensions: 210mm x 297mm (ratio 1:1.414) */
     width: 210mm;
     min-height: 297mm;
     max-width: 100%;
+    /* Show page boundaries with subtle gold dashed line at each A4 page height */
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent calc(297mm - 1px),
+      hsl(var(--invoice-accent) / 0.4) calc(297mm - 1px),
+      hsl(var(--invoice-accent) / 0.4) 297mm
+    );
+    background-size: 100% 297mm;
+  }
+
+  .invoice-page-indicator {
+    @apply absolute left-0 right-0 pointer-events-none;
+    top: 297mm;
+  }
+
+  .invoice-page-indicator::before {
+    content: '— Page 2 starts here —';
+    @apply absolute left-1/2 -translate-x-1/2 px-3 py-0.5 text-xs font-medium rounded-full;
+    background: hsl(var(--invoice-accent) / 0.15);
+    color: hsl(var(--invoice-accent));
+    top: -0.625rem;
+    white-space: nowrap;
   }
 
   .invoice-header {
