@@ -36,7 +36,7 @@ export function Invoice({ data }: InvoiceProps) {
       <InvoiceTable items={data.items} />
 
       {/* Divider */}
-      <div className="invoice-divider mx-6" />
+      <div className="border-t border-dashed border-gray-300 mx-4" />
 
       {/* Totals */}
       <InvoiceTotals

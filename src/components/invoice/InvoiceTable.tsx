@@ -26,48 +26,48 @@ export function InvoiceTable({ items }: InvoiceTableProps) {
       <Table>
         <TableHeader>
           <TableRow className="bg-gray-100 border-none">
-            <TableHead className="w-16 text-center py-4 text-gray-700 text-xs font-semibold uppercase">Sl No.</TableHead>
-            <TableHead className="w-32 py-4 text-gray-700 text-xs font-semibold uppercase">Brand</TableHead>
-            <TableHead className="min-w-[250px] py-4 text-gray-700 text-xs font-semibold uppercase">Description</TableHead>
-            <TableHead className="text-center py-4 w-20 text-gray-700 text-xs font-semibold uppercase">Qty</TableHead>
-            <TableHead className="text-right py-4 w-28 text-gray-700 text-xs font-semibold uppercase">Unit Price</TableHead>
-            <TableHead className="text-center py-4 w-24 text-gray-700 text-xs font-semibold uppercase">Product Image</TableHead>
+            <TableHead className="w-12 text-center py-2 text-gray-700 text-xs font-semibold uppercase">Sl No.</TableHead>
+            <TableHead className="w-28 py-2 text-gray-700 text-xs font-semibold uppercase">Brand</TableHead>
+            <TableHead className="min-w-[200px] py-2 text-gray-700 text-xs font-semibold uppercase">Description</TableHead>
+            <TableHead className="text-center py-2 w-16 text-gray-700 text-xs font-semibold uppercase">Qty</TableHead>
+            <TableHead className="text-right py-2 w-24 text-gray-700 text-xs font-semibold uppercase">Unit Price</TableHead>
+            <TableHead className="text-center py-2 w-20 text-gray-700 text-xs font-semibold uppercase">Image</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {items.map((item, index) => (
             <TableRow 
               key={item.id} 
-              className="invoice-table-row"
+              className="border-b border-gray-200 hover:bg-gray-50"
               style={{ animationDelay: `${index * 0.05}s` }}
             >
-              <TableCell className="text-center font-medium py-6">
-                <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary/5 text-primary text-sm font-semibold">
+              <TableCell className="text-center font-medium py-2">
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/5 text-primary text-xs font-semibold">
                   {item.slNo}
                 </span>
               </TableCell>
-              <TableCell className="py-6">
-                <span className="font-medium text-black">{item.brand || "-"}</span>
+              <TableCell className="py-2">
+                <span className="font-medium text-black text-sm">{item.brand || "-"}</span>
               </TableCell>
-              <TableCell className="py-6">
-                <p className="font-medium text-black">{item.description}</p>
+              <TableCell className="py-2">
+                <p className="font-medium text-black text-sm">{item.description}</p>
               </TableCell>
-              <TableCell className="text-center py-6">
-                <span className="font-semibold text-black">{item.quantity}</span>
+              <TableCell className="text-center py-2">
+                <span className="font-semibold text-black text-sm">{item.quantity}</span>
                 <span className="text-gray-600 text-xs ml-1">{item.unit}</span>
               </TableCell>
-              <TableCell className="text-right py-6 font-medium text-black">
+              <TableCell className="text-right py-2 font-medium text-black text-sm">
                 {formatCurrency(item.rate)}
               </TableCell>
-              <TableCell className="text-center py-6">
+              <TableCell className="text-center py-2">
                 {item.productImage ? (
                   <img 
                     src={item.productImage} 
                     alt={item.description}
-                    className="w-12 h-12 object-cover rounded mx-auto"
+                    className="w-10 h-10 object-cover rounded mx-auto"
                   />
                 ) : (
-                  <span className="text-muted-foreground text-xs">-</span>
+                  <span className="text-gray-400 text-xs">-</span>
                 )}
               </TableCell>
             </TableRow>

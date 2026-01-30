@@ -17,53 +17,53 @@ export function InvoiceTotals({ totals, totalQuantity, amountInWords }: InvoiceT
   };
 
   return (
-    <div className="p-6 space-y-6 bg-white">
-      <div className="flex flex-col lg:flex-row gap-6">
+    <div className="px-4 py-3 bg-white">
+      <div className="flex flex-col lg:flex-row gap-4">
         {/* Amount in Words */}
-        <div className="flex-1 p-4 bg-gray-50 rounded-lg border border-gray-200">
-          <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">
+        <div className="flex-1 p-3 bg-gray-50 rounded border border-gray-200">
+          <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">
             Amount Chargeable (in words)
           </p>
-          <p className="text-lg font-serif font-semibold text-black">
+          <p className="text-sm font-serif font-semibold text-black">
             {amountInWords}
           </p>
-          <p className="text-xs text-gray-500 mt-2">E. & O.E</p>
+          <p className="text-xs text-gray-500 mt-1">E. & O.E</p>
         </div>
 
         {/* Totals Summary */}
-        <div className="lg:w-96 space-y-3">
-          <div className="flex justify-between items-center text-sm">
+        <div className="lg:w-80 space-y-1.5">
+          <div className="flex justify-between items-center text-xs">
             <span className="text-gray-600">Subtotal ({totalQuantity} items)</span>
             <span className="font-medium text-black">{formatCurrency(totals.subtotal)}</span>
           </div>
           
-          <div className="flex justify-between items-center text-sm">
+          <div className="flex justify-between items-center text-xs">
             <span className="text-gray-600">
-              Discount Received @ {totals.discountPercent}%
+              Discount @ {totals.discountPercent}%
             </span>
             <span className="font-medium text-green-600">
               - {formatCurrency(totals.discount)}
             </span>
           </div>
 
-          <Separator className="my-3" />
+          <Separator className="my-1.5" />
 
-          <div className="flex justify-between items-center text-sm">
+          <div className="flex justify-between items-center text-xs">
             <span className="text-gray-600">IGST @ {totals.taxRate}%</span>
             <span className="font-medium text-black">{formatCurrency(totals.taxAmount)}</span>
           </div>
 
-          <div className="flex justify-between items-center text-sm">
+          <div className="flex justify-between items-center text-xs">
             <span className="text-gray-600">Round Off</span>
             <span className="font-medium text-black">{formatCurrency(totals.roundOff)}</span>
           </div>
 
-          <Separator className="my-3" />
+          <Separator className="my-1.5" />
 
-          <div className="bg-[hsl(222,47%,15%)] text-white -mx-4 px-4 py-4 rounded-lg">
+          <div className="bg-[hsl(222,47%,15%)] text-white -mx-2 px-3 py-2 rounded">
             <div className="flex justify-between items-center">
-              <span className="text-lg font-serif font-semibold">Grand Total</span>
-              <span className="text-2xl font-serif font-bold">
+              <span className="text-sm font-serif font-semibold">Grand Total</span>
+              <span className="text-lg font-serif font-bold">
                 ₹{totals.grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </span>
             </div>
