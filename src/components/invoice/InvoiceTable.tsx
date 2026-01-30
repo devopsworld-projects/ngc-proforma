@@ -7,7 +7,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 
 interface InvoiceTableProps {
   items: InvoiceItem[];
@@ -28,11 +27,11 @@ export function InvoiceTable({ items }: InvoiceTableProps) {
         <TableHeader>
           <TableRow className="invoice-table-header border-none">
             <TableHead className="w-16 text-center py-4">Sl No.</TableHead>
-            <TableHead className="min-w-[300px] py-4">Description of Goods</TableHead>
-            <TableHead className="text-right py-4">Quantity</TableHead>
-            <TableHead className="text-right py-4">Rate</TableHead>
-            <TableHead className="text-center py-4">Disc. %</TableHead>
-            <TableHead className="text-right py-4">Amount</TableHead>
+            <TableHead className="w-32 py-4">Brand</TableHead>
+            <TableHead className="min-w-[250px] py-4">Description</TableHead>
+            <TableHead className="text-center py-4 w-20">Qty</TableHead>
+            <TableHead className="text-right py-4 w-28">Unit Price</TableHead>
+            <TableHead className="text-center py-4 w-24">Product Image</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -48,39 +47,28 @@ export function InvoiceTable({ items }: InvoiceTableProps) {
                 </span>
               </TableCell>
               <TableCell className="py-6">
-                <div className="space-y-2">
-                  <p className="font-medium text-foreground">{item.description}</p>
-                  {item.serialNumbers && item.serialNumbers.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      <span className="text-xs text-invoice-muted">S/NO: </span>
-                      {item.serialNumbers.slice(0, 5).map((sn, i) => (
-                        <Badge key={i} variant="secondary" className="text-xs font-mono">
-                          {sn}
-                        </Badge>
-                      ))}
-                      {item.serialNumbers.length > 5 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{item.serialNumbers.length - 5} more
-                        </Badge>
-                      )}
-                    </div>
-                  )}
-                </div>
+                <span className="font-medium text-foreground">{item.brand || "-"}</span>
               </TableCell>
-              <TableCell className="text-right py-6">
-                <span className="font-semibold">{item.quantity.toFixed(3)}</span>
+              <TableCell className="py-6">
+                <p className="font-medium text-foreground">{item.description}</p>
+              </TableCell>
+              <TableCell className="text-center py-6">
+                <span className="font-semibold">{item.quantity}</span>
                 <span className="text-invoice-muted text-xs ml-1">{item.unit}</span>
               </TableCell>
               <TableCell className="text-right py-6 font-medium">
                 {formatCurrency(item.rate)}
               </TableCell>
               <TableCell className="text-center py-6">
-                <Badge variant="outline" className="font-mono">
-                  {item.discountPercent}%
-                </Badge>
-              </TableCell>
-              <TableCell className="text-right py-6">
-                <span className="font-semibold text-lg">{formatCurrency(item.amount)}</span>
+                {item.productImage ? (
+                  <img 
+                    src={item.productImage} 
+                    alt={item.description}
+                    className="w-12 h-12 object-cover rounded mx-auto"
+                  />
+                ) : (
+                  <span className="text-muted-foreground text-xs">-</span>
+                )}
               </TableCell>
             </TableRow>
           ))}

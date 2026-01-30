@@ -21,6 +21,7 @@ export interface SupplierInfo {
 export interface InvoiceItem {
   id: string;
   slNo: number;
+  brand?: string;
   description: string;
   serialNumbers?: string[];
   quantity: number;
@@ -28,6 +29,7 @@ export interface InvoiceItem {
   rate: number;
   discountPercent: number;
   amount: number;
+  productImage?: string;
 }
 
 export interface InvoiceTotals {

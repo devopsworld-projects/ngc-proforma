@@ -92,6 +92,7 @@ export default function InvoicePreview() {
     const items: InvoiceItem[] = (invoice.items || []).map((item: any) => ({
       id: item.id,
       slNo: item.sl_no,
+      brand: item.brand || "",
       description: item.description,
       serialNumbers: item.serial_numbers || [],
       quantity: Number(item.quantity),
@@ -99,6 +100,7 @@ export default function InvoicePreview() {
       rate: Number(item.rate),
       discountPercent: Number(item.discount_percent || 0),
       amount: Number(item.amount),
+      productImage: item.product_image || "",
     }));
 
     const totals: InvoiceTotals = {

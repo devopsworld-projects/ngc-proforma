@@ -5,6 +5,7 @@ import { PdfTemplateSettings, defaultPdfTemplateSettings } from "@/hooks/usePdfT
 
 interface InvoiceItem {
   sl_no: number;
+  brand?: string | null;
   description: string;
   serial_numbers?: string[] | null;
   quantity: number;
@@ -12,6 +13,7 @@ interface InvoiceItem {
   rate: number;
   discount_percent: number;
   amount: number;
+  product_image?: string | null;
 }
 
 interface CompanyInfo {
@@ -309,49 +311,29 @@ export async function generateInvoicePDF(
   yPos = Math.max(detailY, billY) + 10;
 
   // ===== ITEMS TABLE =====
-  const showDiscount = template.show_discount_column;
-  const showSerial = template.show_serial_numbers;
-
   const tableData = invoice.items.map((item, idx) => {
-    let desc = item.description;
-    if (showSerial && item.serial_numbers?.length) {
-      desc += `\nS/N: ${item.serial_numbers.slice(0, 2).join(", ")}${item.serial_numbers.length > 2 ? "..." : ""}`;
-    }
-    
     const row: string[] = [
       (idx + 1).toString(),
-      desc,
-      item.quantity.toString(),
-      item.unit,
+      item.brand || "-",
+      item.description,
+      `${item.quantity} ${item.unit}`,
       formatCurrency(item.rate),
+      item.product_image ? "[Image]" : "-",
     ];
-    
-    if (showDiscount) {
-      row.push(item.discount_percent > 0 ? `${item.discount_percent}%` : "-");
-    }
-    row.push(formatCurrency(item.amount));
     
     return row;
   });
 
-  const tableHead = showDiscount 
-    ? [["#", "Description", "Qty", "Unit", "Rate", "Disc", "Amount"]]
-    : [["#", "Description", "Qty", "Unit", "Rate", "Amount"]];
+  const tableHead = [["#", "Brand", "Description", "Qty", "Unit Price", "Image"]];
 
   const columnStyles: any = {
     0: { cellWidth: 10, halign: "center" },
-    1: { cellWidth: "auto", halign: "left" },
-    2: { cellWidth: 16, halign: "center" },
-    3: { cellWidth: 16, halign: "center" },
-    4: { cellWidth: 28, halign: "right" },
+    1: { cellWidth: 30, halign: "left" },
+    2: { cellWidth: "auto", halign: "left" },
+    3: { cellWidth: 22, halign: "center" },
+    4: { cellWidth: 30, halign: "right" },
+    5: { cellWidth: 18, halign: "center" },
   };
-
-  if (showDiscount) {
-    columnStyles[5] = { cellWidth: 16, halign: "center" };
-    columnStyles[6] = { cellWidth: 32, halign: "right", fontStyle: "bold" };
-  } else {
-    columnStyles[5] = { cellWidth: 32, halign: "right", fontStyle: "bold" };
-  }
 
   autoTable(doc, {
     startY: yPos,
