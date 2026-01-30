@@ -17,10 +17,10 @@ export function InvoiceTotals({
       minimumFractionDigits: 2
     }).format(amount);
   };
-  return <div className="px-4 py-3 bg-white">
+  return <div className="px-3 py-3 bg-white">
       <div className="flex flex-col lg:flex-row gap-4">
         {/* Amount in Words */}
-        <div className="flex-1 p-3 bg-gray-50 rounded border border-gray-200">
+        <div className="flex-1 p-3 bg-gray-50 border border-gray-200">
           <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">
             Amount Chargeable (in words)
           </p>
@@ -60,7 +60,7 @@ export function InvoiceTotals({
 
           <Separator className="my-1.5" />
 
-          <div className="bg-[hsl(222,47%,15%)] text-white -mx-2 px-3 py-2 rounded">
+          <div className="bg-[hsl(222,47%,15%)] text-white -mx-2 px-3 py-2">
             <div className="flex justify-between items-center">
               <span className="text-sm font-serif font-semibold">Grand Total</span>
               <span className="text-lg font-bold font-sans">

@@ -28,7 +28,7 @@ export function InvoiceFooter({
   }
 }: InvoiceFooterProps) {
   return (
-    <div className="px-4 py-3 bg-[hsl(var(--invoice-header-bg))] text-[hsl(var(--invoice-header-fg))] space-y-3">
+    <div className="px-3 py-3 bg-[hsl(var(--invoice-header-bg))] text-[hsl(var(--invoice-header-fg))] space-y-3">
       {/* Terms & Conditions */}
       <div className="space-y-0.5">
         <div className="flex items-center gap-1.5">
