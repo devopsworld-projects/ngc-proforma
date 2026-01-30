@@ -67,6 +67,7 @@ export default function InvoicePreview() {
       stateCode: companySettings.state_code || "",
       email: companySettings.email || "",
       website: companySettings.website || "",
+      logoUrl: companySettings.logo_url || undefined,
     };
 
     const customer = invoice.customers;

@@ -26,9 +26,17 @@ export function InvoiceHeader({
         {/* Company Info */}
         <div className="flex-1 space-y-4">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-lg gradient-gold flex items-center justify-center">
-              <Building2 className="w-6 h-6 text-primary" />
-            </div>
+            {company.logoUrl ? (
+              <img 
+                src={company.logoUrl} 
+                alt={`${company.name} logo`}
+                className="w-12 h-12 rounded-lg object-contain"
+              />
+            ) : (
+              <div className="w-12 h-12 rounded-lg gradient-gold flex items-center justify-center">
+                <Building2 className="w-6 h-6 text-primary" />
+              </div>
+            )}
             <div>
               <h1 className="text-2xl font-serif font-bold tracking-tight">
                 {company.name}

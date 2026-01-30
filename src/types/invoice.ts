@@ -7,6 +7,7 @@ export interface CompanyInfo {
   stateCode: string;
   email: string;
   website: string;
+  logoUrl?: string;
 }
 
 export interface SupplierInfo {
