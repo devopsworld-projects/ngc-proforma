@@ -214,6 +214,7 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
           invoice.items.map((item) => ({
             id: item.id,
             slNo: item.sl_no,
+            brand: item.brand || "",
             description: item.description,
             serialNumbers: item.serial_numbers?.join(", ") || "",
             quantity: item.quantity,
@@ -221,6 +222,7 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
             rate: item.rate,
             discountPercent: item.discount_percent,
             amount: item.amount,
+            productImage: item.product_image || "",
           }))
         );
       }
@@ -356,6 +358,7 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
         const itemsPayload = lineItems.map((item) => ({
           invoice_id: invoice.id,
           sl_no: item.slNo,
+          brand: item.brand || null,
           description: item.description,
           serial_numbers: item.serialNumbers ? item.serialNumbers.split(",").map((s) => s.trim()).filter(Boolean) : null,
           quantity: item.quantity,
@@ -363,6 +366,7 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
           rate: item.rate,
           discount_percent: item.discountPercent,
           amount: item.amount,
+          product_image: item.productImage || null,
         }));
 
         const { error: itemsError } = await supabase.from("invoice_items").insert(itemsPayload);
@@ -382,6 +386,7 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
         const itemsPayload = lineItems.map((item) => ({
           invoice_id: newInvoice.id,
           sl_no: item.slNo,
+          brand: item.brand || null,
           description: item.description,
           serial_numbers: item.serialNumbers ? item.serialNumbers.split(",").map((s) => s.trim()).filter(Boolean) : null,
           quantity: item.quantity,
@@ -389,6 +394,7 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
           rate: item.rate,
           discount_percent: item.discountPercent,
           amount: item.amount,
+          product_image: item.productImage || null,
         }));
 
         const { error: itemsError } = await supabase.from("invoice_items").insert(itemsPayload);

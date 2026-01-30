@@ -157,6 +157,7 @@ export function ExcelLineItemsUpload({ onImport, trigger }: ExcelLineItemsUpload
     const lineItems: LineItem[] = parsedItems.map((item, index) => ({
       id: crypto.randomUUID(),
       slNo: index + 1,
+      brand: "", // Excel import doesn't have brand
       description: item.sku ? `${item.description} (SKU: ${item.sku})` : item.description,
       serialNumbers: item.serialNumbers,
       quantity: item.quantity,
@@ -164,6 +165,7 @@ export function ExcelLineItemsUpload({ onImport, trigger }: ExcelLineItemsUpload
       rate: item.rate,
       discountPercent: item.discountPercent,
       amount: item.amount,
+      productImage: "", // Excel import doesn't have image
     }));
 
     onImport(lineItems);

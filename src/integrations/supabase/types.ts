@@ -178,11 +178,13 @@ export type Database = {
       invoice_items: {
         Row: {
           amount: number
+          brand: string | null
           created_at: string
           description: string
           discount_percent: number | null
           id: string
           invoice_id: string
+          product_image: string | null
           quantity: number
           rate: number
           serial_numbers: string[] | null
@@ -191,11 +193,13 @@ export type Database = {
         }
         Insert: {
           amount: number
+          brand?: string | null
           created_at?: string
           description: string
           discount_percent?: number | null
           id?: string
           invoice_id: string
+          product_image?: string | null
           quantity: number
           rate: number
           serial_numbers?: string[] | null
@@ -204,11 +208,13 @@ export type Database = {
         }
         Update: {
           amount?: number
+          brand?: string | null
           created_at?: string
           description?: string
           discount_percent?: number | null
           id?: string
           invoice_id?: string
+          product_image?: string | null
           quantity?: number
           rate?: number
           serial_numbers?: string[] | null
