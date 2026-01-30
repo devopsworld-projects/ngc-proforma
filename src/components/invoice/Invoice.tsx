@@ -1,6 +1,5 @@
 import { InvoiceData } from "@/types/invoice";
 import { InvoiceHeader } from "./InvoiceHeader";
-import { SupplierInfo } from "./SupplierInfo";
 import { InvoiceTable } from "./InvoiceTable";
 import { InvoiceTotals } from "./InvoiceTotals";
 import { InvoiceFooter } from "./InvoiceFooter";
@@ -15,7 +14,7 @@ export function Invoice({ data }: InvoiceProps) {
       {/* Gold Accent Bar */}
       <div className="invoice-accent-bar" />
       
-      {/* Header */}
+      {/* Header with Org Details + Customer/Invoice Info */}
       <InvoiceHeader
         company={data.company}
         invoiceNo={data.invoiceNo}
@@ -24,10 +23,14 @@ export function Invoice({ data }: InvoiceProps) {
         supplierInvoiceNo={data.supplierInvoiceNo}
         supplierInvoiceDate={data.supplierInvoiceDate}
         otherReferences={data.otherReferences}
+        customer={{
+          name: data.supplier.name,
+          address: data.supplier.address,
+          gstin: data.supplier.gstin,
+          state: data.supplier.state,
+          stateCode: data.supplier.stateCode,
+        }}
       />
-
-      {/* Supplier Info */}
-      <SupplierInfo supplier={data.supplier} />
 
       {/* Items Table */}
       <InvoiceTable items={data.items} />
@@ -42,8 +45,8 @@ export function Invoice({ data }: InvoiceProps) {
         amountInWords={data.amountInWords}
       />
 
-      {/* Footer */}
-      <InvoiceFooter supplier={data.supplier} />
+      {/* Footer - Terms, Bank Details, Signature */}
+      <InvoiceFooter company={data.company} />
 
       {/* Bottom Gold Accent */}
       <div className="invoice-accent-bar" />
