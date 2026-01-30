@@ -69,10 +69,11 @@ export function usePdfTemplateSettings() {
     queryFn: async () => {
       if (!user) return null;
       
-      // Fetch the single global PDF template settings record
+      // Fetch the most recently updated global PDF template settings record
       const { data, error } = await supabase
         .from("pdf_template_settings")
         .select("*")
+        .order("updated_at", { ascending: false })
         .limit(1)
         .maybeSingle();
       

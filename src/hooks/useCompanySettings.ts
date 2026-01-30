@@ -27,10 +27,11 @@ export function useCompanySettings() {
     queryKey: ["companySettings"],
     queryFn: async () => {
       if (!user) return null;
-      // Fetch the single global company settings record
+      // Fetch the most recently updated global company settings record
       const { data, error } = await supabase
         .from("company_settings")
         .select("*")
+        .order("updated_at", { ascending: false })
         .limit(1)
         .maybeSingle();
       if (error) throw error;
