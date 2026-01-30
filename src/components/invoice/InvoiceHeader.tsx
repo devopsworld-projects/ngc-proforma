@@ -92,7 +92,7 @@ export function InvoiceHeader({
             <div className="pt-2 border-t border-white/10 text-sm">
               <p className="text-xs opacity-60 uppercase tracking-wide">
             </p>
-              <p className="font-medium">{supplierInvoiceNo}</p>
+              
               
             </div>
 
