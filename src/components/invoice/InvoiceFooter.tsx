@@ -28,16 +28,16 @@ export function InvoiceFooter({
   }
 }: InvoiceFooterProps) {
   return (
-    <div className="p-4 bg-[hsl(var(--invoice-header-bg))] text-[hsl(var(--invoice-header-fg))] space-y-4">
+    <div className="px-4 py-3 bg-[hsl(var(--invoice-header-bg))] text-[hsl(var(--invoice-header-fg))] space-y-3">
       {/* Terms & Conditions */}
-      <div className="space-y-1">
-        <div className="flex items-center gap-2">
-          <FileText className="w-3.5 h-3.5 opacity-70" />
+      <div className="space-y-0.5">
+        <div className="flex items-center gap-1.5">
+          <FileText className="w-3 h-3 opacity-70" />
           <h4 className="text-xs font-semibold uppercase tracking-wider opacity-70">
             Terms & Conditions
           </h4>
         </div>
-        <ul className="text-xs opacity-90 space-y-0.5 pl-5">
+        <ul className="text-xs opacity-90 space-y-0 pl-4">
           {termsAndConditions.map((term, idx) => (
             <li key={idx}>{idx + 1}. {term}</li>
           ))}
@@ -46,14 +46,14 @@ export function InvoiceFooter({
 
       {/* Bank Details */}
       {bankDetails && bankDetails.bankName && (
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <Building2 className="w-3.5 h-3.5 opacity-70" />
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-1.5">
+            <Building2 className="w-3 h-3 opacity-70" />
             <h4 className="text-xs font-semibold uppercase tracking-wider opacity-70">
               Bank Details
             </h4>
           </div>
-          <div className="text-xs opacity-90 space-y-0.5 pl-5">
+          <div className="text-xs opacity-90 space-y-0 pl-4">
             {bankDetails.branch && <p>Name: {bankDetails.branch}</p>}
             {bankDetails.bankName && <p>Bank: {bankDetails.bankName}</p>}
             {bankDetails.accountNo && <p>A/C No: {bankDetails.accountNo}</p>}
@@ -63,13 +63,13 @@ export function InvoiceFooter({
       )}
 
       {/* Signature Section */}
-      <div className="flex justify-end pt-2">
-        <div className="text-center w-40">
-          <p className="text-xs font-semibold mb-6">
+      <div className="flex justify-end">
+        <div className="text-center w-36">
+          <p className="text-xs font-semibold mb-4">
             for {company.name}
           </p>
-          <div className="border-t border-white/30 pt-2 flex items-center justify-center gap-1.5">
-            <PenLine className="w-3 h-3 opacity-70" />
+          <div className="border-t border-white/30 pt-1.5 flex items-center justify-center gap-1">
+            <PenLine className="w-2.5 h-2.5 opacity-70" />
             <span className="text-xs font-medium opacity-80">
               Authorised Signatory
             </span>
