@@ -182,12 +182,15 @@ export async function generateInvoicePDF(
     let contactY = yPos + 5;
     
     if (company.phone && company.phone.length > 0) {
-      addText(`Phone: ${company.phone[0]}`, rightX, contactY, {
+      const allPhones = company.phone.join(", ");
+      addText(`Phone: ${allPhones}`, rightX, contactY, {
         fontSize: 9,
         color: darkText,
         align: "right",
+        maxWidth: 80,
       });
-      contactY += 5;
+      // Adjust spacing based on phone numbers length
+      contactY += company.phone.length > 1 ? 8 : 5;
     }
     if (company.email) {
       addText(company.email, rightX, contactY, {

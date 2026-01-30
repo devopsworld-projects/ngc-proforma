@@ -151,7 +151,7 @@ export function AppNavigation() {
             ))}
             <DropdownNavGroup label="Proforma Invoice" icon={FileText} items={invoiceItems} />
             <DropdownNavGroup label="Management" icon={Package} items={managementItems} />
-            <NavLink path="/settings" label="Settings" icon={Settings} />
+            {isAdmin && <NavLink path="/settings" label="Settings" icon={Settings} />}
             {isAdmin && (
               <Link
                 to="/admin"
@@ -247,7 +247,7 @@ export function AppNavigation() {
 
             {/* System Section */}
             <div className="pt-2 border-t">
-              <NavLink path="/settings" label="Settings" icon={Settings} />
+              {isAdmin && <NavLink path="/settings" label="Settings" icon={Settings} />}
               {isAdmin && (
                 <Link
                   to="/admin"
