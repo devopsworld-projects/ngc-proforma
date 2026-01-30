@@ -41,13 +41,12 @@ export interface CustomerWithAddresses extends Customer {
 export function useCustomers() {
   const { user } = useAuth();
   return useQuery({
-    queryKey: ["customers", user?.id],
+    queryKey: ["customers"],
     queryFn: async () => {
       if (!user) return [];
       const { data, error } = await supabase
         .from("customers")
         .select("*")
-        .eq("user_id", user.id)
         .order("name");
       if (error) throw error;
       return data as Customer[];
