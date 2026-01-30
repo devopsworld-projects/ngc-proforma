@@ -87,7 +87,7 @@ export function AppNavigation() {
           <ChevronDown className="h-3 w-3" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-48 bg-popover border shadow-lg z-50">
+      <DropdownMenuContent align="start" className="w-48 bg-background border border-border shadow-lg z-[100]">
         {items.map(item => <DropdownMenuItem key={item.path} asChild>
             <Link to={item.path} className={cn("flex items-center gap-2 cursor-pointer", isActive(item.path) && "bg-accent")}>
               <item.icon className="h-4 w-4" />
@@ -132,7 +132,7 @@ export function AppNavigation() {
                     <span className="max-w-[100px] truncate">{user.email?.split("@")[0]}</span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 bg-popover border shadow-lg z-50">
+                <DropdownMenuContent align="end" className="w-48 bg-background border border-border shadow-lg z-[100]">
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium leading-none">Account</p>
