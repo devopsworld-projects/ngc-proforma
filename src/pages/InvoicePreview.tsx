@@ -6,9 +6,8 @@ import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { usePdfTemplateSettings } from "@/hooks/usePdfTemplateSettings";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Edit, Download, Printer } from "lucide-react";
+import { ArrowLeft, Edit, Printer } from "lucide-react";
 import { InvoiceData, CompanyInfo, SupplierInfo, InvoiceItem, InvoiceTotals } from "@/types/invoice";
-import { generateInvoicePDF } from "@/lib/pdf-generator";
 import { formatDate, numberToWords } from "@/lib/invoice-utils";
 import { toast } from "sonner";
 
@@ -20,31 +19,6 @@ export default function InvoicePreview() {
   const { data: templateSettings, isLoading: templateLoading } = usePdfTemplateSettings();
 
   const isLoading = invoiceLoading || settingsLoading || templateLoading;
-
-  const handleExportPDF = async () => {
-    if (!invoice || !companySettings) {
-      toast.error("Please configure company settings first");
-      navigate("/settings");
-      return;
-    }
-
-    try {
-      await generateInvoicePDF(
-        {
-          ...invoice,
-          customer: invoice.customers,
-          billing_address: invoice.billing_address,
-          shipping_address: invoice.shipping_address,
-        },
-        companySettings,
-        { templateSettings }
-      );
-      toast.success("PDF downloaded successfully");
-    } catch (error: any) {
-      console.error("PDF export error:", error);
-      toast.error(error.message || "Failed to export PDF");
-    }
-  };
 
   const handlePrint = () => {
     window.print();
@@ -203,10 +177,6 @@ export default function InvoicePreview() {
             <Button variant="outline" onClick={handlePrint}>
               <Printer className="h-4 w-4 mr-2" />
               Print
-            </Button>
-            <Button variant="outline" onClick={handleExportPDF}>
-              <Download className="h-4 w-4 mr-2" />
-              Download PDF
             </Button>
             <Button onClick={() => navigate(`/invoices/${id}/edit`)}>
               <Edit className="h-4 w-4 mr-2" />
