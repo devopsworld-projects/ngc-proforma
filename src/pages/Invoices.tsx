@@ -39,10 +39,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { FileText, Plus, Edit, RefreshCcw, MoreVertical, Send, CheckCircle, XCircle, Clock, Download, Eye, SearchX, Mail, Loader2, Trash2, User } from "lucide-react";
+import { FileText, Plus, Edit, RefreshCcw, MoreVertical, Send, CheckCircle, XCircle, Clock, Eye, SearchX, Mail, Loader2, Trash2, User, Printer } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { generateInvoicePDF } from "@/lib/pdf-generator";
 import { supabase } from "@/integrations/supabase/client";
 
 const statusColors: Record<string, string> = {
@@ -218,22 +217,9 @@ export default function InvoicesPage() {
     };
   };
 
-  const handleExportPDF = async (invoiceId: string) => {
-    try {
-      const fullInvoice = await fetchFullInvoice(invoiceId);
-
-      if (!companySettings) {
-        toast.error("Please configure company settings first");
-        navigate("/settings");
-        return;
-      }
-
-      await generateInvoicePDF(fullInvoice!, companySettings, { templateSettings });
-      toast.success("PDF downloaded successfully");
-    } catch (error: any) {
-      console.error("PDF export error:", error);
-      toast.error(error.message || "Failed to export PDF");
-    }
+  const handlePrintInvoice = (invoiceId: string) => {
+    // Open the invoice preview in a new window for printing
+    window.open(`/invoices/${invoiceId}`, '_blank');
   };
 
   const handleSendEmail = async (invoiceId: string) => {
@@ -367,10 +353,10 @@ export default function InvoicesPage() {
                     <Button
                       size="icon"
                       variant="outline"
-                      onClick={() => handleExportPDF(invoice.id)}
-                      title="Download PDF"
+                      onClick={() => handlePrintInvoice(invoice.id)}
+                      title="Print / Save as PDF"
                     >
-                      <Download className="h-4 w-4" />
+                      <Printer className="h-4 w-4" />
                     </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -387,9 +373,9 @@ export default function InvoicesPage() {
                           <Mail className="h-4 w-4 mr-2" />
                           Send via Email
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleExportPDF(invoice.id)}>
-                          <Download className="h-4 w-4 mr-2" />
-                          Download PDF
+                        <DropdownMenuItem onClick={() => handlePrintInvoice(invoice.id)}>
+                          <Printer className="h-4 w-4 mr-2" />
+                          Print / Save as PDF
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => navigate(`/invoices/${invoice.id}/edit`)}>
                           <Edit className="h-4 w-4 mr-2" />
