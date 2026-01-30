@@ -7,14 +7,19 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Save, LayoutGrid, FileText, Building2, RotateCcw } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Save, LayoutGrid, FileText, Building2, RotateCcw, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { usePdfTemplateSettings, useUpdatePdfTemplateSettings, defaultPdfTemplateSettings, PdfTemplateSettings } from "@/hooks/usePdfTemplateSettings";
 import { PdfPreviewMini } from "@/components/pdf/PdfPreviewMini";
+import { useIsAdmin } from "@/hooks/useAdmin";
 
 export default function PdfTemplateEditor() {
+  const { data: isAdmin, isLoading: isAdminLoading } = useIsAdmin();
   const { data: savedSettings, isLoading } = usePdfTemplateSettings();
   const updateSettings = useUpdatePdfTemplateSettings();
+  
+  const canEdit = isAdmin === true;
   
   const [settings, setSettings] = useState<Partial<PdfTemplateSettings>>({
     ...defaultPdfTemplateSettings,
@@ -27,6 +32,10 @@ export default function PdfTemplateEditor() {
   }, [savedSettings]);
 
   const handleSave = async () => {
+    if (!canEdit) {
+      toast.error("Only admins can modify template settings");
+      return;
+    }
     try {
       await updateSettings.mutateAsync({
         ...settings,
@@ -39,6 +48,7 @@ export default function PdfTemplateEditor() {
   };
 
   const handleReset = () => {
+    if (!canEdit) return;
     setSettings({ ...defaultPdfTemplateSettings, id: savedSettings?.id });
     toast.info("Settings reset to defaults (not saved yet)");
   };
@@ -47,10 +57,11 @@ export default function PdfTemplateEditor() {
     field: K,
     value: PdfTemplateSettings[K]
   ) => {
+    if (!canEdit) return;
     setSettings((prev) => ({ ...prev, [field]: value }));
   };
 
-  if (isLoading) {
+  if (isLoading || isAdminLoading) {
     return (
       <AppLayout>
         <div className="space-y-6">
@@ -72,20 +83,33 @@ export default function PdfTemplateEditor() {
           <div>
             <h1 className="text-2xl font-bold">PDF Template Editor</h1>
             <p className="text-muted-foreground">
-              Customize the appearance and content of your invoice PDFs
+              {canEdit 
+                ? "Customize the appearance and content of your invoice PDFs" 
+                : "View PDF template settings (admin access required to edit)"}
             </p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={handleReset}>
-              <RotateCcw className="h-4 w-4 mr-2" />
-              Reset
-            </Button>
-            <Button onClick={handleSave} disabled={updateSettings.isPending}>
-              <Save className="h-4 w-4 mr-2" />
-              {updateSettings.isPending ? "Saving..." : "Save Changes"}
-            </Button>
-          </div>
+          {canEdit && (
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={handleReset}>
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Reset
+              </Button>
+              <Button onClick={handleSave} disabled={updateSettings.isPending}>
+                <Save className="h-4 w-4 mr-2" />
+                {updateSettings.isPending ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
+          )}
         </div>
+
+        {!canEdit && (
+          <Alert>
+            <ShieldAlert className="h-4 w-4" />
+            <AlertDescription>
+              Template settings are read-only. Only administrators can modify PDF templates.
+            </AlertDescription>
+          </Alert>
+        )}
 
         <div className="grid lg:grid-cols-2 gap-6">
           {/* Settings Panel */}
@@ -124,6 +148,7 @@ export default function PdfTemplateEditor() {
                         <Switch
                           checked={settings.show_logo ?? true}
                           onCheckedChange={(v) => updateField("show_logo", v)}
+                          disabled={!canEdit}
                         />
                       </div>
 
@@ -135,6 +160,7 @@ export default function PdfTemplateEditor() {
                         <Switch
                           checked={settings.show_gstin_header ?? true}
                           onCheckedChange={(v) => updateField("show_gstin_header", v)}
+                          disabled={!canEdit}
                         />
                       </div>
 
@@ -146,6 +172,7 @@ export default function PdfTemplateEditor() {
                         <Switch
                           checked={settings.show_contact_header ?? true}
                           onCheckedChange={(v) => updateField("show_contact_header", v)}
+                          disabled={!canEdit}
                         />
                       </div>
 
@@ -157,6 +184,7 @@ export default function PdfTemplateEditor() {
                         <Switch
                           checked={settings.show_shipping_address ?? false}
                           onCheckedChange={(v) => updateField("show_shipping_address", v)}
+                          disabled={!canEdit}
                         />
                       </div>
 
@@ -168,6 +196,7 @@ export default function PdfTemplateEditor() {
                         <Switch
                           checked={settings.show_serial_numbers ?? true}
                           onCheckedChange={(v) => updateField("show_serial_numbers", v)}
+                          disabled={!canEdit}
                         />
                       </div>
 
@@ -179,6 +208,7 @@ export default function PdfTemplateEditor() {
                         <Switch
                           checked={settings.show_discount_column ?? true}
                           onCheckedChange={(v) => updateField("show_discount_column", v)}
+                          disabled={!canEdit}
                         />
                       </div>
 
@@ -190,6 +220,7 @@ export default function PdfTemplateEditor() {
                         <Switch
                           checked={settings.show_terms ?? true}
                           onCheckedChange={(v) => updateField("show_terms", v)}
+                          disabled={!canEdit}
                         />
                       </div>
 
@@ -201,6 +232,7 @@ export default function PdfTemplateEditor() {
                         <Switch
                           checked={settings.show_signature ?? true}
                           onCheckedChange={(v) => updateField("show_signature", v)}
+                          disabled={!canEdit}
                         />
                       </div>
 
@@ -212,12 +244,14 @@ export default function PdfTemplateEditor() {
                         <Switch
                           checked={settings.show_amount_words ?? true}
                           onCheckedChange={(v) => updateField("show_amount_words", v)}
+                          disabled={!canEdit}
                         />
                       </div>
                     </div>
                   </CardContent>
                 </Card>
               </TabsContent>
+
 
               <TabsContent value="terms" className="mt-4">
                 <Card>
@@ -234,7 +268,8 @@ export default function PdfTemplateEditor() {
                         value={settings.terms_line1 || ""}
                         onChange={(e) => updateField("terms_line1", e.target.value)}
                         placeholder="Goods once sold will not be taken back."
-                        className="mt-1"
+                        className={`mt-1 ${!canEdit ? "bg-muted" : ""}`}
+                        readOnly={!canEdit}
                       />
                     </div>
                     <div>
@@ -243,7 +278,8 @@ export default function PdfTemplateEditor() {
                         value={settings.terms_line2 || ""}
                         onChange={(e) => updateField("terms_line2", e.target.value)}
                         placeholder="Subject to local jurisdiction only."
-                        className="mt-1"
+                        className={`mt-1 ${!canEdit ? "bg-muted" : ""}`}
+                        readOnly={!canEdit}
                       />
                     </div>
                     <div>
@@ -252,7 +288,8 @@ export default function PdfTemplateEditor() {
                         value={settings.terms_line3 || ""}
                         onChange={(e) => updateField("terms_line3", e.target.value)}
                         placeholder="E&OE - Errors and Omissions Excepted."
-                        className="mt-1"
+                        className={`mt-1 ${!canEdit ? "bg-muted" : ""}`}
+                        readOnly={!canEdit}
                       />
                     </div>
                     <div>
@@ -261,7 +298,8 @@ export default function PdfTemplateEditor() {
                         value={settings.custom_footer_text || ""}
                         onChange={(e) => updateField("custom_footer_text", e.target.value || null)}
                         placeholder="e.g., Thank you for your business!"
-                        className="mt-1"
+                        className={`mt-1 ${!canEdit ? "bg-muted" : ""}`}
+                        readOnly={!canEdit}
                       />
                     </div>
                   </CardContent>
@@ -283,7 +321,8 @@ export default function PdfTemplateEditor() {
                         value={settings.bank_name || ""}
                         onChange={(e) => updateField("bank_name", e.target.value || null)}
                         placeholder="e.g., State Bank of India"
-                        className="mt-1"
+                        className={`mt-1 ${!canEdit ? "bg-muted" : ""}`}
+                        readOnly={!canEdit}
                       />
                     </div>
                     <div>
@@ -292,7 +331,8 @@ export default function PdfTemplateEditor() {
                         value={settings.bank_account_no || ""}
                         onChange={(e) => updateField("bank_account_no", e.target.value || null)}
                         placeholder="e.g., 1234567890"
-                        className="mt-1"
+                        className={`mt-1 ${!canEdit ? "bg-muted" : ""}`}
+                        readOnly={!canEdit}
                       />
                     </div>
                     <div>
@@ -301,7 +341,8 @@ export default function PdfTemplateEditor() {
                         value={settings.bank_ifsc || ""}
                         onChange={(e) => updateField("bank_ifsc", e.target.value || null)}
                         placeholder="e.g., SBIN0001234"
-                        className="mt-1"
+                        className={`mt-1 ${!canEdit ? "bg-muted" : ""}`}
+                        readOnly={!canEdit}
                       />
                     </div>
                     <div>
@@ -310,7 +351,8 @@ export default function PdfTemplateEditor() {
                         value={settings.bank_branch || ""}
                         onChange={(e) => updateField("bank_branch", e.target.value || null)}
                         placeholder="e.g., Main Branch, Mumbai"
-                        className="mt-1"
+                        className={`mt-1 ${!canEdit ? "bg-muted" : ""}`}
+                        readOnly={!canEdit}
                       />
                     </div>
                   </CardContent>
