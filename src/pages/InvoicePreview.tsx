@@ -87,6 +87,8 @@ export default function InvoicePreview() {
       gstin: customer?.gstin || "",
       state: customer?.state || billingAddress?.state || "",
       stateCode: customer?.state_code || billingAddress?.state_code || "",
+      email: customer?.email || "",
+      phone: customer?.phone || "",
     };
 
     const items: InvoiceItem[] = (invoice.items || []).map((item: any) => ({

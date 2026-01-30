@@ -16,6 +16,8 @@ export interface SupplierInfo {
   gstin: string;
   state: string;
   stateCode: string;
+  email?: string;
+  phone?: string;
 }
 
 export interface InvoiceItem {

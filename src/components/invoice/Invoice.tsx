@@ -29,6 +29,8 @@ export function Invoice({ data }: InvoiceProps) {
           gstin: data.supplier.gstin,
           state: data.supplier.state,
           stateCode: data.supplier.stateCode,
+          email: data.supplier.email,
+          phone: data.supplier.phone,
         }}
       />
 
