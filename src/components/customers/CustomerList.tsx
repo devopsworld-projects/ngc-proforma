@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { useCustomers, useCustomer, Address, useDeleteAddress } from "@/hooks/useCustomers";
+import { useCustomers, useCustomer, Address, useDeleteAddress, useDeleteCustomer } from "@/hooks/useCustomers";
 import { CustomerFormDialog } from "./CustomerFormDialog";
 import { AddressFormDialog } from "./AddressFormDialog";
 import { Button } from "@/components/ui/button";
@@ -9,9 +9,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Search, Users, ArrowLeft, MapPin, Pencil, Trash2, Star, MoreHorizontal, Filter, Eye } from "lucide-react";
 import { toast } from "sonner";
+import { format } from "date-fns";
 import {
   Pagination,
   PaginationContent,
@@ -42,6 +43,16 @@ export function CustomerList() {
   const { data: customers, isLoading } = useCustomers();
   const { data: selectedCustomer } = useCustomer(selectedCustomerId || undefined);
   const deleteAddress = useDeleteAddress();
+  const deleteCustomer = useDeleteCustomer();
+
+  const handleDeleteCustomer = async (id: string, name: string) => {
+    try {
+      await deleteCustomer.mutateAsync(id);
+      toast.success(`Customer "${name}" deleted successfully`);
+    } catch (error) {
+      toast.error("Failed to delete customer");
+    }
+  };
 
   const filteredCustomers = useMemo(() => {
     return customers?.filter((c) => {
@@ -274,7 +285,8 @@ export function CustomerList() {
                       <TableHead>Email</TableHead>
                       <TableHead>Phone</TableHead>
                       <TableHead>GSTIN</TableHead>
-                      <TableHead>State</TableHead>
+                      <TableHead>Added By</TableHead>
+                      <TableHead>Date Added</TableHead>
                       <TableHead className="w-10"></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -305,15 +317,13 @@ export function CustomerList() {
                           )}
                         </TableCell>
                         <TableCell>
-                          <span className="text-sm">
-                            {customer.state ? (
-                              <>
-                                {customer.state}
-                                {customer.state_code && <span className="text-muted-foreground"> ({customer.state_code})</span>}
-                              </>
-                            ) : (
-                              <span className="text-muted-foreground">—</span>
-                            )}
+                          <span className="text-sm text-muted-foreground">
+                            {(customer as any).creator_name || "—"}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm text-muted-foreground">
+                            {format(new Date(customer.created_at), "dd MMM yyyy")}
                           </span>
                         </TableCell>
                         <TableCell>
@@ -338,6 +348,14 @@ export function CustomerList() {
                                     </button>
                                   }
                                 />
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                className="text-destructive focus:text-destructive"
+                                onClick={() => handleDeleteCustomer(customer.id, customer.name)}
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>

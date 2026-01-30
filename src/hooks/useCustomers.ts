@@ -38,6 +38,10 @@ export interface CustomerWithAddresses extends Customer {
   addresses: Address[];
 }
 
+export interface CustomerWithCreator extends Customer {
+  creator_name?: string | null;
+}
+
 export function useCustomers() {
   const { user } = useAuth();
   return useQuery({
@@ -46,10 +50,19 @@ export function useCustomers() {
       if (!user) return [];
       const { data, error } = await supabase
         .from("customers")
-        .select("*")
+        .select(`
+          *,
+          profiles:user_id (full_name)
+        `)
         .order("name");
       if (error) throw error;
-      return data as Customer[];
+      
+      // Map to include creator_name
+      return (data || []).map((c: any) => ({
+        ...c,
+        creator_name: c.profiles?.full_name || null,
+        profiles: undefined,
+      })) as CustomerWithCreator[];
     },
     enabled: !!user,
   });
