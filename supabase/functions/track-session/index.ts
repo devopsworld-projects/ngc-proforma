@@ -50,14 +50,19 @@ Deno.serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    // Verify user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
+    // Verify user using getClaims (recommended approach)
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    
+    if (claimsError || !claimsData?.claims?.sub) {
+      console.error("Auth error:", claimsError);
       return new Response(
         JSON.stringify({ success: false, error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    const userId = claimsData.claims.sub;
 
     // Get request body with device info
     const { userAgent, browser, os, deviceType } = await req.json();
@@ -72,7 +77,7 @@ Deno.serve(async (req) => {
     const { error: insertError } = await supabase
       .from("user_sessions")
       .insert({
-        user_id: user.id,
+        user_id: userId,
         ip_address: clientIP,
         user_agent: userAgent || null,
         browser: browser || null,
