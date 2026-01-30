@@ -1,23 +1,23 @@
 import { InvoiceTotals as InvoiceTotalsType } from "@/types/invoice";
 import { Separator } from "@/components/ui/separator";
-
 interface InvoiceTotalsProps {
   totals: InvoiceTotalsType;
   totalQuantity: number;
   amountInWords: string;
 }
-
-export function InvoiceTotals({ totals, totalQuantity, amountInWords }: InvoiceTotalsProps) {
+export function InvoiceTotals({
+  totals,
+  totalQuantity,
+  amountInWords
+}: InvoiceTotalsProps) {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
-      minimumFractionDigits: 2,
+      minimumFractionDigits: 2
     }).format(amount);
   };
-
-  return (
-    <div className="px-4 py-3 bg-white">
+  return <div className="px-4 py-3 bg-white">
       <div className="flex flex-col lg:flex-row gap-4">
         {/* Amount in Words */}
         <div className="flex-1 p-3 bg-gray-50 rounded border border-gray-200">
@@ -27,7 +27,7 @@ export function InvoiceTotals({ totals, totalQuantity, amountInWords }: InvoiceT
           <p className="text-sm font-serif font-semibold text-black">
             {amountInWords}
           </p>
-          <p className="text-xs text-gray-500 mt-1">E. & O.E</p>
+          
         </div>
 
         {/* Totals Summary */}
@@ -64,12 +64,13 @@ export function InvoiceTotals({ totals, totalQuantity, amountInWords }: InvoiceT
             <div className="flex justify-between items-center">
               <span className="text-sm font-serif font-semibold">Grand Total</span>
               <span className="text-lg font-serif font-bold">
-                ₹{totals.grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                ₹{totals.grandTotal.toLocaleString('en-IN', {
+                minimumFractionDigits: 2
+              })}
               </span>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 }
