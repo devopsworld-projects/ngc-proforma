@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useCompanySettings, useUpdateCompanySettings, uploadCompanyLogo, deleteCompanyLogo } from "@/hooks/useCompanySettings";
 import { useAuth } from "@/hooks/useAuth";
@@ -12,9 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Building2, Save, Upload, X, Loader2, FileText, ChevronRight, ShieldAlert } from "lucide-react";
+import { Building2, Save, Upload, X, Loader2, FileText, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { DataExportCard } from "@/components/settings/DataExportCard";
 
@@ -41,8 +40,6 @@ export default function SettingsPage() {
   const updateSettings = useUpdateCompanySettings();
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
-  
-  const canEdit = isAdmin === true;
 
   const form = useForm<SettingsFormData>({
     resolver: zodResolver(settingsSchema),
@@ -80,8 +77,12 @@ export default function SettingsPage() {
     }
   }, [settings, form]);
 
+  // Redirect non-admins
+  if (!isAdminLoading && !isAdmin) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!canEdit) return;
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
@@ -97,7 +98,6 @@ export default function SettingsPage() {
 
     setIsUploadingLogo(true);
     try {
-      // Delete old logo if exists
       if (logoUrl) {
         await deleteCompanyLogo(logoUrl, user.id);
       }
@@ -112,7 +112,6 @@ export default function SettingsPage() {
   };
 
   const handleRemoveLogo = async () => {
-    if (!canEdit) return;
     if (!logoUrl || !user) return;
     try {
       await deleteCompanyLogo(logoUrl, user.id);
@@ -124,10 +123,6 @@ export default function SettingsPage() {
   };
 
   const onSubmit = async (data: SettingsFormData) => {
-    if (!canEdit) {
-      toast.error("Only admins can modify settings");
-      return;
-    }
     try {
       const phoneArray = data.phone
         ? data.phone.split(",").map((p) => p.trim()).filter(Boolean)
@@ -180,31 +175,18 @@ export default function SettingsPage() {
             <div>
               <h2 className="text-2xl font-serif font-bold">Company Settings</h2>
               <p className="text-muted-foreground">
-                {canEdit 
-                  ? "Manage your business details that appear on invoices" 
-                  : "View business details (admin access required to edit)"}
+                Manage your business details that appear on proforma invoices
               </p>
             </div>
-            {canEdit && (
-              <Button type="submit" disabled={updateSettings.isPending} className="gap-2">
-                {updateSettings.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Save className="h-4 w-4" />
-                )}
-                Save Settings
-              </Button>
-            )}
+            <Button type="submit" disabled={updateSettings.isPending} className="gap-2">
+              {updateSettings.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              Save Settings
+            </Button>
           </div>
-
-          {!canEdit && (
-            <Alert>
-              <ShieldAlert className="h-4 w-4" />
-              <AlertDescription>
-                Settings are read-only. Only administrators can modify company settings.
-              </AlertDescription>
-            </Alert>
-          )}
 
           <div className="grid gap-6 lg:grid-cols-3">
             {/* Logo Section */}
@@ -224,46 +206,40 @@ export default function SettingsPage() {
                         alt="Company logo"
                         className="w-32 h-32 object-contain rounded-lg border bg-white"
                       />
-                      {canEdit && (
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="destructive"
-                          className="absolute -top-2 -right-2 h-6 w-6"
-                          onClick={handleRemoveLogo}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      )}
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="destructive"
+                        className="absolute -top-2 -right-2 h-6 w-6"
+                        onClick={handleRemoveLogo}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
                     </div>
                   ) : (
                     <div className="w-32 h-32 rounded-lg border-2 border-dashed flex items-center justify-center bg-muted/50">
                       <Building2 className="h-12 w-12 text-muted-foreground" />
                     </div>
                   )}
-                  {canEdit && (
-                    <>
-                      <Label
-                        htmlFor="logo-upload"
-                        className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-md bg-muted hover:bg-muted/80 text-sm font-medium"
-                      >
-                        {isUploadingLogo ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Upload className="h-4 w-4" />
-                        )}
-                        {isUploadingLogo ? "Uploading..." : "Upload Logo"}
-                      </Label>
-                      <input
-                        id="logo-upload"
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleLogoUpload}
-                        disabled={isUploadingLogo}
-                      />
-                    </>
-                  )}
+                  <Label
+                    htmlFor="logo-upload"
+                    className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-md bg-muted hover:bg-muted/80 text-sm font-medium"
+                  >
+                    {isUploadingLogo ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Upload className="h-4 w-4" />
+                    )}
+                    {isUploadingLogo ? "Uploading..." : "Upload Logo"}
+                  </Label>
+                  <input
+                    id="logo-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleLogoUpload}
+                    disabled={isUploadingLogo}
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -284,7 +260,7 @@ export default function SettingsPage() {
                     <FormItem className="md:col-span-2">
                       <FormLabel>Company Name *</FormLabel>
                       <FormControl>
-                        <Input placeholder="Your Company Name" {...field} readOnly={!canEdit} className={!canEdit ? "bg-muted" : ""} />
+                        <Input placeholder="Your Company Name" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -298,7 +274,7 @@ export default function SettingsPage() {
                     <FormItem>
                       <FormLabel>GSTIN</FormLabel>
                       <FormControl>
-                        <Input placeholder="22AAAAA0000A1Z5" {...field} readOnly={!canEdit} className={!canEdit ? "bg-muted" : ""} />
+                        <Input placeholder="22AAAAA0000A1Z5" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -312,7 +288,7 @@ export default function SettingsPage() {
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder="contact@company.com" {...field} readOnly={!canEdit} className={!canEdit ? "bg-muted" : ""} />
+                        <Input type="email" placeholder="contact@company.com" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -326,7 +302,7 @@ export default function SettingsPage() {
                     <FormItem>
                       <FormLabel>Phone Numbers</FormLabel>
                       <FormControl>
-                        <Input placeholder="Comma separated: 9876543210, 1234567890" {...field} readOnly={!canEdit} className={!canEdit ? "bg-muted" : ""} />
+                        <Input placeholder="Comma separated: 9876543210, 1234567890" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -340,7 +316,7 @@ export default function SettingsPage() {
                     <FormItem>
                       <FormLabel>Website</FormLabel>
                       <FormControl>
-                        <Input placeholder="www.company.com" {...field} readOnly={!canEdit} className={!canEdit ? "bg-muted" : ""} />
+                        <Input placeholder="www.company.com" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -365,7 +341,7 @@ export default function SettingsPage() {
                     <FormItem className="md:col-span-2">
                       <FormLabel>Address Line 1</FormLabel>
                       <FormControl>
-                        <Input placeholder="Street address" {...field} readOnly={!canEdit} className={!canEdit ? "bg-muted" : ""} />
+                        <Input placeholder="Street address" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -379,7 +355,7 @@ export default function SettingsPage() {
                     <FormItem>
                       <FormLabel>Address Line 2</FormLabel>
                       <FormControl>
-                        <Input placeholder="Building, floor, etc." {...field} readOnly={!canEdit} className={!canEdit ? "bg-muted" : ""} />
+                        <Input placeholder="Building, floor, etc." {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -393,7 +369,7 @@ export default function SettingsPage() {
                     <FormItem>
                       <FormLabel>City</FormLabel>
                       <FormControl>
-                        <Input placeholder="City" {...field} readOnly={!canEdit} className={!canEdit ? "bg-muted" : ""} />
+                        <Input placeholder="City" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -407,7 +383,7 @@ export default function SettingsPage() {
                     <FormItem>
                       <FormLabel>State</FormLabel>
                       <FormControl>
-                        <Input placeholder="State" {...field} readOnly={!canEdit} className={!canEdit ? "bg-muted" : ""} />
+                        <Input placeholder="State" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -421,7 +397,7 @@ export default function SettingsPage() {
                     <FormItem>
                       <FormLabel>State Code</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g. 37" {...field} readOnly={!canEdit} className={!canEdit ? "bg-muted" : ""} />
+                        <Input placeholder="e.g. 37" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -435,7 +411,7 @@ export default function SettingsPage() {
                     <FormItem>
                       <FormLabel>Postal Code</FormLabel>
                       <FormControl>
-                        <Input placeholder="518001" {...field} readOnly={!canEdit} className={!canEdit ? "bg-muted" : ""} />
+                        <Input placeholder="518001" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
