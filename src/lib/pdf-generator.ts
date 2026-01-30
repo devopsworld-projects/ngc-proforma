@@ -108,12 +108,15 @@ export async function generateInvoicePDF(
   // Merge template settings with defaults
   const template = { ...defaultPdfTemplateSettings, ...options.templateSettings };
 
-  // Colors - simple palette
-  const primaryColor = hexToRgb(template.primary_color);
-  const tableTextColor = hexToRgb(template.table_text_color);
+  // Colors - matching the web preview's design system
+  // Primary: Deep Navy (HSL 222 47% 15% = #1e2a4a)
+  const headerBgColor: [number, number, number] = [30, 42, 74]; // Deep navy for header
+  const headerTextColor: [number, number, number] = [255, 255, 255]; // White text on header
+  const accentGold: [number, number, number] = [212, 160, 44]; // Gold accent (HSL 43 74% 49%)
   const darkText: [number, number, number] = [0, 0, 0]; // Pure black
   const mutedText: [number, number, number] = [80, 80, 80]; // Dark gray for secondary text
   const borderColor: [number, number, number] = [200, 200, 200];
+  const tableTextColor = hexToRgb(template.table_text_color);
 
   // Helper to add text
   const addText = (
@@ -142,54 +145,110 @@ export async function generateInvoicePDF(
     return fontSize * 0.4;
   };
 
-  // ===== HEADER - ORGANIZATION DETAILS (CENTERED) =====
+  // ===== GOLD ACCENT BAR AT TOP =====
+  doc.setFillColor(...accentGold);
+  doc.rect(0, 0, pageWidth, 3, "F");
+  yPos = 8;
+
+  // ===== HEADER - ORGANIZATION DETAILS (CENTERED) - Dark Navy Background =====
+  const headerStartY = yPos;
+  
+  // We'll draw the header background after calculating height
+  let headerContentHeight = 0;
   
   // Logo centered at top
   const logoSize = 24;
   let hasLogo = false;
+  const logoY = yPos + 6;
   
   if (template.show_logo && company.logo_url) {
     const logoBase64 = await loadImageAsBase64(company.logo_url);
     if (logoBase64) {
       try {
         const logoX = (pageWidth - logoSize) / 2;
-        doc.addImage(logoBase64, "PNG", logoX, yPos, logoSize, logoSize);
         hasLogo = true;
-        yPos += logoSize + 4;
+        headerContentHeight += logoSize + 4;
       } catch (e) {
         console.warn("Failed to add logo:", e);
       }
     }
   }
 
-  // Company name - centered
-  addText(company.name.toUpperCase(), pageWidth / 2, yPos, {
-    fontSize: 16,
-    fontStyle: "bold",
-    color: primaryColor,
-    align: "center",
-  });
-  yPos += 7;
-
-  // Company address - centered
+  // Calculate header content positions
+  let contentY = logoY + (hasLogo ? logoSize + 4 : 0);
+  
+  // Company name
+  const nameY = contentY;
+  contentY += 7;
+  
+  // Address lines
   const addressParts = [company.address_line1, company.address_line2].filter(Boolean);
-  if (addressParts.length > 0) {
-    addText(addressParts.join(", "), pageWidth / 2, yPos, {
-      fontSize: 9,
-      color: mutedText,
-      align: "center",
-    });
-    yPos += 5;
-  }
+  const addressY = contentY;
+  if (addressParts.length > 0) contentY += 5;
   
   const cityLine = [company.city, company.state, company.postal_code].filter(Boolean).join(", ");
-  if (cityLine) {
-    addText(cityLine, pageWidth / 2, yPos, {
+  const cityY = contentY;
+  if (cityLine) contentY += 5;
+
+  // Contact info
+  const contactY = contentY;
+  if (template.show_contact_header) contentY += 5;
+
+  // GSTIN
+  const gstinY = contentY;
+  if (template.show_gstin_header && company.gstin) contentY += 5;
+
+  // State info
+  const stateY = contentY;
+  contentY += 8;
+
+  // PROFORMA INVOICE title
+  const titleY = contentY;
+  contentY += 12;
+
+  const headerEndY = contentY;
+  headerContentHeight = headerEndY - headerStartY;
+
+  // Draw header background
+  doc.setFillColor(...headerBgColor);
+  doc.rect(0, headerStartY - 3, pageWidth, headerContentHeight + 6, "F");
+
+  // Now draw all the content on top
+  if (hasLogo && template.show_logo && company.logo_url) {
+    const logoBase64 = await loadImageAsBase64(company.logo_url);
+    if (logoBase64) {
+      try {
+        const logoX = (pageWidth - logoSize) / 2;
+        doc.addImage(logoBase64, "PNG", logoX, logoY, logoSize, logoSize);
+      } catch (e) {
+        console.warn("Failed to add logo:", e);
+      }
+    }
+  }
+
+  // Company name - centered, white text
+  addText(company.name.toUpperCase(), pageWidth / 2, nameY, {
+    fontSize: 16,
+    fontStyle: "bold",
+    color: headerTextColor,
+    align: "center",
+  });
+
+  // Company address - centered
+  if (addressParts.length > 0) {
+    addText(addressParts.join(", "), pageWidth / 2, addressY, {
       fontSize: 9,
-      color: mutedText,
+      color: [220, 220, 220],
       align: "center",
     });
-    yPos += 5;
+  }
+  
+  if (cityLine) {
+    addText(cityLine, pageWidth / 2, cityY, {
+      fontSize: 9,
+      color: [220, 220, 220],
+      align: "center",
+    });
   }
 
   // Contact info - centered
@@ -205,43 +264,42 @@ export async function generateInvoicePDF(
       contactParts.push(company.website);
     }
     if (contactParts.length > 0) {
-      addText(contactParts.join("  |  "), pageWidth / 2, yPos, {
+      addText(contactParts.join("  |  "), pageWidth / 2, contactY, {
         fontSize: 8,
-        color: mutedText,
+        color: [200, 200, 200],
         align: "center",
       });
-      yPos += 5;
     }
   }
 
-  // GSTIN - centered
+  // GSTIN - centered with semi-transparent background effect
   if (template.show_gstin_header && company.gstin) {
-    addText(`GSTIN: ${company.gstin}`, pageWidth / 2, yPos, {
+    addText(`GSTIN: ${company.gstin}`, pageWidth / 2, gstinY, {
       fontSize: 9,
       fontStyle: "bold",
-      color: darkText,
+      color: headerTextColor,
       align: "center",
     });
-    yPos += 5;
   }
 
-  yPos += 3;
+  // State info
+  if (company.state) {
+    addText(`State: ${company.state}, Code: ${company.state_code || ""}`, pageWidth / 2, stateY, {
+      fontSize: 8,
+      color: [200, 200, 200],
+      align: "center",
+    });
+  }
 
-  // Separator line
-  doc.setDrawColor(...borderColor);
-  doc.setLineWidth(0.5);
-  doc.line(margin, yPos, pageWidth - margin, yPos);
-  
-  yPos += 8;
-
-  // ===== PROFORMA INVOICE TITLE =====
-  addText("PROFORMA INVOICE", pageWidth / 2, yPos, {
+  // ===== PROFORMA INVOICE TITLE - Gold text =====
+  addText("PROFORMA INVOICE", pageWidth / 2, titleY, {
     fontSize: 14,
     fontStyle: "bold",
-    color: primaryColor,
+    color: accentGold,
     align: "center",
   });
-  yPos += 10;
+
+  yPos = headerEndY + 5;
 
   // ===== CUSTOMER DETAILS (LEFT) & INVOICE INFO (RIGHT) =====
   const colWidth = (pageWidth - margin * 2 - 20) / 2;
@@ -434,7 +492,7 @@ export async function generateInvoicePDF(
     addText(value, totalsValueX, totalsY, {
       fontSize: isBold ? 11 : 9,
       fontStyle: isBold ? "bold" : "normal",
-      color: isBold ? primaryColor : darkText,
+      color: isBold ? headerBgColor : darkText,
       align: "right",
     });
     totalsY += 6;
@@ -452,11 +510,26 @@ export async function generateInvoicePDF(
     addTotalLine("Round Off:", formatCurrency(invoice.round_off));
   }
 
-  // Grand total with line
-  totalsY += 2;
-  doc.setDrawColor(...borderColor);
-  doc.line(totalsX - 10, totalsY - 3, pageWidth - margin, totalsY - 3);
-  addTotalLine("GRAND TOTAL:", formatCurrency(invoice.grand_total), true);
+  // Grand total with dark navy background (matching web preview)
+  totalsY += 4;
+  const grandTotalBoxY = totalsY - 4;
+  const grandTotalBoxHeight = 14;
+  
+  doc.setFillColor(...headerBgColor);
+  doc.roundedRect(totalsX - 12, grandTotalBoxY, pageWidth - margin - totalsX + 14, grandTotalBoxHeight, 2, 2, "F");
+  
+  addText("Grand Total", totalsX - 8, totalsY + 2, {
+    fontSize: 10,
+    fontStyle: "bold",
+    color: headerTextColor,
+  });
+  addText(formatCurrency(invoice.grand_total), totalsValueX - 2, totalsY + 2, {
+    fontSize: 12,
+    fontStyle: "bold",
+    color: headerTextColor,
+    align: "right",
+  });
+  totalsY += grandTotalBoxHeight;
 
   // Amount in words (left side, same row as totals start)
   if (template.show_amount_words) {
@@ -477,23 +550,28 @@ export async function generateInvoicePDF(
   yPos = totalsY + 10;
 
   // Check if we need a new page for footer content
-  if (yPos > pageHeight - 70) {
+  if (yPos > pageHeight - 80) {
     doc.addPage();
     yPos = margin;
   }
 
+  // ===== FOOTER SECTION WITH DARK BACKGROUND (matching web preview) =====
+  const footerStartY = yPos;
+  const footerEndY = pageHeight - 15; // Leave space for page number
+  
+  // Draw footer background
+  doc.setFillColor(...headerBgColor);
+  doc.rect(0, footerStartY - 5, pageWidth, footerEndY - footerStartY + 20, "F");
+
   // ===== TERMS & CONDITIONS =====
   if (template.show_terms) {
-    doc.setDrawColor(...borderColor);
-    doc.line(margin, yPos - 3, pageWidth - margin, yPos - 3);
-    
-    addText("Terms & Conditions:", margin, yPos + 3, {
+    addText("Terms & Conditions", margin, yPos, {
       fontSize: 9,
       fontStyle: "bold",
-      color: darkText,
+      color: [180, 180, 180],
     });
     
-    let termY = yPos + 10;
+    let termY = yPos + 6;
     // Use hardcoded terms to match the view proforma
     const defaultTerms = [
       "Customer Should register the product with respective company.",
@@ -503,10 +581,10 @@ export async function generateInvoicePDF(
     ];
     const terms = template.terms_line1 ? [template.terms_line1, template.terms_line2, template.terms_line3].filter(Boolean) : defaultTerms;
     terms.forEach((term, idx) => {
-      addText(`${idx + 1}. ${term}`, margin, termY, { fontSize: 8, color: mutedText });
-      termY += 5;
+      addText(`${idx + 1}. ${term}`, margin + 4, termY, { fontSize: 8, color: [220, 220, 220] });
+      termY += 4;
     });
-    yPos = termY + 5;
+    yPos = termY + 6;
   }
 
   // ===== BANK DETAILS =====
@@ -516,64 +594,64 @@ export async function generateInvoicePDF(
   const bankIfsc = template.bank_ifsc || "TMBL0000171";
   const bankBranch = template.bank_branch || "NEW GLOBAL COMPUTERS";
 
-  doc.setDrawColor(...borderColor);
-  doc.line(margin, yPos - 3, pageWidth - margin, yPos - 3);
-  
-  addText("Bank Details:", margin, yPos + 3, {
+  addText("Bank Details", margin, yPos, {
     fontSize: 9,
     fontStyle: "bold",
-    color: darkText,
+    color: [180, 180, 180],
   });
 
-  let bankY = yPos + 10;
-  addText(`Name: ${bankBranch}`, margin, bankY, { fontSize: 8, color: mutedText });
-  bankY += 5;
-  addText(`Bank: ${bankName}`, margin, bankY, { fontSize: 8, color: mutedText });
-  bankY += 5;
-  addText(`A/C No: ${bankAccountNo}`, margin, bankY, { fontSize: 8, color: mutedText });
-  bankY += 5;
-  addText(`IFSC: ${bankIfsc}`, margin, bankY, { fontSize: 8, color: mutedText });
-  bankY += 5;
-  yPos = bankY + 5;
+  let bankY = yPos + 6;
+  addText(`Name: ${bankBranch}`, margin + 4, bankY, { fontSize: 8, color: [220, 220, 220] });
+  bankY += 4;
+  addText(`Bank: ${bankName}`, margin + 4, bankY, { fontSize: 8, color: [220, 220, 220] });
+  bankY += 4;
+  addText(`A/C No: ${bankAccountNo}`, margin + 4, bankY, { fontSize: 8, color: [220, 220, 220] });
+  bankY += 4;
+  addText(`IFSC: ${bankIfsc}`, margin + 4, bankY, { fontSize: 8, color: [220, 220, 220] });
+  bankY += 4;
 
   // ===== SIGNATURE SECTION =====
   if (template.show_signature) {
     const sigX = pageWidth - margin - 50;
-    const sigY = Math.max(yPos, pageHeight - 30);
+    const sigY = Math.max(yPos + 5, footerEndY - 15);
     
-    addText(`For ${company.name}`, sigX + 25, sigY - 8, {
+    addText(`for ${company.name}`, sigX + 25, sigY - 10, {
       fontSize: 8,
       fontStyle: "bold",
-      color: darkText,
+      color: headerTextColor,
       align: "center",
     });
 
-    doc.setDrawColor(...darkText);
+    doc.setDrawColor(255, 255, 255);
     doc.setLineWidth(0.3);
     doc.line(sigX, sigY, pageWidth - margin, sigY);
     
-    addText("Authorized Signatory", sigX + 25, sigY + 5, {
+    addText("Authorised Signatory", sigX + 25, sigY + 5, {
       fontSize: 7,
-      color: mutedText,
+      color: [180, 180, 180],
       align: "center",
     });
   }
 
-  // Page number
+  // ===== GOLD ACCENT BAR AT BOTTOM =====
+  doc.setFillColor(...accentGold);
+  doc.rect(0, pageHeight - 3, pageWidth, 3, "F");
+
+  // Page number - on top of footer
   const totalPages = doc.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
     doc.setFontSize(8);
-    doc.setTextColor(...mutedText);
-    doc.text(`Page ${i} of ${totalPages}`, pageWidth / 2, pageHeight - 8, { align: "center" });
+    doc.setTextColor(180, 180, 180);
+    doc.text(`Page ${i} of ${totalPages}`, pageWidth / 2, pageHeight - 6, { align: "center" });
   }
 
   // Custom footer text
   if (template.custom_footer_text) {
-    addText(template.custom_footer_text, pageWidth / 2, pageHeight - 12, {
+    addText(template.custom_footer_text, pageWidth / 2, pageHeight - 10, {
       fontSize: 8,
       fontStyle: "italic",
-      color: mutedText,
+      color: [150, 150, 150],
       align: "center",
     });
   }
