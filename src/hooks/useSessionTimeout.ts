@@ -9,6 +9,8 @@ interface UseSessionTimeoutOptions {
 interface SessionTimeoutState {
   showWarning: boolean;
   remainingSeconds: number;
+  totalRemainingSeconds: number;
+  timeoutMinutes: number;
   resetTimer: () => void;
 }
 
@@ -19,9 +21,11 @@ export function useSessionTimeout({
   const { user, signOut } = useAuth();
   const [showWarning, setShowWarning] = useState(false);
   const [remainingSeconds, setRemainingSeconds] = useState(warningMinutes * 60);
+  const [totalRemainingSeconds, setTotalRemainingSeconds] = useState(timeoutMinutes * 60);
   
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const warningIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastActivityRef = useRef<number>(Date.now());
 
   const timeoutMs = timeoutMinutes * 60 * 1000;
@@ -36,6 +40,10 @@ export function useSessionTimeout({
       clearInterval(warningIntervalRef.current);
       warningIntervalRef.current = null;
     }
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
+    }
   }, []);
 
   const handleLogout = useCallback(async () => {
@@ -48,6 +56,11 @@ export function useSessionTimeout({
     setShowWarning(true);
     setRemainingSeconds(warningMinutes * 60);
 
+    // Clear the main countdown
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+    }
+
     warningIntervalRef.current = setInterval(() => {
       setRemainingSeconds((prev) => {
         if (prev <= 1) {
@@ -56,6 +69,7 @@ export function useSessionTimeout({
         }
         return prev - 1;
       });
+      setTotalRemainingSeconds((prev) => Math.max(0, prev - 1));
     }, 1000);
   }, [warningMinutes, handleLogout]);
 
@@ -64,14 +78,23 @@ export function useSessionTimeout({
     clearTimers();
     setShowWarning(false);
     setRemainingSeconds(warningMinutes * 60);
+    setTotalRemainingSeconds(timeoutMinutes * 60);
 
     if (user) {
+      // Start countdown for total remaining time
+      countdownIntervalRef.current = setInterval(() => {
+        setTotalRemainingSeconds((prev) => {
+          if (prev <= 1) return 0;
+          return prev - 1;
+        });
+      }, 1000);
+
       // Set timeout to show warning
       timeoutRef.current = setTimeout(() => {
         startWarningCountdown();
       }, timeoutMs - warningMs);
     }
-  }, [user, timeoutMs, warningMs, clearTimers, startWarningCountdown, warningMinutes]);
+  }, [user, timeoutMs, warningMs, clearTimers, startWarningCountdown, warningMinutes, timeoutMinutes]);
 
   // Track user activity
   useEffect(() => {
@@ -123,6 +146,8 @@ export function useSessionTimeout({
   return {
     showWarning,
     remainingSeconds,
+    totalRemainingSeconds,
+    timeoutMinutes,
     resetTimer,
   };
 }
