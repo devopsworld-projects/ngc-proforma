@@ -24,7 +24,7 @@ export function InvoiceTotals({
           <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">
             Amount Chargeable (in words)
           </p>
-          <p className="text-sm font-serif font-semibold text-black">
+          <p className="text-sm font-semibold text-black font-mono">
             {amountInWords}
           </p>
           
@@ -63,7 +63,7 @@ export function InvoiceTotals({
           <div className="bg-[hsl(222,47%,15%)] text-white -mx-2 px-3 py-2 rounded">
             <div className="flex justify-between items-center">
               <span className="text-sm font-serif font-semibold">Grand Total</span>
-              <span className="text-lg font-serif font-bold">
+              <span className="text-lg font-bold font-sans">
                 ₹{totals.grandTotal.toLocaleString('en-IN', {
                 minimumFractionDigits: 2
               })}
