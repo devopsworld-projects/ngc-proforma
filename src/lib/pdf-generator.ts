@@ -140,80 +140,90 @@ export async function generateInvoicePDF(
     return fontSize * 0.4;
   };
 
-  // ===== HEADER - SIMPLE WHITE LAYOUT =====
+  // ===== HEADER - ORGANIZATION DETAILS (CENTERED) =====
   
-  // Logo on left (vertically centered with company info)
-  const logoSize = 28;
-  let logoEndX = margin;
+  // Logo centered at top
+  const logoSize = 24;
   let hasLogo = false;
   
   if (template.show_logo && company.logo_url) {
     const logoBase64 = await loadImageAsBase64(company.logo_url);
     if (logoBase64) {
       try {
-        doc.addImage(logoBase64, "PNG", margin, yPos, logoSize, logoSize);
-        logoEndX = margin + logoSize + 10;
+        const logoX = (pageWidth - logoSize) / 2;
+        doc.addImage(logoBase64, "PNG", logoX, yPos, logoSize, logoSize);
         hasLogo = true;
+        yPos += logoSize + 4;
       } catch (e) {
         console.warn("Failed to add logo:", e);
       }
     }
   }
 
-  // Company name - aligned with logo center
-  const companyNameY = hasLogo ? yPos + 10 : yPos + 8;
-  addText(company.name.toUpperCase(), logoEndX, companyNameY, {
+  // Company name - centered
+  addText(company.name.toUpperCase(), pageWidth / 2, yPos, {
     fontSize: 16,
     fontStyle: "bold",
     color: primaryColor,
+    align: "center",
   });
+  yPos += 7;
 
-  // Company details under name
-  let companyY = companyNameY + 6;
-  if (template.show_gstin_header && company.gstin) {
-    addText(`GSTIN: ${company.gstin}`, logoEndX, companyY, {
+  // Company address - centered
+  const addressParts = [company.address_line1, company.address_line2].filter(Boolean);
+  if (addressParts.length > 0) {
+    addText(addressParts.join(", "), pageWidth / 2, yPos, {
       fontSize: 9,
       color: mutedText,
+      align: "center",
     });
-    companyY += 5;
+    yPos += 5;
+  }
+  
+  const cityLine = [company.city, company.state, company.postal_code].filter(Boolean).join(", ");
+  if (cityLine) {
+    addText(cityLine, pageWidth / 2, yPos, {
+      fontSize: 9,
+      color: mutedText,
+      align: "center",
+    });
+    yPos += 5;
   }
 
-  // Contact info on right
+  // Contact info - centered
   if (template.show_contact_header) {
-    const rightX = pageWidth - margin;
-    let contactY = yPos + 5;
-    
+    const contactParts = [];
     if (company.phone && company.phone.length > 0) {
-      const allPhones = company.phone.join(", ");
-      addText(`Phone: ${allPhones}`, rightX, contactY, {
-        fontSize: 9,
-        color: darkText,
-        align: "right",
-        maxWidth: 80,
-      });
-      // Adjust spacing based on phone numbers length
-      contactY += company.phone.length > 1 ? 8 : 5;
+      contactParts.push(`Phone: ${company.phone.join(", ")}`);
     }
     if (company.email) {
-      addText(company.email, rightX, contactY, {
-        fontSize: 9,
-        color: darkText,
-        align: "right",
-      });
-      contactY += 5;
+      contactParts.push(`Email: ${company.email}`);
     }
-    
-    const addressParts = [company.city, company.state, company.postal_code].filter(Boolean);
-    if (addressParts.length > 0) {
-      addText(addressParts.join(", "), rightX, contactY, {
-        fontSize: 9,
+    if (company.website) {
+      contactParts.push(company.website);
+    }
+    if (contactParts.length > 0) {
+      addText(contactParts.join("  |  "), pageWidth / 2, yPos, {
+        fontSize: 8,
         color: mutedText,
-        align: "right",
+        align: "center",
       });
+      yPos += 5;
     }
   }
 
-  yPos += hasLogo ? 35 : 30;
+  // GSTIN - centered
+  if (template.show_gstin_header && company.gstin) {
+    addText(`GSTIN: ${company.gstin}`, pageWidth / 2, yPos, {
+      fontSize: 9,
+      fontStyle: "bold",
+      color: darkText,
+      align: "center",
+    });
+    yPos += 5;
+  }
+
+  yPos += 3;
 
   // Separator line
   doc.setDrawColor(...borderColor);
@@ -222,15 +232,76 @@ export async function generateInvoicePDF(
   
   yPos += 8;
 
-  // No TAX INVOICE title - clean layout
+  // ===== PROFORMA INVOICE TITLE =====
+  addText("PROFORMA INVOICE", pageWidth / 2, yPos, {
+    fontSize: 14,
+    fontStyle: "bold",
+    color: primaryColor,
+    align: "center",
+  });
+  yPos += 10;
 
-  // ===== INVOICE DETAILS & BILL TO - TWO COLUMNS =====
+  // ===== CUSTOMER DETAILS (LEFT) & INVOICE INFO (RIGHT) =====
   const colWidth = (pageWidth - margin * 2 - 20) / 2;
   const leftColX = margin;
   const rightColX = margin + colWidth + 20;
 
-  // Proforma Invoice Details (Left)
-  addText("Proforma Invoice Details", leftColX, yPos, {
+  // Bill To (Left)
+  addText("Bill To:", leftColX, yPos, {
+    fontSize: 10,
+    fontStyle: "bold",
+    color: darkText,
+  });
+
+  let billY = yPos + 7;
+  if (invoice.customer) {
+    addText(invoice.customer.name, leftColX, billY, {
+      fontSize: 10,
+      fontStyle: "bold",
+      color: darkText,
+      maxWidth: colWidth,
+    });
+    billY += 6;
+
+    if (invoice.billing_address) {
+      const addr = invoice.billing_address;
+      if (addr.address_line1) {
+        addText(addr.address_line1, leftColX, billY, { fontSize: 9, color: mutedText, maxWidth: colWidth });
+        billY += 5;
+      }
+      if (addr.address_line2) {
+        addText(addr.address_line2, leftColX, billY, { fontSize: 9, color: mutedText, maxWidth: colWidth });
+        billY += 5;
+      }
+      const addrCityLine = [addr.city, addr.state, addr.postal_code].filter(Boolean).join(", ");
+      if (addrCityLine) {
+        addText(addrCityLine, leftColX, billY, { fontSize: 9, color: mutedText, maxWidth: colWidth });
+        billY += 5;
+      }
+    }
+
+    if (invoice.customer.gstin) {
+      addText(`GSTIN: ${invoice.customer.gstin}`, leftColX, billY, {
+        fontSize: 9,
+        color: darkText,
+      });
+      billY += 5;
+    }
+
+    if (invoice.customer.state) {
+      const stateInfo = invoice.customer.state_code 
+        ? `${invoice.customer.state} (${invoice.customer.state_code})`
+        : invoice.customer.state;
+      addText(`State: ${stateInfo}`, leftColX, billY, {
+        fontSize: 9,
+        color: mutedText,
+      });
+      billY += 5;
+    }
+  }
+
+  // Invoice Details (Right)
+  addText("Invoice Details:", rightColX, yPos, {
     fontSize: 10,
     fontStyle: "bold",
     color: darkText,
@@ -244,8 +315,8 @@ export async function generateInvoicePDF(
   });
 
   const addDetailLine = (label: string, value: string) => {
-    addText(label, leftColX, detailY, { fontSize: 9, color: mutedText });
-    addText(value, leftColX + 35, detailY, { fontSize: 9, fontStyle: "bold", color: darkText });
+    addText(label, rightColX, detailY, { fontSize: 9, color: mutedText });
+    addText(value, rightColX + 35, detailY, { fontSize: 9, fontStyle: "bold", color: darkText });
     detailY += 5;
   };
 
@@ -254,59 +325,6 @@ export async function generateInvoicePDF(
   if (invoice.e_way_bill_no) addDetailLine("e-Way Bill:", invoice.e_way_bill_no);
   if (invoice.supplier_invoice_no) addDetailLine("Supplier Inv:", invoice.supplier_invoice_no);
   if (invoice.other_references) addDetailLine("Reference:", invoice.other_references.substring(0, 30));
-
-  // Bill To (Right)
-  addText("Bill To", rightColX, yPos, {
-    fontSize: 10,
-    fontStyle: "bold",
-    color: darkText,
-  });
-
-  let billY = yPos + 7;
-  if (invoice.customer) {
-    addText(invoice.customer.name, rightColX, billY, {
-      fontSize: 10,
-      fontStyle: "bold",
-      color: darkText,
-      maxWidth: colWidth,
-    });
-    billY += 6;
-
-    if (invoice.billing_address) {
-      const addr = invoice.billing_address;
-      if (addr.address_line1) {
-        addText(addr.address_line1, rightColX, billY, { fontSize: 9, color: mutedText, maxWidth: colWidth });
-        billY += 5;
-      }
-      if (addr.address_line2) {
-        addText(addr.address_line2, rightColX, billY, { fontSize: 9, color: mutedText, maxWidth: colWidth });
-        billY += 5;
-      }
-      const cityLine = [addr.city, addr.state, addr.postal_code].filter(Boolean).join(", ");
-      if (cityLine) {
-        addText(cityLine, rightColX, billY, { fontSize: 9, color: mutedText, maxWidth: colWidth });
-        billY += 5;
-      }
-    }
-
-    if (invoice.customer.gstin) {
-      addText(`GSTIN: ${invoice.customer.gstin}`, rightColX, billY, {
-        fontSize: 9,
-        color: darkText,
-      });
-      billY += 5;
-    }
-
-    if (invoice.customer.state) {
-      const stateInfo = invoice.customer.state_code 
-        ? `${invoice.customer.state} (${invoice.customer.state_code})`
-        : invoice.customer.state;
-      addText(`State: ${stateInfo}`, rightColX, billY, {
-        fontSize: 9,
-        color: mutedText,
-      });
-    }
-  }
 
   yPos = Math.max(detailY, billY) + 10;
 
@@ -440,6 +458,32 @@ export async function generateInvoicePDF(
 
   yPos = totalsY + 10;
 
+  // Check if we need a new page for footer content
+  if (yPos > pageHeight - 70) {
+    doc.addPage();
+    yPos = margin;
+  }
+
+  // ===== TERMS & CONDITIONS =====
+  if (template.show_terms) {
+    doc.setDrawColor(...borderColor);
+    doc.line(margin, yPos - 3, pageWidth - margin, yPos - 3);
+    
+    addText("Terms & Conditions:", margin, yPos + 3, {
+      fontSize: 9,
+      fontStyle: "bold",
+      color: darkText,
+    });
+    
+    let termY = yPos + 10;
+    const terms = [template.terms_line1, template.terms_line2, template.terms_line3].filter(Boolean);
+    terms.forEach((term, idx) => {
+      addText(`${idx + 1}. ${term}`, margin, termY, { fontSize: 8, color: mutedText });
+      termY += 5;
+    });
+    yPos = termY + 5;
+  }
+
   // ===== BANK DETAILS =====
   if (template.bank_name) {
     doc.setDrawColor(...borderColor);
@@ -451,51 +495,32 @@ export async function generateInvoicePDF(
       color: darkText,
     });
 
-    const bankInfo = [
-      template.bank_name,
-      template.bank_account_no ? `A/C: ${template.bank_account_no}` : null,
-      template.bank_ifsc ? `IFSC: ${template.bank_ifsc}` : null,
-      template.bank_branch ? `Branch: ${template.bank_branch}` : null,
-    ].filter(Boolean).join("  |  ");
-
-    addText(bankInfo, margin, yPos + 10, {
-      fontSize: 9,
-      color: mutedText,
-      maxWidth: pageWidth - margin * 2,
-    });
-
-    yPos += 20;
+    let bankY = yPos + 10;
+    if (template.bank_name) {
+      addText(`Bank: ${template.bank_name}`, margin, bankY, { fontSize: 8, color: mutedText });
+      bankY += 5;
+    }
+    if (template.bank_account_no) {
+      addText(`Account No: ${template.bank_account_no}`, margin, bankY, { fontSize: 8, color: mutedText });
+      bankY += 5;
+    }
+    if (template.bank_ifsc) {
+      addText(`IFSC: ${template.bank_ifsc}`, margin, bankY, { fontSize: 8, color: mutedText });
+      bankY += 5;
+    }
+    if (template.bank_branch) {
+      addText(`Branch: ${template.bank_branch}`, margin, bankY, { fontSize: 8, color: mutedText });
+      bankY += 5;
+    }
+    yPos = bankY + 5;
   }
 
-  // ===== FOOTER SECTION =====
-  const footerY = pageHeight - 35;
-
-  // Separator line
-  doc.setDrawColor(...borderColor);
-  doc.setLineWidth(0.3);
-  doc.line(margin, footerY - 8, pageWidth - margin, footerY - 8);
-
-  // Terms & Conditions
-  if (template.show_terms) {
-    addText("Terms & Conditions:", margin, footerY - 2, {
-      fontSize: 8,
-      fontStyle: "bold",
-      color: darkText,
-    });
-    
-    let termY = footerY + 4;
-    const terms = [template.terms_line1, template.terms_line2, template.terms_line3].filter(Boolean);
-    terms.forEach((term, idx) => {
-      addText(`${idx + 1}. ${term}`, margin, termY, { fontSize: 7, color: mutedText });
-      termY += 4;
-    });
-  }
-
-  // Signature section (right side)
+  // ===== SIGNATURE SECTION =====
   if (template.show_signature) {
-    const sigX = pageWidth - margin - 40;
+    const sigX = pageWidth - margin - 50;
+    const sigY = Math.max(yPos, pageHeight - 30);
     
-    addText(`For ${company.name}`, sigX + 20, footerY - 4, {
+    addText(`For ${company.name}`, sigX + 25, sigY - 8, {
       fontSize: 8,
       fontStyle: "bold",
       color: darkText,
@@ -504,13 +529,22 @@ export async function generateInvoicePDF(
 
     doc.setDrawColor(...darkText);
     doc.setLineWidth(0.3);
-    doc.line(sigX, footerY + 10, pageWidth - margin, footerY + 10);
+    doc.line(sigX, sigY, pageWidth - margin, sigY);
     
-    addText("Authorized Signatory", sigX + 20, footerY + 15, {
+    addText("Authorized Signatory", sigX + 25, sigY + 5, {
       fontSize: 7,
       color: mutedText,
       align: "center",
     });
+  }
+
+  // Page number
+  const totalPages = doc.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(...mutedText);
+    doc.text(`Page ${i} of ${totalPages}`, pageWidth / 2, pageHeight - 8, { align: "center" });
   }
 
   // Custom footer text
