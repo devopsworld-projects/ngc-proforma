@@ -97,7 +97,7 @@ export function AppNavigation() {
           {/* Logo / Brand */}
           <Link to="/dashboard" className="flex items-center gap-2 font-semibold text-lg">
             <Globe className="h-5 w-5 text-primary" />
-            <span className="hidden sm:inline">Global Shope </span>
+            <span className="hidden sm:inline">Global Shopee </span>
           </Link>
 
           {/* Desktop Navigation */}
