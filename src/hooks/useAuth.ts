@@ -79,18 +79,20 @@ export function useAuthProvider(): AuthContextType {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    let isMounted = true;
+
+    // Listener for ONGOING auth changes (does NOT control isLoading)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setIsLoading(false);
+      (event, currentSession) => {
+        if (!isMounted) return;
         
-        // Track session on sign in
-        if (event === "SIGNED_IN" && session?.user && !sessionTracked) {
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+        
+        // Track session on sign in (fire and forget)
+        if (event === "SIGNED_IN" && currentSession?.user && !sessionTracked) {
           sessionTracked = true;
-          // Defer to avoid blocking auth flow
-          setTimeout(() => trackUserSession(session.user.id), 100);
+          setTimeout(() => trackUserSession(currentSession.user.id), 100);
         }
         
         if (event === "SIGNED_OUT") {
@@ -99,14 +101,27 @@ export function useAuthProvider(): AuthContextType {
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setIsLoading(false);
-    });
+    // INITIAL load (controls isLoading)
+    const initializeAuth = async () => {
+      try {
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        if (!isMounted) return;
+        
+        setSession(initialSession);
+        setUser(initialSession?.user ?? null);
+      } catch (error) {
+        console.error("Error during initial auth setup:", error);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
 
-    return () => subscription.unsubscribe();
+    initializeAuth();
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string) => {
