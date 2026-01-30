@@ -15,23 +15,29 @@ interface InvoiceFooterProps {
 export function InvoiceFooter({ 
   company, 
   termsAndConditions = [
-    "Goods once sold will not be taken back.",
-    "Subject to local jurisdiction only.",
-    "E&OE - Errors and Omissions Excepted."
+    "Customer Should register the product with respective company.",
+    "In case of Warranty the customer should bare the courier charges.",
+    "Validity of this quotation is for 7 days.",
+    "Payment should be made in 100% Advance, No warranty for Burning."
   ],
-  bankDetails 
+  bankDetails = {
+    bankName: "TAMILNAD MERCANTILE BANK LTD",
+    accountNo: "171700150950039",
+    ifsc: "TMBL0000171",
+    branch: "NEW GLOBAL COMPUTERS"
+  }
 }: InvoiceFooterProps) {
   return (
-    <div className="p-6 bg-invoice-subtle border-t border-invoice-border space-y-6">
+    <div className="p-4 bg-[hsl(var(--invoice-header-bg))] text-[hsl(var(--invoice-header-fg))] space-y-4">
       {/* Terms & Conditions */}
-      <div className="space-y-2">
+      <div className="space-y-1">
         <div className="flex items-center gap-2">
-          <FileText className="w-4 h-4 text-invoice-muted" />
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-invoice-muted">
+          <FileText className="w-3.5 h-3.5 opacity-70" />
+          <h4 className="text-xs font-semibold uppercase tracking-wider opacity-70">
             Terms & Conditions
           </h4>
         </div>
-        <ul className="text-xs text-muted-foreground space-y-1 pl-6">
+        <ul className="text-xs opacity-90 space-y-0.5 pl-5">
           {termsAndConditions.map((term, idx) => (
             <li key={idx}>{idx + 1}. {term}</li>
           ))}
@@ -40,31 +46,31 @@ export function InvoiceFooter({
 
       {/* Bank Details */}
       {bankDetails && bankDetails.bankName && (
-        <div className="space-y-2">
+        <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <Building2 className="w-4 h-4 text-invoice-muted" />
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-invoice-muted">
+            <Building2 className="w-3.5 h-3.5 opacity-70" />
+            <h4 className="text-xs font-semibold uppercase tracking-wider opacity-70">
               Bank Details
             </h4>
           </div>
-          <div className="text-xs text-muted-foreground grid grid-cols-2 gap-2 pl-6">
+          <div className="text-xs opacity-90 grid grid-cols-2 gap-1 pl-5">
+            {bankDetails.branch && <p>Name: {bankDetails.branch}</p>}
             {bankDetails.bankName && <p>Bank: {bankDetails.bankName}</p>}
             {bankDetails.accountNo && <p>A/C No: {bankDetails.accountNo}</p>}
             {bankDetails.ifsc && <p>IFSC: {bankDetails.ifsc}</p>}
-            {bankDetails.branch && <p>Branch: {bankDetails.branch}</p>}
           </div>
         </div>
       )}
 
       {/* Signature Section */}
-      <div className="flex justify-end">
-        <div className="text-center w-48">
-          <p className="text-sm font-semibold text-foreground mb-8">
+      <div className="flex justify-end pt-2">
+        <div className="text-center w-40">
+          <p className="text-xs font-semibold mb-6">
             for {company.name}
           </p>
-          <div className="border-t-2 border-primary pt-3 flex items-center justify-center gap-2">
-            <PenLine className="w-4 h-4 text-invoice-muted" />
-            <span className="text-sm font-medium text-muted-foreground">
+          <div className="border-t border-white/30 pt-2 flex items-center justify-center gap-1.5">
+            <PenLine className="w-3 h-3 opacity-70" />
+            <span className="text-xs font-medium opacity-80">
               Authorised Signatory
             </span>
           </div>
