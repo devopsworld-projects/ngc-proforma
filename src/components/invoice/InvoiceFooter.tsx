@@ -53,7 +53,7 @@ export function InvoiceFooter({
               Bank Details
             </h4>
           </div>
-          <div className="text-xs opacity-90 grid grid-cols-2 gap-1 pl-5">
+          <div className="text-xs opacity-90 space-y-0.5 pl-5">
             {bankDetails.branch && <p>Name: {bankDetails.branch}</p>}
             {bankDetails.bankName && <p>Bank: {bankDetails.bankName}</p>}
             {bankDetails.accountNo && <p>A/C No: {bankDetails.accountNo}</p>}

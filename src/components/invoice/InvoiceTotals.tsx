@@ -17,31 +17,31 @@ export function InvoiceTotals({ totals, totalQuantity, amountInWords }: InvoiceT
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 bg-white">
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Amount in Words */}
-        <div className="flex-1 p-4 bg-invoice-subtle rounded-lg border border-invoice-border">
-          <p className="text-xs font-semibold uppercase tracking-wider text-invoice-muted mb-2">
+        <div className="flex-1 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">
             Amount Chargeable (in words)
           </p>
-          <p className="text-lg font-serif font-semibold text-foreground">
+          <p className="text-lg font-serif font-semibold text-black">
             {amountInWords}
           </p>
-          <p className="text-xs text-invoice-muted mt-2">E. & O.E</p>
+          <p className="text-xs text-gray-500 mt-2">E. & O.E</p>
         </div>
 
         {/* Totals Summary */}
         <div className="lg:w-96 space-y-3">
           <div className="flex justify-between items-center text-sm">
-            <span className="text-muted-foreground">Subtotal ({totalQuantity} items)</span>
-            <span className="font-medium">{formatCurrency(totals.subtotal)}</span>
+            <span className="text-gray-600">Subtotal ({totalQuantity} items)</span>
+            <span className="font-medium text-black">{formatCurrency(totals.subtotal)}</span>
           </div>
           
           <div className="flex justify-between items-center text-sm">
-            <span className="text-muted-foreground">
+            <span className="text-gray-600">
               Discount Received @ {totals.discountPercent}%
             </span>
-            <span className="font-medium text-invoice-success">
+            <span className="font-medium text-green-600">
               - {formatCurrency(totals.discount)}
             </span>
           </div>
@@ -49,18 +49,18 @@ export function InvoiceTotals({ totals, totalQuantity, amountInWords }: InvoiceT
           <Separator className="my-3" />
 
           <div className="flex justify-between items-center text-sm">
-            <span className="text-muted-foreground">IGST @ {totals.taxRate}%</span>
-            <span className="font-medium">{formatCurrency(totals.taxAmount)}</span>
+            <span className="text-gray-600">IGST @ {totals.taxRate}%</span>
+            <span className="font-medium text-black">{formatCurrency(totals.taxAmount)}</span>
           </div>
 
           <div className="flex justify-between items-center text-sm">
-            <span className="text-muted-foreground">Round Off</span>
-            <span className="font-medium">{formatCurrency(totals.roundOff)}</span>
+            <span className="text-gray-600">Round Off</span>
+            <span className="font-medium text-black">{formatCurrency(totals.roundOff)}</span>
           </div>
 
           <Separator className="my-3" />
 
-          <div className="invoice-total-row -mx-4 px-4 py-4 rounded-lg">
+          <div className="bg-[hsl(222,47%,15%)] text-white -mx-4 px-4 py-4 rounded-lg">
             <div className="flex justify-between items-center">
               <span className="text-lg font-serif font-semibold">Grand Total</span>
               <span className="text-2xl font-serif font-bold">

@@ -25,13 +25,13 @@ export function InvoiceTable({ items }: InvoiceTableProps) {
     <div className="overflow-x-auto">
       <Table>
         <TableHeader>
-          <TableRow className="invoice-table-header border-none">
-            <TableHead className="w-16 text-center py-4">Sl No.</TableHead>
-            <TableHead className="w-32 py-4">Brand</TableHead>
-            <TableHead className="min-w-[250px] py-4">Description</TableHead>
-            <TableHead className="text-center py-4 w-20">Qty</TableHead>
-            <TableHead className="text-right py-4 w-28">Unit Price</TableHead>
-            <TableHead className="text-center py-4 w-24">Product Image</TableHead>
+          <TableRow className="bg-gray-100 border-none">
+            <TableHead className="w-16 text-center py-4 text-gray-700 text-xs font-semibold uppercase">Sl No.</TableHead>
+            <TableHead className="w-32 py-4 text-gray-700 text-xs font-semibold uppercase">Brand</TableHead>
+            <TableHead className="min-w-[250px] py-4 text-gray-700 text-xs font-semibold uppercase">Description</TableHead>
+            <TableHead className="text-center py-4 w-20 text-gray-700 text-xs font-semibold uppercase">Qty</TableHead>
+            <TableHead className="text-right py-4 w-28 text-gray-700 text-xs font-semibold uppercase">Unit Price</TableHead>
+            <TableHead className="text-center py-4 w-24 text-gray-700 text-xs font-semibold uppercase">Product Image</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -47,16 +47,16 @@ export function InvoiceTable({ items }: InvoiceTableProps) {
                 </span>
               </TableCell>
               <TableCell className="py-6">
-                <span className="font-medium text-foreground">{item.brand || "-"}</span>
+                <span className="font-medium text-black">{item.brand || "-"}</span>
               </TableCell>
               <TableCell className="py-6">
-                <p className="font-medium text-foreground">{item.description}</p>
+                <p className="font-medium text-black">{item.description}</p>
               </TableCell>
               <TableCell className="text-center py-6">
-                <span className="font-semibold">{item.quantity}</span>
-                <span className="text-invoice-muted text-xs ml-1">{item.unit}</span>
+                <span className="font-semibold text-black">{item.quantity}</span>
+                <span className="text-gray-600 text-xs ml-1">{item.unit}</span>
               </TableCell>
-              <TableCell className="text-right py-6 font-medium">
+              <TableCell className="text-right py-6 font-medium text-black">
                 {formatCurrency(item.rate)}
               </TableCell>
               <TableCell className="text-center py-6">
