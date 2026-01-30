@@ -140,30 +140,34 @@ export async function generateInvoicePDF(
 
   // ===== HEADER - SIMPLE WHITE LAYOUT =====
   
-  // Logo on left
+  // Logo on left (vertically centered with company info)
+  const logoSize = 28;
   let logoEndX = margin;
+  let hasLogo = false;
+  
   if (template.show_logo && company.logo_url) {
     const logoBase64 = await loadImageAsBase64(company.logo_url);
     if (logoBase64) {
       try {
-        const logoSize = 22;
         doc.addImage(logoBase64, "PNG", margin, yPos, logoSize, logoSize);
-        logoEndX = margin + logoSize + 8;
+        logoEndX = margin + logoSize + 10;
+        hasLogo = true;
       } catch (e) {
         console.warn("Failed to add logo:", e);
       }
     }
   }
 
-  // Company name
-  addText(company.name.toUpperCase(), logoEndX, yPos + 8, {
+  // Company name - aligned with logo center
+  const companyNameY = hasLogo ? yPos + 10 : yPos + 8;
+  addText(company.name.toUpperCase(), logoEndX, companyNameY, {
     fontSize: 16,
     fontStyle: "bold",
     color: primaryColor,
   });
 
   // Company details under name
-  let companyY = yPos + 14;
+  let companyY = companyNameY + 6;
   if (template.show_gstin_header && company.gstin) {
     addText(`GSTIN: ${company.gstin}`, logoEndX, companyY, {
       fontSize: 9,
@@ -204,7 +208,7 @@ export async function generateInvoicePDF(
     }
   }
 
-  yPos += 30;
+  yPos += hasLogo ? 35 : 30;
 
   // Separator line
   doc.setDrawColor(...borderColor);
@@ -220,8 +224,8 @@ export async function generateInvoicePDF(
   const leftColX = margin;
   const rightColX = margin + colWidth + 20;
 
-  // Invoice Details (Left)
-  addText("Invoice Details", leftColX, yPos, {
+  // Proforma Invoice Details (Left)
+  addText("Proforma Invoice Details", leftColX, yPos, {
     fontSize: 10,
     fontStyle: "bold",
     color: darkText,
@@ -240,7 +244,7 @@ export async function generateInvoicePDF(
     detailY += 5;
   };
 
-  addDetailLine("Invoice No:", invoice.invoice_no);
+  addDetailLine("Proforma No:", invoice.invoice_no);
   addDetailLine("Date:", invoiceDate);
   if (invoice.e_way_bill_no) addDetailLine("e-Way Bill:", invoice.e_way_bill_no);
   if (invoice.supplier_invoice_no) addDetailLine("Supplier Inv:", invoice.supplier_invoice_no);

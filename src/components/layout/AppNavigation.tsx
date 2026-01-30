@@ -15,11 +15,11 @@ const mainNavItems = [{
 }];
 const invoiceItems = [{
   path: "/invoices/new",
-  label: "Create Invoice",
+  label: "Create Proforma",
   icon: PlusCircle
 }, {
   path: "/invoices",
-  label: "All Invoices",
+  label: "All Proformas",
   icon: LayoutDashboard
 }, {
   path: "/recurring",
@@ -102,7 +102,7 @@ export function AppNavigation() {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-1">
             {mainNavItems.map(item => <NavLink key={item.path} {...item} />)}
-            <DropdownNavGroup label="Invoices" icon={FileText} items={invoiceItems} />
+            <DropdownNavGroup label="Proforma" icon={FileText} items={invoiceItems} />
             <DropdownNavGroup label="Management" icon={Package} items={managementItems} />
             <NavLink path="/settings" label="Settings" icon={Settings} />
             {isAdmin && <Link to="/admin" className={cn("flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors", isActive("/admin") ? "bg-amber-500 text-white" : "text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/20")}>
@@ -160,10 +160,10 @@ export function AppNavigation() {
           <div className="px-4 py-3 space-y-1">
             {mainNavItems.map(item => <NavLink key={item.path} {...item} />)}
             
-            {/* Invoice Section */}
+            {/* Proforma Invoice Section */}
             <div className="pt-2">
               <p className="px-3 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Invoices
+                Proforma Invoices
               </p>
               {invoiceItems.map(item => <NavLink key={item.path} {...item} />)}
             </div>

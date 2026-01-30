@@ -159,11 +159,11 @@ export default function InvoicesPage() {
           recipientEmail: statusConfirmation.customerEmail!,
           recipientName: statusConfirmation.customerName || "Valued Customer",
           grandTotal: formatCurrency(statusConfirmation.grandTotal),
-          companyName: companySettings?.name || "Invoice System",
+          companyName: companySettings?.name || "Proforma System",
         });
         toast.success(`Status updated and notification sent to ${statusConfirmation.customerEmail}`);
       } else {
-        toast.success(`Invoice status updated to ${status}`);
+        toast.success(`Proforma status updated to ${status}`);
       }
     } catch (error: any) {
       toast.error(error.message || "Failed to update status");
@@ -183,9 +183,9 @@ export default function InvoicesPage() {
     setIsDeleting(true);
     try {
       await deleteInvoice.mutateAsync(deleteConfirmation.id);
-      toast.success(`Invoice #${deleteConfirmation.invoiceNo} deleted successfully`);
+      toast.success(`Proforma #${deleteConfirmation.invoiceNo} deleted successfully`);
     } catch (error: any) {
-      toast.error(error.message || "Failed to delete invoice");
+      toast.error(error.message || "Failed to delete proforma");
     } finally {
       setIsDeleting(false);
       setDeleteConfirmation(null);
@@ -258,12 +258,12 @@ export default function InvoicesPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-serif font-bold">Invoices</h2>
-            <p className="text-muted-foreground">View and manage all your invoices</p>
+            <h2 className="text-2xl font-serif font-bold">Proforma Invoices</h2>
+            <p className="text-muted-foreground">View and manage all your proforma invoices</p>
           </div>
           <Button className="gap-2" onClick={() => navigate("/invoices/new")}>
             <Plus className="h-4 w-4" />
-            New Invoice
+            New Proforma
           </Button>
         </div>
 
@@ -277,7 +277,7 @@ export default function InvoicesPage() {
         {/* Results Summary */}
         {!isLoading && invoices && invoices.length > 0 && (
           <div className="text-sm text-muted-foreground">
-            Showing {filteredInvoices.length} of {invoices.length} invoices
+            Showing {filteredInvoices.length} of {invoices.length} proforma invoices
             {hasActiveFilters && " (filtered)"}
           </div>
         )}
@@ -303,11 +303,11 @@ export default function InvoicesPage() {
           <Card className="border-dashed">
             <CardContent className="py-12 text-center">
               <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">No invoices yet</h3>
-              <p className="text-muted-foreground mb-4">Create your first invoice to get started</p>
+              <h3 className="text-lg font-medium mb-2">No proforma invoices yet</h3>
+              <p className="text-muted-foreground mb-4">Create your first proforma invoice to get started</p>
               <Button className="gap-2" onClick={() => navigate("/invoices/new")}>
                 <Plus className="h-4 w-4" />
-                Create Invoice
+                Create Proforma
               </Button>
             </CardContent>
           </Card>
@@ -315,7 +315,7 @@ export default function InvoicesPage() {
           <Card className="border-dashed">
             <CardContent className="py-12 text-center">
               <SearchX className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">No matching invoices</h3>
+              <h3 className="text-lg font-medium mb-2">No matching proforma invoices</h3>
               <p className="text-muted-foreground mb-4">Try adjusting your search or filters</p>
               <Button variant="outline" onClick={clearFilters}>
                 Clear Filters
@@ -333,7 +333,7 @@ export default function InvoicesPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold">Invoice #{invoice.invoice_no}</span>
+                        <span className="font-semibold">Proforma #{invoice.invoice_no}</span>
                         {invoice.is_recurring && (
                           <RefreshCcw className="h-4 w-4 text-invoice-accent" />
                         )}
@@ -381,7 +381,7 @@ export default function InvoicesPage() {
                       <DropdownMenuContent align="end" className="w-48 bg-popover">
                         <DropdownMenuItem onClick={() => navigate(`/invoices/${invoice.id}`)}>
                           <Eye className="h-4 w-4 mr-2" />
-                          View Invoice
+                          View Proforma
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleSendEmail(invoice.id)}>
                           <Mail className="h-4 w-4 mr-2" />
@@ -393,7 +393,7 @@ export default function InvoicesPage() {
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => navigate(`/invoices/${invoice.id}/edit`)}>
                           <Edit className="h-4 w-4 mr-2" />
-                          Edit Invoice
+                          Edit Proforma
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
@@ -435,7 +435,7 @@ export default function InvoicesPage() {
                           className="text-destructive"
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
-                          Delete Invoice
+                          Delete Proforma
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -460,9 +460,9 @@ export default function InvoicesPage() {
       <Dialog open={!!statusConfirmation} onOpenChange={(open) => !open && setStatusConfirmation(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Update Invoice Status</DialogTitle>
+            <DialogTitle>Update Proforma Status</DialogTitle>
             <DialogDescription>
-              Change Invoice #{statusConfirmation?.invoiceNo} to <strong>{statusConfirmation?.newStatus}</strong>
+              Change Proforma #{statusConfirmation?.invoiceNo} to <strong>{statusConfirmation?.newStatus}</strong>
             </DialogDescription>
           </DialogHeader>
           
@@ -506,9 +506,9 @@ export default function InvoicesPage() {
       <AlertDialog open={!!deleteConfirmation} onOpenChange={(open) => !open && setDeleteConfirmation(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Invoice</AlertDialogTitle>
+            <AlertDialogTitle>Delete Proforma Invoice</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete Invoice #{deleteConfirmation?.invoiceNo}? This will permanently remove the invoice and all associated line items. 
+              Are you sure you want to delete Proforma #{deleteConfirmation?.invoiceNo}? This will permanently remove the proforma invoice and all associated line items. 
               <br /><br />
               <strong>Amount: {formatCurrency(deleteConfirmation?.grandTotal || 0)}</strong>
               <br /><br />

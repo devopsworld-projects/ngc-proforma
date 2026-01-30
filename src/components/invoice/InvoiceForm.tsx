@@ -30,7 +30,7 @@ import { toast } from "sonner";
 import type { Json } from "@/integrations/supabase/types";
 
 const invoiceFormSchema = z.object({
-  invoiceNo: z.string().min(1, "Invoice number is required"),
+  invoiceNo: z.string().min(1, "Proforma number is required"),
   date: z.date(),
   eWayBillNo: z.string().optional(),
   supplierInvoiceNo: z.string().optional(),
@@ -368,7 +368,7 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
         const { error: itemsError } = await supabase.from("invoice_items").insert(itemsPayload);
         if (itemsError) throw itemsError;
 
-        toast.success("Invoice updated successfully!");
+        toast.success("Proforma invoice updated successfully!");
       } else {
         // Create new invoice
         const { data: newInvoice, error: invoiceError } = await supabase
@@ -418,14 +418,14 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
           }
         }
 
-        toast.success("Invoice created successfully!");
+        toast.success("Proforma invoice created successfully!");
       }
 
       onSuccess?.();
       navigate("/invoices");
     } catch (error: any) {
-      console.error("Error saving invoice:", error);
-      toast.error(error.message || "Failed to save invoice");
+      console.error("Error saving proforma invoice:", error);
+      toast.error(error.message || "Failed to save proforma invoice");
     } finally {
       setIsSubmitting(false);
     }
@@ -440,10 +440,10 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-serif font-bold">
-              {isEditing ? `Edit Invoice #${invoice?.invoice_no}` : "Create Invoice"}
+              {isEditing ? `Edit Proforma #${invoice?.invoice_no}` : "Create Proforma Invoice"}
             </h2>
             <p className="text-muted-foreground">
-              {isEditing ? "Update the invoice details" : "Fill in the details to create a new invoice"}
+              {isEditing ? "Update the proforma invoice details" : "Fill in the details to create a new proforma invoice"}
             </p>
           </div>
           <div className="flex gap-2">
@@ -453,7 +453,7 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
             </Button>
             <Button type="submit" disabled={isSubmitting || !quoteFor} className="gap-2">
               <Save className="h-4 w-4" />
-              {isSubmitting ? "Saving..." : isEditing ? "Update Invoice" : "Save Invoice"}
+              {isSubmitting ? "Saving..." : isEditing ? "Update Proforma" : "Save Proforma"}
             </Button>
           </div>
         </div>
@@ -531,10 +531,10 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Invoice Details */}
+            {/* Proforma Invoice Details */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Invoice Details</CardTitle>
+                <CardTitle className="text-base">Proforma Details</CardTitle>
               </CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
@@ -542,9 +542,9 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
                   name="invoiceNo"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Invoice Number *</FormLabel>
+                      <FormLabel>Proforma Number *</FormLabel>
                       <FormControl>
-                        <Input placeholder="INV-001" {...field} />
+                        <Input placeholder="PI-001" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -556,7 +556,7 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
                   name="date"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Invoice Date *</FormLabel>
+                      <FormLabel>Proforma Date *</FormLabel>
                       <Popover>
                         <PopoverTrigger asChild>
                           <FormControl>

@@ -35,8 +35,8 @@ export default function EditInvoicePage() {
     return (
       <AppLayout>
         <div className="text-center py-12">
-          <h2 className="text-xl font-semibold mb-2">Invoice not found</h2>
-          <p className="text-muted-foreground">The invoice you're looking for doesn't exist.</p>
+          <h2 className="text-xl font-semibold mb-2">Proforma Invoice not found</h2>
+          <p className="text-muted-foreground">The proforma invoice you're looking for doesn't exist.</p>
         </div>
       </AppLayout>
     );
