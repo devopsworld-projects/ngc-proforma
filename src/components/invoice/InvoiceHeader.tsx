@@ -35,7 +35,7 @@ export function InvoiceHeader({
           </div>
           
           <div className="space-y-1.5 text-sm opacity-90">
-            {company.address.map((line, i) => <p key={i}>{line}</p>)}
+            {company.address.map((line, i) => <p key={i} className="">{line}</p>)}
           </div>
 
           <div className="flex flex-wrap gap-4 text-xs opacity-80">
@@ -93,7 +93,7 @@ export function InvoiceHeader({
               <p className="text-xs opacity-60 uppercase tracking-wide">
             </p>
               <p className="font-medium">{supplierInvoiceNo}</p>
-              <p className="text-xs opacity-70">Dated: {supplierInvoiceDate}</p>
+              
             </div>
 
             {otherReferences && <div className="text-sm">
