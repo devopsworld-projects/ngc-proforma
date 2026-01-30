@@ -51,7 +51,7 @@ export interface InvoiceItem {
 
 export function useInvoices() {
   const { user } = useAuth();
-  const { data: isAdmin } = useIsAdmin();
+  const { data: isAdmin, isLoading: isAdminLoading } = useIsAdmin();
   
   return useQuery({
     queryKey: ["invoices", user?.id, isAdmin],
@@ -92,7 +92,7 @@ export function useInvoices() {
       if (error) throw error;
       return data;
     },
-    enabled: !!user,
+    enabled: !!user && !isAdminLoading,
   });
 }
 
