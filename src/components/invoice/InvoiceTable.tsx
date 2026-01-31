@@ -7,6 +7,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
+import { ImageIcon } from "lucide-react";
 
 interface InvoiceTableProps {
   items: InvoiceItem[];
@@ -31,7 +37,7 @@ export function InvoiceTable({ items }: InvoiceTableProps) {
             <TableHead className="min-w-[200px] py-2 text-gray-700 text-xs font-semibold uppercase">Description</TableHead>
             <TableHead className="text-center py-2 w-16 text-gray-700 text-xs font-semibold uppercase">Qty</TableHead>
             <TableHead className="text-right py-2 w-24 text-gray-700 text-xs font-semibold uppercase">Unit Price</TableHead>
-            <TableHead className="text-center py-2 w-20 text-gray-700 text-xs font-semibold uppercase">Image</TableHead>
+            <TableHead className="text-center py-2 w-24 text-gray-700 text-xs font-semibold uppercase">Image</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -61,13 +67,32 @@ export function InvoiceTable({ items }: InvoiceTableProps) {
               </TableCell>
               <TableCell className="text-center py-2">
                 {item.productImage ? (
-                  <img 
-                    src={item.productImage} 
-                    alt={item.description}
-                    className="w-10 h-10 object-cover rounded mx-auto"
-                  />
+                  <HoverCard openDelay={200} closeDelay={100}>
+                    <HoverCardTrigger asChild>
+                      <div className="relative w-14 h-14 mx-auto cursor-pointer group">
+                        <img 
+                          src={item.productImage} 
+                          alt={item.description}
+                          className="w-full h-full object-cover rounded-md border border-gray-200 shadow-sm transition-all group-hover:shadow-md group-hover:border-primary/30"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 rounded-md transition-colors" />
+                      </div>
+                    </HoverCardTrigger>
+                    <HoverCardContent side="left" className="w-auto p-2">
+                      <img 
+                        src={item.productImage} 
+                        alt={item.description}
+                        className="max-w-[200px] max-h-[200px] object-contain rounded-md"
+                      />
+                      <p className="text-xs text-muted-foreground mt-2 text-center max-w-[200px] truncate">
+                        {item.description}
+                      </p>
+                    </HoverCardContent>
+                  </HoverCard>
                 ) : (
-                  <span className="text-gray-400 text-xs">-</span>
+                  <div className="w-14 h-14 mx-auto flex items-center justify-center bg-gray-100 rounded-md border border-dashed border-gray-300">
+                    <ImageIcon className="w-5 h-5 text-gray-400" />
+                  </div>
                 )}
               </TableCell>
             </TableRow>
