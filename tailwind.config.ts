@@ -14,8 +14,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
-        serif: ['Playfair Display', 'serif'],
+        sans: ['Inter', 'Arial', 'sans-serif'],
+        heading: ['Montserrat', 'Inter', 'sans-serif'],
+        mono: ['Roboto Mono', 'monospace'],
       },
       colors: {
         border: "hsl(var(--border))",
