@@ -3,15 +3,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FileText, Plus, BarChart3 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
 const Index = () => {
   const navigate = useNavigate();
-
-  return (
-    <AppLayout>
+  return <AppLayout>
       <div className="space-y-6">
         <div>
-          <h2 className="text-2xl font-serif font-bold">Welcome to Proforma Invoice</h2>
+          <h2 className="text-2xl font-serif font-bold">Welcome to Global Shopee Proforma Invoice System</h2>
           <p className="text-muted-foreground">Your premium invoice management system</p>
         </div>
 
@@ -64,8 +61,6 @@ const Index = () => {
           </CardContent>
         </Card>
       </div>
-    </AppLayout>
-  );
+    </AppLayout>;
 };
-
 export default Index;
