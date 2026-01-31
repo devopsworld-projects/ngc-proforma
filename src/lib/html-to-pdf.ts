@@ -33,53 +33,51 @@ export async function downloadInvoiceAsPdf(
       imageTimeout: 15000,
       removeContainer: true,
       onclone: (clonedDoc, clonedElement) => {
-        // CRITICAL: Force solid white background and remove ALL potential overlay sources
+        // CRITICAL: Force solid white background on the main container only
+        // But preserve header/footer navy backgrounds
         clonedElement.style.cssText = `
           background-color: #ffffff !important;
           background-image: none !important;
-          background: #ffffff !important;
           box-shadow: none !important;
           filter: none !important;
-          opacity: 1 !important;
         `;
         
-        // Remove ALL pseudo-element backgrounds that might cause grey overlay
+        // Remove box-shadow and filter that might cause grey overlay
+        // But DO NOT override background colors on header/footer elements
         const style = clonedDoc.createElement('style');
         style.textContent = `
-          #${elementId},
-          #${elementId}::before,
-          #${elementId}::after,
-          #${elementId} *::before,
-          #${elementId} *::after {
+          #${elementId} {
             box-shadow: none !important;
             filter: none !important;
           }
           
-          /* Force the invoice body area to be pure white */
-          #${elementId} > div:not(.invoice-header):not(.invoice-accent-bar):not([class*="invoice-total"]) {
-            background-color: #ffffff !important;
+          #${elementId}::before,
+          #${elementId}::after {
+            display: none !important;
           }
           
-          /* Ensure table backgrounds are correct */
-          #${elementId} table {
-            background-color: #ffffff !important;
+          /* Force opacity to 1 for all elements to ensure solid rendering */
+          #${elementId} [class*="opacity-"] {
+            opacity: 1 !important;
           }
           
-          #${elementId} tbody {
-            background-color: #ffffff !important;
-          }
-          
-          #${elementId} tr {
-            background-color: transparent !important;
-          }
-          
+          /* Ensure table body has white background */
+          #${elementId} table,
+          #${elementId} tbody,
           #${elementId} td {
             background-color: transparent !important;
           }
           
-          /* Make sure all opacity-based elements render solid */
-          [class*="opacity-"] {
-            opacity: 1 !important;
+          /* Keep the invoice header and footer with their proper navy background */
+          #${elementId} .invoice-header,
+          #${elementId} .invoice-accent-bar,
+          #${elementId} .invoice-total-row {
+            /* These already have proper backgrounds - don't override */
+          }
+          
+          /* The totals section with navy background */
+          #${elementId} [class*="bg-\\[hsl"] {
+            /* Preserve HSL backgrounds */
           }
         `;
         clonedDoc.head.appendChild(style);
