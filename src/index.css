@@ -139,26 +139,22 @@
 @layer components {
   .invoice-container {
     @apply overflow-hidden mx-auto relative;
-    /* CRITICAL: Solid white background - no transparency, no gradients */
+    /* CRITICAL: Solid white background for PDF capture - NO transparency */
+    background: #ffffff !important;
     background-color: #ffffff !important;
-    background-image: none !important;
-    box-shadow: 0 25px 50px -12px rgba(30, 42, 74, 0.15);
+    /* Remove box-shadow completely - it causes grey overlay in PDF */
+    box-shadow: none;
     /* A4 dimensions: 210mm x 297mm (ratio 1:1.414) */
     width: 210mm;
     min-height: 297mm;
     max-width: 100%;
   }
-
-  /* Page break indicator - only visible on screen, not in PDF capture */
-  .invoice-container::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 297mm;
-    height: 1px;
-    background: #d4a02c;
-    pointer-events: none;
+  
+  /* Add shadow only for screen display, not during PDF capture */
+  @media screen {
+    .invoice-container {
+      box-shadow: 0 25px 50px -12px rgba(30, 42, 74, 0.15);
+    }
   }
 
   .invoice-page-indicator {

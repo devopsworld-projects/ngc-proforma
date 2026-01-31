@@ -23,26 +23,7 @@ export async function downloadInvoiceAsPdf(
   });
 
   try {
-    // Force solid white background on element before capture
-    const originalBg = element.style.background;
-    const originalBgColor = element.style.backgroundColor;
-    const originalBgImage = element.style.backgroundImage;
-    element.style.background = '#ffffff';
-    element.style.backgroundColor = '#ffffff';
-    element.style.backgroundImage = 'none';
-
-    // Hide pseudo-elements that may cause overlay issues
-    const style = document.createElement('style');
-    style.textContent = `
-      #${elementId}::before, #${elementId}::after,
-      #${elementId} *::before, #${elementId} *::after {
-        background-image: none !important;
-        background: transparent !important;
-      }
-    `;
-    document.head.appendChild(style);
-
-    // Capture with high quality - force solid white background
+    // Capture with high quality
     const canvas = await html2canvas(element, {
       scale: 2,
       useCORS: true,
@@ -51,25 +32,59 @@ export async function downloadInvoiceAsPdf(
       logging: false,
       imageTimeout: 15000,
       removeContainer: true,
-      onclone: (clonedDoc) => {
-        // Ensure cloned element has solid white background
-        const clonedElement = clonedDoc.getElementById(elementId);
-        if (clonedElement) {
-          clonedElement.style.background = '#ffffff';
-          clonedElement.style.backgroundColor = '#ffffff';
-          clonedElement.style.backgroundImage = 'none';
-          clonedElement.style.boxShadow = 'none';
-        }
+      onclone: (clonedDoc, clonedElement) => {
+        // CRITICAL: Force solid white background and remove ALL potential overlay sources
+        clonedElement.style.cssText = `
+          background-color: #ffffff !important;
+          background-image: none !important;
+          background: #ffffff !important;
+          box-shadow: none !important;
+          filter: none !important;
+          opacity: 1 !important;
+        `;
+        
+        // Remove ALL pseudo-element backgrounds that might cause grey overlay
+        const style = clonedDoc.createElement('style');
+        style.textContent = `
+          #${elementId},
+          #${elementId}::before,
+          #${elementId}::after,
+          #${elementId} *::before,
+          #${elementId} *::after {
+            box-shadow: none !important;
+            filter: none !important;
+          }
+          
+          /* Force the invoice body area to be pure white */
+          #${elementId} > div:not(.invoice-header):not(.invoice-accent-bar):not([class*="invoice-total"]) {
+            background-color: #ffffff !important;
+          }
+          
+          /* Ensure table backgrounds are correct */
+          #${elementId} table {
+            background-color: #ffffff !important;
+          }
+          
+          #${elementId} tbody {
+            background-color: #ffffff !important;
+          }
+          
+          #${elementId} tr {
+            background-color: transparent !important;
+          }
+          
+          #${elementId} td {
+            background-color: transparent !important;
+          }
+          
+          /* Make sure all opacity-based elements render solid */
+          [class*="opacity-"] {
+            opacity: 1 !important;
+          }
+        `;
+        clonedDoc.head.appendChild(style);
       },
     });
-
-    // Cleanup injected style
-    document.head.removeChild(style);
-    
-    // Restore original styles
-    element.style.background = originalBg;
-    element.style.backgroundColor = originalBgColor;
-    element.style.backgroundImage = originalBgImage;
 
     // A4 dimensions in mm
     const a4Width = 210;
