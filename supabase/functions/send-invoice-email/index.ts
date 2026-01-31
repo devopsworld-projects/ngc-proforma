@@ -17,7 +17,7 @@ if (Deno.env.get("DENO_ENV") !== "production") {
 
 function getCorsHeaders(origin: string | null): Record<string, string> {
   const allowedOrigin = origin && allowedOrigins.some(allowed => 
-    origin === allowed || origin.endsWith('.lovable.app')
+    origin === allowed || origin.endsWith('.lovable.app') || origin.endsWith('.lovableproject.com')
   ) ? origin : allowedOrigins[0];
   
   return {
