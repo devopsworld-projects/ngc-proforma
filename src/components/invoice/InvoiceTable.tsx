@@ -48,7 +48,7 @@ export function InvoiceTable({ items }: InvoiceTableProps) {
               style={{ animationDelay: `${index * 0.05}s` }}
             >
               <TableCell className="text-center font-medium py-2">
-                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/5 text-primary text-xs font-semibold">
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-800 text-xs font-semibold">
                   {item.slNo}
                 </span>
               </TableCell>
@@ -73,12 +73,11 @@ export function InvoiceTable({ items }: InvoiceTableProps) {
                         <img 
                           src={item.productImage} 
                           alt={item.description}
-                          className="w-full h-full object-cover rounded-md border border-gray-200 shadow-sm transition-all group-hover:shadow-md group-hover:border-primary/30"
+                          className="w-full h-full object-cover rounded-md border border-gray-200 shadow-sm"
                         />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 rounded-md transition-colors" />
                       </div>
                     </HoverCardTrigger>
-                    <HoverCardContent side="left" className="w-auto p-2">
+                    <HoverCardContent side="left" className="w-auto p-2 no-print">
                       <img 
                         src={item.productImage} 
                         alt={item.description}
@@ -90,7 +89,7 @@ export function InvoiceTable({ items }: InvoiceTableProps) {
                     </HoverCardContent>
                   </HoverCard>
                 ) : (
-                  <div className="w-14 h-14 mx-auto flex items-center justify-center bg-gray-100 rounded-md border border-dashed border-gray-300">
+                  <div className="w-14 h-14 mx-auto flex items-center justify-center bg-gray-100 rounded-md border border-gray-300">
                     <ImageIcon className="w-5 h-5 text-gray-400" />
                   </div>
                 )}
