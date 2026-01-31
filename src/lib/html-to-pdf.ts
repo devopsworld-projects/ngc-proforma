@@ -2,6 +2,22 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
 /**
+ * Preload an image with proper CORS handling
+ */
+async function preloadImage(src: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve();
+    img.onerror = () => {
+      console.warn(`Failed to preload image: ${src}`);
+      resolve(); // Continue even if image fails
+    };
+    img.src = src;
+  });
+}
+
+/**
  * Captures the exact rendered HTML element and converts it to a PDF.
  * Uses a wrapper approach to ensure clean white background.
  */
@@ -14,6 +30,21 @@ export async function downloadInvoiceAsPdf(
   if (!element) {
     throw new Error(`Element with id "${elementId}" not found`);
   }
+
+  // Preload all images in the element with CORS headers
+  const images = element.querySelectorAll('img');
+  const imagePromises: Promise<void>[] = [];
+  
+  images.forEach((img) => {
+    if (img.src && !img.src.startsWith('data:')) {
+      // Set crossOrigin on the actual img element too
+      img.crossOrigin = "anonymous";
+      imagePromises.push(preloadImage(img.src));
+    }
+  });
+  
+  // Wait for all images to load
+  await Promise.all(imagePromises);
 
   // Hide no-print elements temporarily
   const noPrintElements = element.querySelectorAll('.no-print');
@@ -30,14 +61,14 @@ export async function downloadInvoiceAsPdf(
   element.style.animation = 'none';
 
   try {
-    // Capture with high quality - use PNG for accurate colors
+    // Capture with high quality
     const canvas = await html2canvas(element, {
       scale: 2,
       useCORS: true,
-      allowTaint: true,
+      allowTaint: false, // Prevent tainted canvas
       backgroundColor: "#ffffff",
       logging: false,
-      imageTimeout: 15000,
+      imageTimeout: 30000, // Longer timeout for images
     });
 
     // A4 dimensions in mm
