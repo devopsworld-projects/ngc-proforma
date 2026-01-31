@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Invoice } from "@/components/invoice/Invoice";
@@ -12,6 +12,9 @@ import { InvoiceData, CompanyInfo, SupplierInfo, InvoiceItem, InvoiceTotals } fr
 import { formatDate, numberToWords } from "@/lib/invoice-utils";
 import { downloadInvoiceAsPdf } from "@/lib/html-to-pdf";
 import { toast } from "sonner";
+
+// Shadow style for screen display only - removed during PDF capture
+const SCREEN_SHADOW = "0 25px 50px -12px rgba(30, 42, 74, 0.15)";
 
 export default function InvoicePreview() {
   const { id } = useParams<{ id: string }>();
@@ -27,11 +30,26 @@ export default function InvoicePreview() {
     window.print();
   };
 
+  // Apply shadow on mount for screen display
+  useEffect(() => {
+    const container = document.getElementById("invoice-container");
+    if (container) {
+      container.style.boxShadow = SCREEN_SHADOW;
+    }
+  }, [invoice]);
+
   const handleDownloadPdf = async () => {
     if (!invoice) return;
     
+    const container = document.getElementById("invoice-container");
+    
     setIsDownloading(true);
     try {
+      // Remove shadow before capture
+      if (container) {
+        container.style.boxShadow = "none";
+      }
+      
       await downloadInvoiceAsPdf(
         "invoice-container",
         `Proforma-${invoice.invoice_no}`
@@ -41,6 +59,10 @@ export default function InvoicePreview() {
       console.error("Failed to download PDF:", error);
       toast.error("Failed to download PDF. Please try again.");
     } finally {
+      // Restore shadow after capture
+      if (container) {
+        container.style.boxShadow = SCREEN_SHADOW;
+      }
       setIsDownloading(false);
     }
   };
