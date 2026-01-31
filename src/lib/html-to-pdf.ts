@@ -4,6 +4,7 @@ import jsPDF from "jspdf";
 /**
  * Captures the exact rendered HTML element and converts it to a PDF.
  * This ensures pixel-perfect matching between web view and PDF output.
+ * Uses canvas slicing for proper multi-page support without overlays.
  */
 export async function downloadInvoiceAsPdf(
   elementId: string,
@@ -22,7 +23,7 @@ export async function downloadInvoiceAsPdf(
   });
 
   try {
-    // Capture with high quality
+    // Capture with high quality - force solid white background
     const canvas = await html2canvas(element, {
       scale: 2,
       useCORS: true,
@@ -30,6 +31,8 @@ export async function downloadInvoiceAsPdf(
       backgroundColor: "#ffffff",
       logging: false,
       imageTimeout: 15000,
+      // Remove any transparency
+      removeContainer: true,
     });
 
     // A4 dimensions in mm
@@ -43,32 +46,58 @@ export async function downloadInvoiceAsPdf(
       format: "a4",
     });
 
-    // Calculate dimensions to fit A4 width
+    // Calculate the image dimensions when scaled to A4 width
     const imgWidth = a4Width;
     const imgHeight = (canvas.height * a4Width) / canvas.width;
     
-    // Get the full image data
-    const imgData = canvas.toDataURL("image/png", 1.0);
-    
     if (imgHeight <= a4Height) {
       // Single page - simple case
-      pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+      const imgData = canvas.toDataURL("image/jpeg", 1.0);
+      pdf.addImage(imgData, "JPEG", 0, 0, imgWidth, imgHeight);
     } else {
-      // Multiple pages needed
-      // Calculate how many pages we need
+      // Multiple pages needed - slice the canvas properly
       const totalPages = Math.ceil(imgHeight / a4Height);
+      
+      // Calculate how much of the source canvas corresponds to one A4 page
+      const sourcePageHeight = (a4Height / imgHeight) * canvas.height;
       
       for (let page = 0; page < totalPages; page++) {
         if (page > 0) {
           pdf.addPage();
         }
         
-        // Calculate the Y position for this page
-        // We use negative Y offset to shift the image up for each page
-        const yPosition = -(page * a4Height);
+        // Calculate source Y position and height for this page
+        const sourceY = page * sourcePageHeight;
+        const remainingHeight = canvas.height - sourceY;
+        const sliceHeight = Math.min(sourcePageHeight, remainingHeight);
         
-        // Add the full image with offset
-        pdf.addImage(imgData, "PNG", 0, yPosition, imgWidth, imgHeight);
+        // Create a new canvas for this page slice
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = sliceHeight;
+        
+        const ctx = pageCanvas.getContext('2d');
+        if (ctx) {
+          // Fill with solid white background first
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+          
+          // Draw the slice of the original canvas
+          ctx.drawImage(
+            canvas,
+            0, sourceY, canvas.width, sliceHeight,  // Source rectangle
+            0, 0, canvas.width, sliceHeight          // Destination rectangle
+          );
+        }
+        
+        // Convert this page slice to image data
+        const pageImgData = pageCanvas.toDataURL("image/jpeg", 1.0);
+        
+        // Calculate the height this slice takes on the PDF page
+        const pdfSliceHeight = (sliceHeight / canvas.width) * a4Width;
+        
+        // Add to PDF - each page gets only its slice, no overlapping
+        pdf.addImage(pageImgData, "JPEG", 0, 0, a4Width, pdfSliceHeight);
       }
     }
 
