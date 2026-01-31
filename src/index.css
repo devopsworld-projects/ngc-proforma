@@ -138,21 +138,27 @@
 
 @layer components {
   .invoice-container {
-    @apply bg-white overflow-hidden mx-auto relative;
+    @apply overflow-hidden mx-auto relative;
+    /* CRITICAL: Solid white background - no transparency, no gradients */
+    background-color: #ffffff !important;
+    background-image: none !important;
     box-shadow: 0 25px 50px -12px rgba(30, 42, 74, 0.15);
     /* A4 dimensions: 210mm x 297mm (ratio 1:1.414) */
     width: 210mm;
     min-height: 297mm;
     max-width: 100%;
-    /* Show page boundaries with subtle gold dashed line at each A4 page height */
-    background-image: repeating-linear-gradient(
-      to bottom,
-      transparent 0,
-      transparent calc(297mm - 1px),
-      #d4a02c calc(297mm - 1px),
-      #d4a02c 297mm
-    );
-    background-size: 100% 297mm;
+  }
+
+  /* Page break indicator - only visible on screen, not in PDF capture */
+  .invoice-container::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 297mm;
+    height: 1px;
+    background: #d4a02c;
+    pointer-events: none;
   }
 
   .invoice-page-indicator {

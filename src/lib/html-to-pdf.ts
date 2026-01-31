@@ -23,6 +23,25 @@ export async function downloadInvoiceAsPdf(
   });
 
   try {
+    // Force solid white background on element before capture
+    const originalBg = element.style.background;
+    const originalBgColor = element.style.backgroundColor;
+    const originalBgImage = element.style.backgroundImage;
+    element.style.background = '#ffffff';
+    element.style.backgroundColor = '#ffffff';
+    element.style.backgroundImage = 'none';
+
+    // Hide pseudo-elements that may cause overlay issues
+    const style = document.createElement('style');
+    style.textContent = `
+      #${elementId}::before, #${elementId}::after,
+      #${elementId} *::before, #${elementId} *::after {
+        background-image: none !important;
+        background: transparent !important;
+      }
+    `;
+    document.head.appendChild(style);
+
     // Capture with high quality - force solid white background
     const canvas = await html2canvas(element, {
       scale: 2,
@@ -31,9 +50,26 @@ export async function downloadInvoiceAsPdf(
       backgroundColor: "#ffffff",
       logging: false,
       imageTimeout: 15000,
-      // Remove any transparency
       removeContainer: true,
+      onclone: (clonedDoc) => {
+        // Ensure cloned element has solid white background
+        const clonedElement = clonedDoc.getElementById(elementId);
+        if (clonedElement) {
+          clonedElement.style.background = '#ffffff';
+          clonedElement.style.backgroundColor = '#ffffff';
+          clonedElement.style.backgroundImage = 'none';
+          clonedElement.style.boxShadow = 'none';
+        }
+      },
     });
+
+    // Cleanup injected style
+    document.head.removeChild(style);
+    
+    // Restore original styles
+    element.style.background = originalBg;
+    element.style.backgroundColor = originalBgColor;
+    element.style.backgroundImage = originalBgImage;
 
     // A4 dimensions in mm
     const a4Width = 210;
