@@ -6,11 +6,12 @@ import { InvoiceFooter } from "./InvoiceFooter";
 
 interface InvoiceProps {
   data: InvoiceData;
+  containerId?: string;
 }
 
-export function Invoice({ data }: InvoiceProps) {
+export function Invoice({ data, containerId = "invoice-container" }: InvoiceProps) {
   return (
-    <div className="invoice-container animate-fade-in">
+    <div id={containerId} className="invoice-container animate-fade-in">
       {/* Page break indicator - shows where page 2 would start */}
       <div className="invoice-page-indicator no-print" aria-hidden="true" />
       
