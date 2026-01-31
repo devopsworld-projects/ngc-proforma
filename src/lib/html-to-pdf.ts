@@ -22,10 +22,7 @@ export async function downloadInvoiceAsPdf(
   });
 
   try {
-    // Get the actual rendered dimensions
-    const rect = element.getBoundingClientRect();
-    
-    // Capture with high quality - use scale 2 for crisp output
+    // Capture with high quality
     const canvas = await html2canvas(element, {
       scale: 2,
       useCORS: true,
@@ -33,14 +30,6 @@ export async function downloadInvoiceAsPdf(
       backgroundColor: "#ffffff",
       logging: false,
       imageTimeout: 15000,
-      onclone: (clonedDoc) => {
-        // Ensure cloned element has proper styling
-        const clonedElement = clonedDoc.getElementById(elementId);
-        if (clonedElement) {
-          clonedElement.style.transform = 'none';
-          clonedElement.style.width = `${rect.width}px`;
-        }
-      }
     });
 
     // A4 dimensions in mm
@@ -54,61 +43,32 @@ export async function downloadInvoiceAsPdf(
       format: "a4",
     });
 
-    // Calculate the aspect ratio of the captured content
-    const canvasAspectRatio = canvas.width / canvas.height;
-    const a4AspectRatio = a4Width / a4Height;
+    // Calculate dimensions to fit A4 width
+    const imgWidth = a4Width;
+    const imgHeight = (canvas.height * a4Width) / canvas.width;
     
-    let imgWidth: number;
-    let imgHeight: number;
-    
-    // Fit to A4 width while maintaining aspect ratio
-    imgWidth = a4Width;
-    imgHeight = imgWidth / canvasAspectRatio;
-    
-    // If content is taller than one page, we need to handle pagination
+    // Get the full image data
     const imgData = canvas.toDataURL("image/png", 1.0);
     
     if (imgHeight <= a4Height) {
-      // Content fits on one page
+      // Single page - simple case
       pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
     } else {
-      // Content spans multiple pages
-      let yOffset = 0;
-      let remainingHeight = imgHeight;
-      let pageNum = 0;
+      // Multiple pages needed
+      // Calculate how many pages we need
+      const totalPages = Math.ceil(imgHeight / a4Height);
       
-      while (remainingHeight > 0) {
-        if (pageNum > 0) {
+      for (let page = 0; page < totalPages; page++) {
+        if (page > 0) {
           pdf.addPage();
         }
         
-        // Calculate source and destination coordinates
-        const sourceY = (yOffset / imgHeight) * canvas.height;
-        const sourceHeight = Math.min((a4Height / imgHeight) * canvas.height, canvas.height - sourceY);
-        const destHeight = Math.min(a4Height, remainingHeight);
+        // Calculate the Y position for this page
+        // We use negative Y offset to shift the image up for each page
+        const yPosition = -(page * a4Height);
         
-        // Create a temporary canvas for this page section
-        const pageCanvas = document.createElement('canvas');
-        pageCanvas.width = canvas.width;
-        pageCanvas.height = sourceHeight;
-        
-        const ctx = pageCanvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(
-            canvas,
-            0, sourceY, canvas.width, sourceHeight,
-            0, 0, canvas.width, sourceHeight
-          );
-          
-          const pageImgData = pageCanvas.toDataURL("image/png", 1.0);
-          const pageImgHeight = (sourceHeight / canvas.width) * a4Width;
-          
-          pdf.addImage(pageImgData, "PNG", 0, 0, a4Width, pageImgHeight);
-        }
-        
-        yOffset += a4Height;
-        remainingHeight -= a4Height;
-        pageNum++;
+        // Add the full image with offset
+        pdf.addImage(imgData, "PNG", 0, yPosition, imgWidth, imgHeight);
       }
     }
 
