@@ -53,10 +53,10 @@ export function InvoiceTable({ items }: InvoiceTableProps) {
                 <p className="font-medium text-black text-sm">{item.description}</p>
               </TableCell>
               <TableCell className="text-center py-2">
-                <span className="font-semibold text-black text-sm">{item.quantity}</span>
+                <span className="font-semibold text-black text-sm font-mono">{item.quantity}</span>
                 <span className="text-gray-600 text-xs ml-1">{item.unit}</span>
               </TableCell>
-              <TableCell className="text-right py-2 font-medium text-black text-sm">
+              <TableCell className="text-right py-2 font-medium text-black text-sm font-mono">
                 {formatCurrency(item.rate)}
               </TableCell>
               <TableCell className="text-center py-2">

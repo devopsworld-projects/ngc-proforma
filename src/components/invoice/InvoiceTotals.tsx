@@ -34,14 +34,14 @@ export function InvoiceTotals({
         <div className="lg:w-80 space-y-1.5">
           <div className="flex justify-between items-center text-xs">
             <span className="text-gray-600">Subtotal ({totalQuantity} items)</span>
-            <span className="font-medium text-black">{formatCurrency(totals.subtotal)}</span>
+            <span className="font-medium text-black font-mono">{formatCurrency(totals.subtotal)}</span>
           </div>
           
           <div className="flex justify-between items-center text-xs">
             <span className="text-gray-600">
               Discount @ {totals.discountPercent}%
             </span>
-            <span className="font-medium text-green-600">
+            <span className="font-medium text-green-600 font-mono">
               - {formatCurrency(totals.discount)}
             </span>
           </div>
@@ -50,20 +50,20 @@ export function InvoiceTotals({
 
           <div className="flex justify-between items-center text-xs">
             <span className="text-gray-600">IGST @ {totals.taxRate}%</span>
-            <span className="font-medium text-black">{formatCurrency(totals.taxAmount)}</span>
+            <span className="font-medium text-black font-mono">{formatCurrency(totals.taxAmount)}</span>
           </div>
 
           <div className="flex justify-between items-center text-xs">
             <span className="text-gray-600">Round Off</span>
-            <span className="font-medium text-black">{formatCurrency(totals.roundOff)}</span>
+            <span className="font-medium text-black font-mono">{formatCurrency(totals.roundOff)}</span>
           </div>
 
           <Separator className="my-1.5" />
 
           <div className="bg-[hsl(222,47%,15%)] text-white -mx-2 px-3 py-2">
             <div className="flex justify-between items-center">
-              <span className="text-sm font-serif font-semibold">Grand Total</span>
-              <span className="text-lg font-bold font-sans">
+              <span className="text-sm font-heading font-semibold">Grand Total</span>
+              <span className="text-lg font-bold font-mono">
                 ₹{totals.grandTotal.toLocaleString('en-IN', {
                 minimumFractionDigits: 2
               })}

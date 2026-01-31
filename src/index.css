@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700&family=Roboto+Mono:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -123,11 +123,16 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Ubuntu', sans-serif;
+    font-family: 'Inter', Arial, sans-serif;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Montserrat', 'Inter', sans-serif;
+  }
+
+  /* Monospaced fonts for invoice amounts and numbers */
+  .font-mono, .invoice-amount {
+    font-family: 'Roboto Mono', monospace;
   }
 }
 
