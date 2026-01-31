@@ -23,53 +23,68 @@ export async function downloadInvoiceAsPdf(
   });
 
   try {
-    // Create a wrapper div with solid white background to prevent any transparency issues
-    const wrapper = document.createElement('div');
-    wrapper.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: ${element.offsetWidth}px;
-      background: #ffffff;
-      z-index: -9999;
-      pointer-events: none;
-    `;
-    
-    // Clone the element
-    const clone = element.cloneNode(true) as HTMLElement;
-    clone.id = `${elementId}-clone`;
-    
-    // Remove pseudo-elements and box-shadows from clone
-    clone.style.cssText = `
-      background: #ffffff !important;
-      box-shadow: none !important;
-    `;
-    
-    // Add style to handle pseudo-elements in the clone
-    const styleSheet = document.createElement('style');
-    styleSheet.textContent = `
-      #${elementId}-clone::before,
-      #${elementId}-clone::after {
-        display: none !important;
-      }
-    `;
-    
-    wrapper.appendChild(styleSheet);
-    wrapper.appendChild(clone);
-    document.body.appendChild(wrapper);
-
-    // Capture the clone with html2canvas
-    const canvas = await html2canvas(clone, {
+    // Capture with high quality
+    const canvas = await html2canvas(element, {
       scale: 2,
       useCORS: true,
       allowTaint: true,
       backgroundColor: "#ffffff",
       logging: false,
       imageTimeout: 15000,
+      removeContainer: true,
+      onclone: (clonedDoc, clonedElement) => {
+        // CRITICAL: Force solid white background and remove ALL potential overlay sources
+        clonedElement.style.cssText = `
+          background-color: #ffffff !important;
+          background-image: none !important;
+          background: #ffffff !important;
+          box-shadow: none !important;
+          filter: none !important;
+          opacity: 1 !important;
+        `;
+        
+        // Remove ALL pseudo-element backgrounds that might cause grey overlay
+        const style = clonedDoc.createElement('style');
+        style.textContent = `
+          #${elementId},
+          #${elementId}::before,
+          #${elementId}::after,
+          #${elementId} *::before,
+          #${elementId} *::after {
+            box-shadow: none !important;
+            filter: none !important;
+          }
+          
+          /* Force the invoice body area to be pure white */
+          #${elementId} > div:not(.invoice-header):not(.invoice-accent-bar):not([class*="invoice-total"]) {
+            background-color: #ffffff !important;
+          }
+          
+          /* Ensure table backgrounds are correct */
+          #${elementId} table {
+            background-color: #ffffff !important;
+          }
+          
+          #${elementId} tbody {
+            background-color: #ffffff !important;
+          }
+          
+          #${elementId} tr {
+            background-color: transparent !important;
+          }
+          
+          #${elementId} td {
+            background-color: transparent !important;
+          }
+          
+          /* Make sure all opacity-based elements render solid */
+          [class*="opacity-"] {
+            opacity: 1 !important;
+          }
+        `;
+        clonedDoc.head.appendChild(style);
+      },
     });
-
-    // Remove the wrapper
-    document.body.removeChild(wrapper);
 
     // A4 dimensions in mm
     const a4Width = 210;
@@ -88,21 +103,7 @@ export async function downloadInvoiceAsPdf(
     
     if (imgHeight <= a4Height) {
       // Single page - simple case
-      // Create a white background canvas and draw the content on top
-      const finalCanvas = document.createElement('canvas');
-      finalCanvas.width = canvas.width;
-      finalCanvas.height = canvas.height;
-      const ctx = finalCanvas.getContext('2d');
-      
-      if (ctx) {
-        // Fill with solid white first
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
-        // Draw the captured content
-        ctx.drawImage(canvas, 0, 0);
-      }
-      
-      const imgData = finalCanvas.toDataURL("image/jpeg", 1.0);
+      const imgData = canvas.toDataURL("image/jpeg", 1.0);
       pdf.addImage(imgData, "JPEG", 0, 0, imgWidth, imgHeight);
     } else {
       // Multiple pages needed - slice the canvas properly
