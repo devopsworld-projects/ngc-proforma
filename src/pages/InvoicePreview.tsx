@@ -13,7 +13,7 @@ import { formatDate, numberToWords } from "@/lib/invoice-utils";
 import { downloadInvoiceAsPdf } from "@/lib/html-to-pdf";
 import { toast } from "sonner";
 
-// Shadow style for screen display only - removed during PDF capture
+// Shadow style for screen display only
 const SCREEN_SHADOW = "0 25px 50px -12px rgba(30, 42, 74, 0.15)";
 
 export default function InvoicePreview() {
@@ -41,15 +41,9 @@ export default function InvoicePreview() {
   const handleDownloadPdf = async () => {
     if (!invoice) return;
     
-    const container = document.getElementById("invoice-container");
-    
     setIsDownloading(true);
     try {
-      // Remove shadow before capture
-      if (container) {
-        container.style.boxShadow = "none";
-      }
-      
+      // The downloadInvoiceAsPdf function handles shadow removal internally
       await downloadInvoiceAsPdf(
         "invoice-container",
         `Proforma-${invoice.invoice_no}`
@@ -60,6 +54,7 @@ export default function InvoicePreview() {
       toast.error("Failed to download PDF. Please try again.");
     } finally {
       // Restore shadow after capture
+      const container = document.getElementById("invoice-container");
       if (container) {
         container.style.boxShadow = SCREEN_SHADOW;
       }
