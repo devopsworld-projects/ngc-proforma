@@ -15,84 +15,109 @@ export async function downloadInvoiceAsPdf(
     throw new Error(`Element with id "${elementId}" not found`);
   }
 
-  // Store original styles to restore later
-  const originalTransform = element.style.transform;
-  const originalWidth = element.style.width;
-  
+  // Hide no-print elements temporarily
+  const noPrintElements = element.querySelectorAll('.no-print');
+  noPrintElements.forEach((el) => {
+    (el as HTMLElement).style.display = 'none';
+  });
+
   try {
-    // Reset any transforms that might affect rendering
-    element.style.transform = "none";
+    // Get the actual rendered dimensions
+    const rect = element.getBoundingClientRect();
     
-    // A4 dimensions in mm: 210 x 297
-    // At 96 DPI, A4 is approximately 794 x 1123 pixels
-    const a4WidthPx = 794;
-    const a4HeightPx = 1123;
-    
-    // Capture the element with high quality settings
+    // Capture with high quality - use scale 2 for crisp output
     const canvas = await html2canvas(element, {
-      scale: 2, // Higher scale for better quality
-      useCORS: true, // Allow cross-origin images
+      scale: 2,
+      useCORS: true,
       allowTaint: true,
       backgroundColor: "#ffffff",
       logging: false,
-      width: element.scrollWidth,
-      height: element.scrollHeight,
-      windowWidth: element.scrollWidth,
-      windowHeight: element.scrollHeight,
+      imageTimeout: 15000,
+      onclone: (clonedDoc) => {
+        // Ensure cloned element has proper styling
+        const clonedElement = clonedDoc.getElementById(elementId);
+        if (clonedElement) {
+          clonedElement.style.transform = 'none';
+          clonedElement.style.width = `${rect.width}px`;
+        }
+      }
     });
 
-    // Calculate dimensions for A4 PDF
-    const imgWidth = 210; // A4 width in mm
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    // A4 dimensions in mm
+    const a4Width = 210;
+    const a4Height = 297;
     
-    // Create PDF with appropriate page size
+    // Create PDF in A4 portrait
     const pdf = new jsPDF({
-      orientation: imgHeight > imgWidth ? "portrait" : "landscape",
+      orientation: "portrait",
       unit: "mm",
       format: "a4",
     });
 
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    let heightLeft = imgHeight;
-    let position = 0;
-    let page = 1;
-
-    // Add image to first page
-    pdf.addImage(
-      canvas.toDataURL("image/png", 1.0),
-      "PNG",
-      0,
-      position,
-      imgWidth,
-      imgHeight,
-      undefined,
-      "FAST"
-    );
-    heightLeft -= pageHeight;
-
-    // Add additional pages if content overflows
-    while (heightLeft > 0) {
-      position = heightLeft - imgHeight;
-      pdf.addPage();
-      pdf.addImage(
-        canvas.toDataURL("image/png", 1.0),
-        "PNG",
-        0,
-        position,
-        imgWidth,
-        imgHeight,
-        undefined,
-        "FAST"
-      );
-      heightLeft -= pageHeight;
-      page++;
+    // Calculate the aspect ratio of the captured content
+    const canvasAspectRatio = canvas.width / canvas.height;
+    const a4AspectRatio = a4Width / a4Height;
+    
+    let imgWidth: number;
+    let imgHeight: number;
+    
+    // Fit to A4 width while maintaining aspect ratio
+    imgWidth = a4Width;
+    imgHeight = imgWidth / canvasAspectRatio;
+    
+    // If content is taller than one page, we need to handle pagination
+    const imgData = canvas.toDataURL("image/png", 1.0);
+    
+    if (imgHeight <= a4Height) {
+      // Content fits on one page
+      pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+    } else {
+      // Content spans multiple pages
+      let yOffset = 0;
+      let remainingHeight = imgHeight;
+      let pageNum = 0;
+      
+      while (remainingHeight > 0) {
+        if (pageNum > 0) {
+          pdf.addPage();
+        }
+        
+        // Calculate source and destination coordinates
+        const sourceY = (yOffset / imgHeight) * canvas.height;
+        const sourceHeight = Math.min((a4Height / imgHeight) * canvas.height, canvas.height - sourceY);
+        const destHeight = Math.min(a4Height, remainingHeight);
+        
+        // Create a temporary canvas for this page section
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = sourceHeight;
+        
+        const ctx = pageCanvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(
+            canvas,
+            0, sourceY, canvas.width, sourceHeight,
+            0, 0, canvas.width, sourceHeight
+          );
+          
+          const pageImgData = pageCanvas.toDataURL("image/png", 1.0);
+          const pageImgHeight = (sourceHeight / canvas.width) * a4Width;
+          
+          pdf.addImage(pageImgData, "PNG", 0, 0, a4Width, pageImgHeight);
+        }
+        
+        yOffset += a4Height;
+        remainingHeight -= a4Height;
+        pageNum++;
+      }
     }
 
     // Download the PDF
     pdf.save(`${filename}.pdf`);
   } finally {
-    // Restore original styles
-    element.style.transform = originalTransform;
-    element.style.width = originalWidth;
+    // Restore no-print elements
+    noPrintElements.forEach((el) => {
+      (el as HTMLElement).style.display = '';
+    });
   }
 }
