@@ -57,8 +57,8 @@ export async function downloadInvoiceAsPdf(
     
     if (imgHeight <= a4Height) {
       // Single page - simple case
-      const imgData = canvas.toDataURL("image/png");
-      pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+      const imgData = canvas.toDataURL("image/jpeg", 1.0);
+      pdf.addImage(imgData, "JPEG", 0, 0, imgWidth, imgHeight);
     } else {
       // Multiple pages needed - slice the canvas properly
       const totalPages = Math.ceil(imgHeight / a4Height);
@@ -95,14 +95,14 @@ export async function downloadInvoiceAsPdf(
           );
         }
         
-        // Convert this page slice to image data - use PNG for accuracy
-        const pageImgData = pageCanvas.toDataURL("image/png");
+        // Convert this page slice to image data
+        const pageImgData = pageCanvas.toDataURL("image/jpeg", 1.0);
         
         // Calculate the height this slice takes on the PDF page
         const pdfSliceHeight = (sliceHeight / canvas.width) * a4Width;
         
         // Add to PDF
-        pdf.addImage(pageImgData, "PNG", 0, 0, a4Width, pdfSliceHeight);
+        pdf.addImage(pageImgData, "JPEG", 0, 0, a4Width, pdfSliceHeight);
       }
     }
 
