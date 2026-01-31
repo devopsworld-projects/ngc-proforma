@@ -138,8 +138,8 @@
 
 @layer components {
   .invoice-container {
-    @apply bg-white shadow-xl overflow-hidden mx-auto relative;
-    box-shadow: 0 25px 50px -12px hsl(var(--invoice-shadow) / 0.15);
+    @apply bg-white overflow-hidden mx-auto relative;
+    box-shadow: 0 25px 50px -12px rgba(30, 42, 74, 0.15);
     /* A4 dimensions: 210mm x 297mm (ratio 1:1.414) */
     width: 210mm;
     min-height: 297mm;
@@ -149,8 +149,8 @@
       to bottom,
       transparent 0,
       transparent calc(297mm - 1px),
-      hsl(var(--invoice-accent) / 0.4) calc(297mm - 1px),
-      hsl(var(--invoice-accent) / 0.4) 297mm
+      #d4a02c calc(297mm - 1px),
+      #d4a02c 297mm
     );
     background-size: 100% 297mm;
   }
@@ -163,8 +163,8 @@
   .invoice-page-indicator::before {
     content: '— Page 2 starts here —';
     @apply absolute left-1/2 -translate-x-1/2 px-3 py-0.5 text-xs font-medium rounded-full;
-    background: hsl(var(--invoice-accent) / 0.15);
-    color: hsl(var(--invoice-accent));
+    background: rgba(212, 160, 44, 0.15);
+    color: #d4a02c;
     top: -0.625rem;
     white-space: nowrap;
   }
@@ -194,19 +194,22 @@
   }
 
   .invoice-badge-success {
-    @apply bg-[hsl(var(--invoice-success)/0.1)] text-[hsl(var(--invoice-success))];
+    background: rgba(22, 163, 74, 0.1);
+    color: #16a34a;
   }
 
   .invoice-badge-pending {
-    @apply bg-[hsl(var(--invoice-accent)/0.1)] text-[hsl(var(--invoice-accent))];
+    background: rgba(212, 160, 44, 0.1);
+    color: #d4a02c;
   }
 
   .invoice-gold-text {
-    @apply text-[hsl(var(--invoice-accent))];
+    color: #d4a02c;
   }
 
   .invoice-divider {
-    @apply border-t-2 border-dashed border-[hsl(var(--invoice-border))];
+    @apply border-t-2 border-dashed;
+    border-color: #e5e7eb;
   }
 }
 
