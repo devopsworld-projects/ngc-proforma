@@ -139,22 +139,14 @@
 @layer components {
   .invoice-container {
     @apply overflow-hidden mx-auto relative;
-    /* CRITICAL: Solid white background for PDF capture - NO transparency */
-    background: #ffffff !important;
-    background-color: #ffffff !important;
-    /* Remove box-shadow completely - it causes grey overlay in PDF */
-    box-shadow: none;
-    /* A4 dimensions: 210mm x 297mm (ratio 1:1.414) */
+    /* Solid white background - no transparency */
+    background: #ffffff;
+    background-color: #ffffff;
+    /* NO box-shadow here - it causes grey overlay in PDF capture */
+    /* Shadow is applied via JavaScript in InvoicePreview for screen only */
     width: 210mm;
     min-height: 297mm;
     max-width: 100%;
-  }
-  
-  /* Add shadow only for screen display, not during PDF capture */
-  @media screen {
-    .invoice-container {
-      box-shadow: 0 25px 50px -12px rgba(30, 42, 74, 0.15);
-    }
   }
 
   .invoice-page-indicator {
