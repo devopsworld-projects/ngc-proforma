@@ -6,24 +6,66 @@ import jsPDF from "jspdf";
  * This ensures pixel-perfect matching between web view and PDF output.
  * Uses canvas slicing for proper multi-page support without overlays.
  */
-export async function downloadInvoiceAsPdf(
-  elementId: string,
-  filename: string
-): Promise<void> {
+export async function downloadInvoiceAsPdf(elementId: string, filename: string): Promise<void> {
   const element = document.getElementById(elementId);
-  
+
   if (!element) {
     throw new Error(`Element with id "${elementId}" not found`);
   }
 
+  // Find ALL elements and store their original styles
+  const allElements = element.querySelectorAll("*");
+  const originalStyles = new Map<HTMLElement, { bg: string; color: string }>();
+
+  // Force white background and dark text on root and all children
+  (element as HTMLElement).style.backgroundColor = "#ffffff";
+  (element as HTMLElement).style.color = "#000000";
+
+  allElements.forEach((el) => {
+    const htmlEl = el as HTMLElement;
+    const computed = window.getComputedStyle(htmlEl);
+
+    // Store original styles
+    originalStyles.set(htmlEl, {
+      bg: htmlEl.style.backgroundColor,
+      color: htmlEl.style.color,
+    });
+
+    // Force white background
+    const bgColor = computed.backgroundColor;
+    if (bgColor && bgColor !== "transparent" && bgColor !== "rgba(0, 0, 0, 0)") {
+      htmlEl.style.backgroundColor = "#ffffff";
+    }
+
+    // Force dark text color (but preserve specific colors like links, highlights)
+    const textColor = computed.color;
+    if (textColor) {
+      const rgb = textColor.match(/\d+/g);
+      if (rgb && rgb.length >= 3) {
+        const r = parseInt(rgb[0]);
+        const g = parseInt(rgb[1]);
+        const b = parseInt(rgb[2]);
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+
+        // If text is light colored (brightness > 128), make it dark
+        if (brightness > 128) {
+          htmlEl.style.color = "#000000";
+        }
+      }
+    }
+  });
+
   // Hide no-print elements temporarily
-  const noPrintElements = element.querySelectorAll('.no-print');
+  const noPrintElements = element.querySelectorAll(".no-print");
   noPrintElements.forEach((el) => {
-    (el as HTMLElement).style.display = 'none';
+    (el as HTMLElement).style.display = "none";
   });
 
   try {
-    // Capture with high quality - force solid white background
+    // Small delay to ensure styles are applied
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // Capture with high quality
     const canvas = await html2canvas(element, {
       scale: 2,
       useCORS: true,
@@ -31,14 +73,13 @@ export async function downloadInvoiceAsPdf(
       backgroundColor: "#ffffff",
       logging: false,
       imageTimeout: 15000,
-      // Remove any transparency
       removeContainer: true,
     });
 
     // A4 dimensions in mm
     const a4Width = 210;
     const a4Height = 297;
-    
+
     // Create PDF in A4 portrait
     const pdf = new jsPDF({
       orientation: "portrait",
@@ -49,7 +90,7 @@ export async function downloadInvoiceAsPdf(
     // Calculate the image dimensions when scaled to A4 width
     const imgWidth = a4Width;
     const imgHeight = (canvas.height * a4Width) / canvas.width;
-    
+
     if (imgHeight <= a4Height) {
       // Single page - simple case
       const imgData = canvas.toDataURL("image/jpeg", 1.0);
@@ -57,45 +98,47 @@ export async function downloadInvoiceAsPdf(
     } else {
       // Multiple pages needed - slice the canvas properly
       const totalPages = Math.ceil(imgHeight / a4Height);
-      
+
       // Calculate how much of the source canvas corresponds to one A4 page
       const sourcePageHeight = (a4Height / imgHeight) * canvas.height;
-      
+
       for (let page = 0; page < totalPages; page++) {
         if (page > 0) {
           pdf.addPage();
         }
-        
+
         // Calculate source Y position and height for this page
         const sourceY = page * sourcePageHeight;
         const remainingHeight = canvas.height - sourceY;
         const sliceHeight = Math.min(sourcePageHeight, remainingHeight);
-        
+
         // Create a new canvas for this page slice
-        const pageCanvas = document.createElement('canvas');
+        const pageCanvas = document.createElement("canvas");
         pageCanvas.width = canvas.width;
         pageCanvas.height = sliceHeight;
-        
-        const ctx = pageCanvas.getContext('2d');
+
+        const ctx = pageCanvas.getContext("2d");
         if (ctx) {
-          // Fill with solid white background first
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
-          
-          // Draw the slice of the original canvas
+          // Draw the slice of the original canvas directly
           ctx.drawImage(
             canvas,
-            0, sourceY, canvas.width, sliceHeight,  // Source rectangle
-            0, 0, canvas.width, sliceHeight          // Destination rectangle
+            0,
+            sourceY,
+            canvas.width,
+            sliceHeight, // Source rectangle
+            0,
+            0,
+            canvas.width,
+            sliceHeight, // Destination rectangle
           );
         }
-        
+
         // Convert this page slice to image data
         const pageImgData = pageCanvas.toDataURL("image/jpeg", 1.0);
-        
+
         // Calculate the height this slice takes on the PDF page
         const pdfSliceHeight = (sliceHeight / canvas.width) * a4Width;
-        
+
         // Add to PDF - each page gets only its slice, no overlapping
         pdf.addImage(pageImgData, "JPEG", 0, 0, a4Width, pdfSliceHeight);
       }
@@ -104,9 +147,17 @@ export async function downloadInvoiceAsPdf(
     // Download the PDF
     pdf.save(`${filename}.pdf`);
   } finally {
+    // Restore all original styles
+    originalStyles.forEach((styles, el) => {
+      el.style.backgroundColor = styles.bg;
+      el.style.color = styles.color;
+    });
+    (element as HTMLElement).style.backgroundColor = "";
+    (element as HTMLElement).style.color = "";
+
     // Restore no-print elements
     noPrintElements.forEach((el) => {
-      (el as HTMLElement).style.display = '';
+      (el as HTMLElement).style.display = "";
     });
   }
 }
