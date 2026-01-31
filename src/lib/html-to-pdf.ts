@@ -3,8 +3,7 @@ import jsPDF from "jspdf";
 
 /**
  * Captures the exact rendered HTML element and converts it to a PDF.
- * This ensures pixel-perfect matching between web view and PDF output.
- * Uses canvas slicing for proper multi-page support without overlays.
+ * Uses a wrapper approach to ensure clean white background.
  */
 export async function downloadInvoiceAsPdf(
   elementId: string,
@@ -22,8 +21,16 @@ export async function downloadInvoiceAsPdf(
     (el as HTMLElement).style.display = 'none';
   });
 
+  // Store original styles to restore later
+  const originalBoxShadow = element.style.boxShadow;
+  const originalAnimation = element.style.animation;
+  
+  // Remove shadow and animation before capture
+  element.style.boxShadow = 'none';
+  element.style.animation = 'none';
+
   try {
-    // Capture with high quality
+    // Capture with high quality - use PNG for accurate colors
     const canvas = await html2canvas(element, {
       scale: 2,
       useCORS: true,
@@ -31,28 +38,6 @@ export async function downloadInvoiceAsPdf(
       backgroundColor: "#ffffff",
       logging: false,
       imageTimeout: 15000,
-      removeContainer: true,
-      onclone: (clonedDoc, clonedElement) => {
-        // ONLY remove box-shadow which causes grey overlay - DO NOT override backgrounds
-        clonedElement.style.boxShadow = 'none';
-        
-        // Surgical fix: only remove shadows, preserve all background colors
-        const style = clonedDoc.createElement('style');
-        style.textContent = `
-          /* Remove shadows that cause grey overlay */
-          #${elementId},
-          #${elementId} * {
-            box-shadow: none !important;
-          }
-          
-          /* Hide pseudo-elements that might cause issues */
-          #${elementId}::before,
-          #${elementId}::after {
-            display: none !important;
-          }
-        `;
-        clonedDoc.head.appendChild(style);
-      },
     });
 
     // A4 dimensions in mm
@@ -72,8 +57,8 @@ export async function downloadInvoiceAsPdf(
     
     if (imgHeight <= a4Height) {
       // Single page - simple case
-      const imgData = canvas.toDataURL("image/jpeg", 1.0);
-      pdf.addImage(imgData, "JPEG", 0, 0, imgWidth, imgHeight);
+      const imgData = canvas.toDataURL("image/png");
+      pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
     } else {
       // Multiple pages needed - slice the canvas properly
       const totalPages = Math.ceil(imgHeight / a4Height);
@@ -105,25 +90,29 @@ export async function downloadInvoiceAsPdf(
           // Draw the slice of the original canvas
           ctx.drawImage(
             canvas,
-            0, sourceY, canvas.width, sliceHeight,  // Source rectangle
-            0, 0, canvas.width, sliceHeight          // Destination rectangle
+            0, sourceY, canvas.width, sliceHeight,
+            0, 0, canvas.width, sliceHeight
           );
         }
         
-        // Convert this page slice to image data
-        const pageImgData = pageCanvas.toDataURL("image/jpeg", 1.0);
+        // Convert this page slice to image data - use PNG for accuracy
+        const pageImgData = pageCanvas.toDataURL("image/png");
         
         // Calculate the height this slice takes on the PDF page
         const pdfSliceHeight = (sliceHeight / canvas.width) * a4Width;
         
-        // Add to PDF - each page gets only its slice, no overlapping
-        pdf.addImage(pageImgData, "JPEG", 0, 0, a4Width, pdfSliceHeight);
+        // Add to PDF
+        pdf.addImage(pageImgData, "PNG", 0, 0, a4Width, pdfSliceHeight);
       }
     }
 
     // Download the PDF
     pdf.save(`${filename}.pdf`);
   } finally {
+    // Restore original styles
+    element.style.boxShadow = originalBoxShadow;
+    element.style.animation = originalAnimation;
+    
     // Restore no-print elements
     noPrintElements.forEach((el) => {
       (el as HTMLElement).style.display = '';
