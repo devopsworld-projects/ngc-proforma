@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Invoice } from "@/components/invoice/Invoice";
@@ -6,14 +7,16 @@ import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { usePdfTemplateSettings } from "@/hooks/usePdfTemplateSettings";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Edit, Printer } from "lucide-react";
+import { ArrowLeft, Edit, Printer, Download, Loader2 } from "lucide-react";
 import { InvoiceData, CompanyInfo, SupplierInfo, InvoiceItem, InvoiceTotals } from "@/types/invoice";
 import { formatDate, numberToWords } from "@/lib/invoice-utils";
+import { downloadInvoiceAsPdf } from "@/lib/html-to-pdf";
 import { toast } from "sonner";
 
 export default function InvoicePreview() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [isDownloading, setIsDownloading] = useState(false);
   const { data: invoice, isLoading: invoiceLoading } = useInvoice(id);
   const { data: companySettings, isLoading: settingsLoading } = useCompanySettings();
   const { data: templateSettings, isLoading: templateLoading } = usePdfTemplateSettings();
@@ -22,6 +25,24 @@ export default function InvoicePreview() {
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!invoice) return;
+    
+    setIsDownloading(true);
+    try {
+      await downloadInvoiceAsPdf(
+        "invoice-container",
+        `Proforma-${invoice.invoice_no}`
+      );
+      toast.success("PDF downloaded successfully");
+    } catch (error) {
+      console.error("Failed to download PDF:", error);
+      toast.error("Failed to download PDF. Please try again.");
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   // Transform database data to InvoiceData format
@@ -178,6 +199,18 @@ export default function InvoicePreview() {
               <Printer className="h-4 w-4 mr-2" />
               Print
             </Button>
+            <Button 
+              variant="outline" 
+              onClick={handleDownloadPdf}
+              disabled={isDownloading}
+            >
+              {isDownloading ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4 mr-2" />
+              )}
+              {isDownloading ? "Downloading..." : "Download PDF"}
+            </Button>
             <Button onClick={() => navigate(`/invoices/${id}/edit`)}>
               <Edit className="h-4 w-4 mr-2" />
               Edit
@@ -187,7 +220,7 @@ export default function InvoicePreview() {
 
         {/* Invoice Preview */}
         <div className="max-w-4xl mx-auto">
-          <Invoice data={invoiceData} />
+          <Invoice data={invoiceData} containerId="invoice-container" />
         </div>
       </div>
     </AppLayout>
