@@ -33,53 +33,22 @@ export async function downloadInvoiceAsPdf(
       imageTimeout: 15000,
       removeContainer: true,
       onclone: (clonedDoc, clonedElement) => {
-        // CRITICAL: Force solid white background and remove ALL potential overlay sources
-        clonedElement.style.cssText = `
-          background-color: #ffffff !important;
-          background-image: none !important;
-          background: #ffffff !important;
-          box-shadow: none !important;
-          filter: none !important;
-          opacity: 1 !important;
-        `;
+        // ONLY remove box-shadow which causes grey overlay - DO NOT override backgrounds
+        clonedElement.style.boxShadow = 'none';
         
-        // Remove ALL pseudo-element backgrounds that might cause grey overlay
+        // Surgical fix: only remove shadows, preserve all background colors
         const style = clonedDoc.createElement('style');
         style.textContent = `
+          /* Remove shadows that cause grey overlay */
           #${elementId},
-          #${elementId}::before,
-          #${elementId}::after,
-          #${elementId} *::before,
-          #${elementId} *::after {
+          #${elementId} * {
             box-shadow: none !important;
-            filter: none !important;
           }
           
-          /* Force the invoice body area to be pure white */
-          #${elementId} > div:not(.invoice-header):not(.invoice-accent-bar):not([class*="invoice-total"]) {
-            background-color: #ffffff !important;
-          }
-          
-          /* Ensure table backgrounds are correct */
-          #${elementId} table {
-            background-color: #ffffff !important;
-          }
-          
-          #${elementId} tbody {
-            background-color: #ffffff !important;
-          }
-          
-          #${elementId} tr {
-            background-color: transparent !important;
-          }
-          
-          #${elementId} td {
-            background-color: transparent !important;
-          }
-          
-          /* Make sure all opacity-based elements render solid */
-          [class*="opacity-"] {
-            opacity: 1 !important;
+          /* Hide pseudo-elements that might cause issues */
+          #${elementId}::before,
+          #${elementId}::after {
+            display: none !important;
           }
         `;
         clonedDoc.head.appendChild(style);
