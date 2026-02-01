@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Invoice } from "@/components/invoice/Invoice";
+import { BoldCorporateInvoice } from "@/components/invoice/templates";
 import { useInvoice } from "@/hooks/useInvoices";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
-import { usePdfTemplateSettings } from "@/hooks/usePdfTemplateSettings";
+import { usePdfTemplateSettings, defaultPdfTemplateSettings } from "@/hooks/usePdfTemplateSettings";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, Edit, Printer, Download, Loader2 } from "lucide-react";
@@ -26,6 +26,9 @@ export default function InvoicePreview() {
 
   const isLoading = invoiceLoading || settingsLoading || templateLoading;
 
+  // Merge template settings with defaults
+  const settings = { ...defaultPdfTemplateSettings, ...templateSettings };
+
   const handlePrint = () => {
     window.print();
   };
@@ -36,14 +39,13 @@ export default function InvoicePreview() {
     if (container) {
       container.style.boxShadow = SCREEN_SHADOW;
     }
-  }, [invoice]);
+  }, [invoice, templateSettings]);
 
   const handleDownloadPdf = async () => {
     if (!invoice) return;
     
     setIsDownloading(true);
     try {
-      // The downloadInvoiceAsPdf function handles shadow removal internally
       await downloadInvoiceAsPdf(
         "invoice-container",
         `Proforma-${invoice.invoice_no}`
@@ -53,7 +55,6 @@ export default function InvoicePreview() {
       console.error("Failed to download PDF:", error);
       toast.error("Failed to download PDF. Please try again.");
     } finally {
-      // Restore shadow after capture
       const container = document.getElementById("invoice-container");
       if (container) {
         container.style.boxShadow = SCREEN_SHADOW;
@@ -235,9 +236,13 @@ export default function InvoicePreview() {
           </div>
         </div>
 
-        {/* Invoice Preview */}
+        {/* Invoice Preview - Uses template based on settings */}
         <div className="max-w-4xl mx-auto">
-          <Invoice data={invoiceData} containerId="invoice-container" />
+          <BoldCorporateInvoice 
+            data={invoiceData} 
+            settings={settings as any} 
+            containerId="invoice-container" 
+          />
         </div>
       </div>
     </AppLayout>
