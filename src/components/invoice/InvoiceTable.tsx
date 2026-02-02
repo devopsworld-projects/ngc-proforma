@@ -33,8 +33,7 @@ export function InvoiceTable({ items }: InvoiceTableProps) {
         <TableHeader>
           <TableRow className="bg-gray-100 border-none">
             <TableHead className="w-12 text-center py-2 text-gray-700 text-xs font-semibold uppercase">Sl No.</TableHead>
-            <TableHead className="w-28 py-2 text-gray-700 text-xs font-semibold uppercase">Brand</TableHead>
-            <TableHead className="min-w-[200px] py-2 text-gray-700 text-xs font-semibold uppercase">Description</TableHead>
+            <TableHead className="min-w-[250px] py-2 text-gray-700 text-xs font-semibold uppercase">Product</TableHead>
             <TableHead className="text-center py-2 w-16 text-gray-700 text-xs font-semibold uppercase">Qty</TableHead>
             <TableHead className="text-right py-2 w-24 text-gray-700 text-xs font-semibold uppercase">Unit Price</TableHead>
             <TableHead className="text-center py-2 w-24 text-gray-700 text-xs font-semibold uppercase">Image</TableHead>
@@ -53,10 +52,12 @@ export function InvoiceTable({ items }: InvoiceTableProps) {
                 </span>
               </TableCell>
               <TableCell className="py-2">
-                <span className="font-medium text-black text-sm">{item.brand || "-"}</span>
-              </TableCell>
-              <TableCell className="py-2">
-                <p className="font-medium text-black text-sm">{item.description}</p>
+                <div className="space-y-0.5">
+                  <p className="font-semibold text-black text-sm">{item.brand || "Unnamed Product"}</p>
+                  {item.description && item.description !== item.brand && (
+                    <p className="text-xs text-gray-600">{item.description}</p>
+                  )}
+                </div>
               </TableCell>
               <TableCell className="text-center py-2">
                 <span className="font-semibold text-black text-sm font-mono">{item.quantity}</span>
@@ -72,7 +73,7 @@ export function InvoiceTable({ items }: InvoiceTableProps) {
                       <div className="relative w-14 h-14 mx-auto cursor-pointer group">
                         <img 
                           src={item.productImage} 
-                          alt={item.description}
+                          alt={item.brand || item.description}
                           className="w-full h-full object-cover rounded-md border border-gray-200 shadow-sm"
                         />
                       </div>
@@ -80,11 +81,11 @@ export function InvoiceTable({ items }: InvoiceTableProps) {
                     <HoverCardContent side="left" className="w-auto p-2 no-print">
                       <img 
                         src={item.productImage} 
-                        alt={item.description}
+                        alt={item.brand || item.description}
                         className="max-w-[200px] max-h-[200px] object-contain rounded-md"
                       />
                       <p className="text-xs text-muted-foreground mt-2 text-center max-w-[200px] truncate">
-                        {item.description}
+                        {item.brand || item.description}
                       </p>
                     </HoverCardContent>
                   </HoverCard>
