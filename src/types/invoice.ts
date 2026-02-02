@@ -32,6 +32,8 @@ export interface InvoiceItem {
   discountPercent: number;
   amount: number;
   productImage?: string;
+  gstPercent: number;
+  gstAmount: number;
 }
 
 export interface InvoiceTotals {
