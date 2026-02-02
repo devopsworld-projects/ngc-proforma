@@ -154,19 +154,25 @@ export function ExcelLineItemsUpload({ onImport, trigger }: ExcelLineItemsUpload
     }
 
     // Convert parsed items to LineItem format
-    const lineItems: LineItem[] = parsedItems.map((item, index) => ({
-      id: crypto.randomUUID(),
-      slNo: index + 1,
-      brand: "", // Excel import doesn't have brand
-      description: item.sku ? `${item.description} (SKU: ${item.sku})` : item.description,
-      serialNumbers: item.serialNumbers,
-      quantity: item.quantity,
-      unit: item.unit,
-      rate: item.rate,
-      discountPercent: item.discountPercent,
-      amount: item.amount,
-      productImage: "", // Excel import doesn't have image
-    }));
+    const lineItems: LineItem[] = parsedItems.map((item, index) => {
+      const gstPercent = 18; // Default GST for Excel imports
+      const gstAmount = Math.round((item.amount * gstPercent) / 100 * 100) / 100;
+      return {
+        id: crypto.randomUUID(),
+        slNo: index + 1,
+        brand: "", // Excel import doesn't have brand
+        description: item.sku ? `${item.description} (SKU: ${item.sku})` : item.description,
+        serialNumbers: item.serialNumbers,
+        quantity: item.quantity,
+        unit: item.unit,
+        rate: item.rate,
+        discountPercent: item.discountPercent,
+        amount: item.amount,
+        productImage: "", // Excel import doesn't have image
+        gstPercent: gstPercent,
+        gstAmount: gstAmount,
+      };
+    });
 
     onImport(lineItems);
     toast.success(`Successfully imported ${lineItems.length} line items`);
