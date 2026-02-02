@@ -58,8 +58,6 @@ export interface LineItem {
   amount: number;
   productId?: string;
   productImage?: string;
-  gstPercent: number;
-  gstAmount: number;
 }
 
 interface PricingMarkup {
@@ -365,8 +363,6 @@ export function LineItemsEditor({ items, onChange, customerType, pricingSettings
       discountPercent: 0,
       amount: 0,
       productImage: "",
-      gstPercent: 18,
-      gstAmount: 0,
     };
     onChange([...items, newItem]);
     setExpandedItem(newItem.id);
@@ -387,11 +383,6 @@ export function LineItemsEditor({ items, onChange, customerType, pricingSettings
       }
     }
     
-    const roundedRate = Math.round(finalRate * 100) / 100;
-    const amount = qty * roundedRate;
-    const gstPercent = product.gst_percent ?? 18;
-    const gstAmount = Math.round((amount * gstPercent) / 100 * 100) / 100;
-    
     const newItem: LineItem = {
       id: crypto.randomUUID(),
       slNo: items.length + 1,
@@ -400,13 +391,11 @@ export function LineItemsEditor({ items, onChange, customerType, pricingSettings
       serialNumbers: "",
       quantity: qty,
       unit: product.unit,
-      rate: roundedRate,
+      rate: Math.round(finalRate * 100) / 100,
       discountPercent: 0,
-      amount: amount,
+      amount: qty * Math.round(finalRate * 100) / 100,
       productId: product.id,
       productImage: product.image_url || "", // Store product image
-      gstPercent: gstPercent,
-      gstAmount: gstAmount,
     };
     onChange([...items, newItem]);
     setSearchTerm("");
@@ -420,17 +409,13 @@ export function LineItemsEditor({ items, onChange, customerType, pricingSettings
 
       const updatedItem = { ...item, [field]: value };
 
-      // Recalculate amount and GST when relevant fields change
-      if (field === "quantity" || field === "rate" || field === "discountPercent" || field === "gstPercent") {
+      if (field === "quantity" || field === "rate" || field === "discountPercent") {
         const qty = field === "quantity" ? Number(value) : updatedItem.quantity;
         const rate = field === "rate" ? Number(value) : updatedItem.rate;
         const discount = field === "discountPercent" ? Number(value) : updatedItem.discountPercent;
-        const gstPercent = field === "gstPercent" ? Number(value) : updatedItem.gstPercent;
-        
         const grossAmount = qty * rate;
         const discountAmount = (grossAmount * discount) / 100;
         updatedItem.amount = grossAmount - discountAmount;
-        updatedItem.gstAmount = Math.round((updatedItem.amount * gstPercent) / 100 * 100) / 100;
       }
 
       return updatedItem;

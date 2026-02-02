@@ -147,14 +147,11 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
       const finalRate = Math.round(newRate * 100) / 100;
       const grossAmount = item.quantity * finalRate;
       const discountAmount = (grossAmount * item.discountPercent) / 100;
-      const amount = grossAmount - discountAmount;
-      const gstAmount = Math.round((amount * item.gstPercent) / 100 * 100) / 100;
       
       return {
         ...item,
         rate: finalRate,
-        amount: amount,
-        gstAmount: gstAmount,
+        amount: grossAmount - discountAmount,
       };
     });
   }, [pricingSettings, quoteFor]);
@@ -226,8 +223,6 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
             discountPercent: item.discount_percent,
             amount: item.amount,
             productImage: item.product_image || "",
-            gstPercent: item.gst_percent ?? 18,
-            gstAmount: item.gst_amount ?? 0,
           }))
         );
       }
@@ -372,8 +367,6 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
           discount_percent: item.discountPercent,
           amount: item.amount,
           product_image: item.productImage || null,
-          gst_percent: item.gstPercent,
-          gst_amount: item.gstAmount,
         }));
 
         const { error: itemsError } = await supabase.from("invoice_items").insert(itemsPayload);
@@ -402,8 +395,6 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
           discount_percent: item.discountPercent,
           amount: item.amount,
           product_image: item.productImage || null,
-          gst_percent: item.gstPercent,
-          gst_amount: item.gstAmount,
         }));
 
         const { error: itemsError } = await supabase.from("invoice_items").insert(itemsPayload);

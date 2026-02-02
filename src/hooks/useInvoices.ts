@@ -48,8 +48,6 @@ export interface InvoiceItem {
   discount_percent: number;
   amount: number;
   product_image: string | null;
-  gst_percent: number;
-  gst_amount: number;
   created_at: string;
 }
 
