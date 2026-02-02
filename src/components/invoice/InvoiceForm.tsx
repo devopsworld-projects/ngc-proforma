@@ -211,19 +211,25 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
       
       if (invoice.items && invoice.items.length > 0) {
         setLineItems(
-          invoice.items.map((item) => ({
-            id: item.id,
-            slNo: item.sl_no,
-            brand: item.brand || "",
-            description: item.description,
-            serialNumbers: item.serial_numbers?.join(", ") || "",
-            quantity: item.quantity,
-            unit: item.unit,
-            rate: item.rate,
-            discountPercent: item.discount_percent,
-            amount: item.amount,
-            productImage: item.product_image || "",
-          }))
+          invoice.items.map((item) => {
+            const gstPercent = item.gst_percent || 18;
+            const gstAmount = item.gst_amount || (item.amount * gstPercent) / 100;
+            return {
+              id: item.id,
+              slNo: item.sl_no,
+              brand: item.brand || "",
+              description: item.description,
+              serialNumbers: item.serial_numbers?.join(", ") || "",
+              quantity: item.quantity,
+              unit: item.unit,
+              rate: item.rate,
+              discountPercent: item.discount_percent,
+              gstPercent: gstPercent,
+              gstAmount: gstAmount,
+              amount: item.amount,
+              productImage: item.product_image || "",
+            };
+          })
         );
       }
     }
@@ -365,6 +371,8 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
           unit: item.unit,
           rate: item.rate,
           discount_percent: item.discountPercent,
+          gst_percent: item.gstPercent || 18,
+          gst_amount: item.gstAmount || 0,
           amount: item.amount,
           product_image: item.productImage || null,
         }));
@@ -393,6 +401,8 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
           unit: item.unit,
           rate: item.rate,
           discount_percent: item.discountPercent,
+          gst_percent: item.gstPercent || 18,
+          gst_amount: item.gstAmount || 0,
           amount: item.amount,
           product_image: item.productImage || null,
         }));

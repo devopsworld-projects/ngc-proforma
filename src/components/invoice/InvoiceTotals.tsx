@@ -37,19 +37,19 @@ export function InvoiceTotals({
             <span className="font-medium text-black font-mono">{formatCurrency(totals.subtotal)}</span>
           </div>
           
-          <div className="flex justify-between items-center text-xs">
-            <span className="text-gray-600">
-              Discount @ {totals.discountPercent}%
-            </span>
-            <span className="font-medium text-green-600 font-mono">
-              - {formatCurrency(totals.discount)}
-            </span>
-          </div>
+          {totals.discount > 0 && (
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-gray-600">
+                Discount @ {totals.discountPercent}%
+              </span>
+              <span className="font-medium text-green-600 font-mono">
+                - {formatCurrency(totals.discount)}
+              </span>
+            </div>
+          )}
 
-          <Separator className="my-1.5" />
-
           <div className="flex justify-between items-center text-xs">
-            <span className="text-gray-600">IGST @ {totals.taxRate}%</span>
+            <span className="text-gray-600">Total GST (included per item)</span>
             <span className="font-medium text-black font-mono">{formatCurrency(totals.taxAmount)}</span>
           </div>
 
