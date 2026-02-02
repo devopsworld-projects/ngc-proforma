@@ -348,46 +348,26 @@ export type Database = {
       }
       pdf_template_settings: {
         Row: {
-          accent_color: string
           bank_account_no: string | null
           bank_branch: string | null
           bank_ifsc: string | null
           bank_name: string | null
-          bill_to_label: string
           created_at: string
           custom_footer_text: string | null
-          font_body: string
-          font_heading: string
-          font_mono: string
-          font_size_scale: string
-          grand_total_bg: string
-          grand_total_text: string
-          header_layout: string
           header_text_color: string
           id: string
-          invoice_details_label: string
-          invoice_title: string
           primary_color: string
           secondary_color: string
           show_amount_words: boolean
-          show_brand_column: boolean
-          show_company_state: boolean
           show_contact_header: boolean
-          show_customer_email: boolean
-          show_customer_phone: boolean
           show_discount_column: boolean
           show_gstin_header: boolean
-          show_image_column: boolean
           show_logo: boolean
           show_serial_numbers: boolean
           show_shipping_address: boolean
           show_signature: boolean
           show_terms: boolean
-          show_unit_column: boolean
-          table_header_bg: string
-          table_header_text: string
           table_text_color: string
-          template_style: string
           terms_line1: string | null
           terms_line2: string | null
           terms_line3: string | null
@@ -395,46 +375,26 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          accent_color?: string
           bank_account_no?: string | null
           bank_branch?: string | null
           bank_ifsc?: string | null
           bank_name?: string | null
-          bill_to_label?: string
           created_at?: string
           custom_footer_text?: string | null
-          font_body?: string
-          font_heading?: string
-          font_mono?: string
-          font_size_scale?: string
-          grand_total_bg?: string
-          grand_total_text?: string
-          header_layout?: string
           header_text_color?: string
           id?: string
-          invoice_details_label?: string
-          invoice_title?: string
           primary_color?: string
           secondary_color?: string
           show_amount_words?: boolean
-          show_brand_column?: boolean
-          show_company_state?: boolean
           show_contact_header?: boolean
-          show_customer_email?: boolean
-          show_customer_phone?: boolean
           show_discount_column?: boolean
           show_gstin_header?: boolean
-          show_image_column?: boolean
           show_logo?: boolean
           show_serial_numbers?: boolean
           show_shipping_address?: boolean
           show_signature?: boolean
           show_terms?: boolean
-          show_unit_column?: boolean
-          table_header_bg?: string
-          table_header_text?: string
           table_text_color?: string
-          template_style?: string
           terms_line1?: string | null
           terms_line2?: string | null
           terms_line3?: string | null
@@ -442,46 +402,26 @@ export type Database = {
           user_id: string
         }
         Update: {
-          accent_color?: string
           bank_account_no?: string | null
           bank_branch?: string | null
           bank_ifsc?: string | null
           bank_name?: string | null
-          bill_to_label?: string
           created_at?: string
           custom_footer_text?: string | null
-          font_body?: string
-          font_heading?: string
-          font_mono?: string
-          font_size_scale?: string
-          grand_total_bg?: string
-          grand_total_text?: string
-          header_layout?: string
           header_text_color?: string
           id?: string
-          invoice_details_label?: string
-          invoice_title?: string
           primary_color?: string
           secondary_color?: string
           show_amount_words?: boolean
-          show_brand_column?: boolean
-          show_company_state?: boolean
           show_contact_header?: boolean
-          show_customer_email?: boolean
-          show_customer_phone?: boolean
           show_discount_column?: boolean
           show_gstin_header?: boolean
-          show_image_column?: boolean
           show_logo?: boolean
           show_serial_numbers?: boolean
           show_shipping_address?: boolean
           show_signature?: boolean
           show_terms?: boolean
-          show_unit_column?: boolean
-          table_header_bg?: string
-          table_header_text?: string
           table_text_color?: string
-          template_style?: string
           terms_line1?: string | null
           terms_line2?: string | null
           terms_line3?: string | null

@@ -6,25 +6,11 @@ export interface PdfTemplateSettings {
   id: string;
   user_id: string;
   
-  // Template style
-  template_style: 'bold_corporate' | 'modern_minimal' | 'classic_professional';
-  
   // Colors
   primary_color: string;
   secondary_color: string;
   header_text_color: string;
   table_text_color: string;
-  accent_color: string;
-  table_header_bg: string;
-  table_header_text: string;
-  grand_total_bg: string;
-  grand_total_text: string;
-  
-  // Font customization
-  font_heading: string;
-  font_body: string;
-  font_mono: string;
-  font_size_scale: 'small' | 'normal' | 'large';
   
   // Section visibility
   show_logo: boolean;
@@ -36,20 +22,6 @@ export interface PdfTemplateSettings {
   show_terms: boolean;
   show_signature: boolean;
   show_amount_words: boolean;
-  
-  // Layout options
-  header_layout: 'centered' | 'left_aligned' | 'split';
-  show_brand_column: boolean;
-  show_unit_column: boolean;
-  show_image_column: boolean;
-  show_company_state: boolean;
-  show_customer_email: boolean;
-  show_customer_phone: boolean;
-  
-  // Custom labels
-  invoice_title: string;
-  bill_to_label: string;
-  invoice_details_label: string;
   
   // Custom content
   terms_line1: string | null;
@@ -66,27 +38,10 @@ export interface PdfTemplateSettings {
 }
 
 export const defaultPdfTemplateSettings: Omit<PdfTemplateSettings, "id" | "user_id" | "created_at" | "updated_at"> = {
-  // Template style
-  template_style: 'bold_corporate',
-  
-  // Colors
   primary_color: "#294172",
   secondary_color: "#3b82f6",
   header_text_color: "#ffffff",
   table_text_color: "#1f2937",
-  accent_color: "#d4a02c",
-  table_header_bg: "#f3f4f6",
-  table_header_text: "#374151",
-  grand_total_bg: "#1e2a4a",
-  grand_total_text: "#ffffff",
-  
-  // Fonts
-  font_heading: "Montserrat",
-  font_body: "Inter",
-  font_mono: "Roboto Mono",
-  font_size_scale: "normal",
-  
-  // Section visibility
   show_logo: true,
   show_gstin_header: true,
   show_contact_header: true,
@@ -96,22 +51,6 @@ export const defaultPdfTemplateSettings: Omit<PdfTemplateSettings, "id" | "user_
   show_terms: true,
   show_signature: true,
   show_amount_words: true,
-  
-  // Layout options
-  header_layout: 'centered',
-  show_brand_column: true,
-  show_unit_column: true,
-  show_image_column: true,
-  show_company_state: true,
-  show_customer_email: true,
-  show_customer_phone: true,
-  
-  // Custom labels
-  invoice_title: "PROFORMA INVOICE",
-  bill_to_label: "Bill To",
-  invoice_details_label: "Invoice Details",
-  
-  // Custom content
   terms_line1: "Goods once sold will not be taken back.",
   terms_line2: "Subject to local jurisdiction only.",
   terms_line3: "E&OE - Errors and Omissions Excepted.",
