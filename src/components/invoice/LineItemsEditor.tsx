@@ -55,6 +55,8 @@ export interface LineItem {
   unit: string;
   rate: number;
   discountPercent: number;
+  gstPercent: number;
+  gstAmount: number;
   amount: number;
   productId?: string;
   productImage?: string;
@@ -135,12 +137,15 @@ function SortableLineItem({
           </span>
         </div>
         
-        {/* Description */}
+        {/* Product (Name + Description) */}
         <div 
           className="col-span-4 md:col-span-4 min-w-0 cursor-pointer"
           onClick={onToggleExpand}
         >
-          <p className="font-medium truncate text-sm">{item.description || "—"}</p>
+          <p className="font-semibold truncate text-sm">{item.brand || "Unnamed Product"}</p>
+          {item.description && item.description !== item.brand && (
+            <p className="text-xs text-muted-foreground truncate">{item.description}</p>
+          )}
           {item.serialNumbers && (
             <div className="flex items-center gap-1 mt-0.5">
               <Barcode className="h-3 w-3 text-muted-foreground" />
@@ -158,21 +163,17 @@ function SortableLineItem({
           <span>{formatCurrency(item.rate)}</span>
         </div>
         
-        {/* Discount */}
+        {/* GST */}
         <div className="col-span-2 text-center" onClick={onToggleExpand}>
-          {item.discountPercent > 0 ? (
-            <Badge variant="secondary" className="text-xs gap-1">
-              <Percent className="h-3 w-3" />
-              {item.discountPercent}%
-            </Badge>
-          ) : (
-            <span className="text-muted-foreground text-sm">—</span>
-          )}
+          <div className="text-xs">
+            <span className="text-muted-foreground">{item.gstPercent || 18}%</span>
+            <span className="block font-medium text-sm">{formatCurrency(item.gstAmount || 0)}</span>
+          </div>
         </div>
         
-        {/* Amount */}
+        {/* Amount (incl. GST) */}
         <div className="col-span-2 text-right" onClick={onToggleExpand}>
-          <span className="font-semibold text-sm">{formatCurrency(item.amount)}</span>
+          <span className="font-semibold text-sm">{formatCurrency(item.amount + (item.gstAmount || 0))}</span>
         </div>
         
         {/* Actions */}
@@ -361,6 +362,8 @@ export function LineItemsEditor({ items, onChange, customerType, pricingSettings
       unit: "NOS",
       rate: 0,
       discountPercent: 0,
+      gstPercent: 18,
+      gstAmount: 0,
       amount: 0,
       productImage: "",
     };
@@ -383,6 +386,11 @@ export function LineItemsEditor({ items, onChange, customerType, pricingSettings
       }
     }
     
+    const itemRate = Math.round(finalRate * 100) / 100;
+    const baseAmount = qty * itemRate;
+    const gstPercent = product.gst_percent || 18;
+    const gstAmount = (baseAmount * gstPercent) / 100;
+    
     const newItem: LineItem = {
       id: crypto.randomUUID(),
       slNo: items.length + 1,
@@ -391,9 +399,11 @@ export function LineItemsEditor({ items, onChange, customerType, pricingSettings
       serialNumbers: "",
       quantity: qty,
       unit: product.unit,
-      rate: Math.round(finalRate * 100) / 100,
+      rate: itemRate,
       discountPercent: 0,
-      amount: qty * Math.round(finalRate * 100) / 100,
+      gstPercent: gstPercent,
+      gstAmount: gstAmount,
+      amount: baseAmount,
       productId: product.id,
       productImage: product.image_url || "", // Store product image
     };
@@ -409,13 +419,16 @@ export function LineItemsEditor({ items, onChange, customerType, pricingSettings
 
       const updatedItem = { ...item, [field]: value };
 
-      if (field === "quantity" || field === "rate" || field === "discountPercent") {
+      if (field === "quantity" || field === "rate" || field === "discountPercent" || field === "gstPercent") {
         const qty = field === "quantity" ? Number(value) : updatedItem.quantity;
         const rate = field === "rate" ? Number(value) : updatedItem.rate;
         const discount = field === "discountPercent" ? Number(value) : updatedItem.discountPercent;
+        const gstPercent = field === "gstPercent" ? Number(value) : (updatedItem.gstPercent || 18);
         const grossAmount = qty * rate;
         const discountAmount = (grossAmount * discount) / 100;
         updatedItem.amount = grossAmount - discountAmount;
+        updatedItem.gstPercent = gstPercent;
+        updatedItem.gstAmount = (updatedItem.amount * gstPercent) / 100;
       }
 
       return updatedItem;
@@ -632,9 +645,9 @@ export function LineItemsEditor({ items, onChange, customerType, pricingSettings
             {/* Table Header */}
             <div className="hidden md:grid md:grid-cols-12 gap-2 px-4 py-2.5 bg-muted/50 text-xs font-medium text-muted-foreground uppercase tracking-wider">
               <div className="col-span-1">#</div>
-              <div className="col-span-4">Description</div>
+              <div className="col-span-4">Product</div>
               <div className="col-span-2 text-center">Qty × Rate</div>
-              <div className="col-span-2 text-center">Discount</div>
+              <div className="col-span-2 text-center">GST</div>
               <div className="col-span-2 text-right">Amount</div>
               <div className="col-span-1"></div>
             </div>

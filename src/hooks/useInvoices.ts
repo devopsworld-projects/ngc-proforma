@@ -46,6 +46,8 @@ export interface InvoiceItem {
   unit: string;
   rate: number;
   discount_percent: number;
+  gst_percent: number | null;
+  gst_amount: number | null;
   amount: number;
   product_image: string | null;
   created_at: string;
