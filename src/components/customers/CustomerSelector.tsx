@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Search, Building2, MapPin, Star, Plus, UserPlus, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,6 +42,7 @@ export function CustomerSelector({
   // New customer form state - default to filterType if provided
   const [newCustomerName, setNewCustomerName] = useState("");
   const [newCustomerType, setNewCustomerType] = useState<"customer" | "dealer">(filterType || "customer");
+  const [newCustomerTaxType, setNewCustomerTaxType] = useState<"cgst" | "igst">("cgst");
   const [newCustomerGstin, setNewCustomerGstin] = useState("");
   const [newCustomerEmail, setNewCustomerEmail] = useState("");
   const [newCustomerPhone, setNewCustomerPhone] = useState("");
@@ -134,6 +136,7 @@ export function CustomerSelector({
       const newCustomer = await createCustomer.mutateAsync({
         name: newCustomerName.trim(),
         customer_type: newCustomerType,
+        tax_type: newCustomerTaxType,
         gstin: newCustomerGstin.trim() || null,
         email: newCustomerEmail.trim() || null,
         phone: newCustomerPhone.trim() || null,
@@ -243,6 +246,7 @@ export function CustomerSelector({
     setSearch("");
     setNewCustomerName("");
     setNewCustomerType(filterType || "customer");
+    setNewCustomerTaxType("cgst");
     setNewCustomerGstin("");
     setNewCustomerEmail("");
     setNewCustomerPhone("");
@@ -378,6 +382,28 @@ export function CustomerSelector({
                 <p className="text-xs text-muted-foreground">
                   {newCustomerType === "dealer" ? "Dealer pricing will apply" : "Customer pricing will apply"}
                 </p>
+              </div>
+
+              <div className="col-span-2 space-y-2">
+                <Label>Tax Type *</Label>
+                <RadioGroup
+                  value={newCustomerTaxType}
+                  onValueChange={(v) => setNewCustomerTaxType(v as "cgst" | "igst")}
+                  className="flex gap-6"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="cgst" id="inline-cgst" />
+                    <Label htmlFor="inline-cgst" className="font-normal cursor-pointer">
+                      CGST + SGST (Intra-state)
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="igst" id="inline-igst" />
+                    <Label htmlFor="inline-igst" className="font-normal cursor-pointer">
+                      IGST (Inter-state)
+                    </Label>
+                  </div>
+                </RadioGroup>
               </div>
 
               <div className="space-y-2">

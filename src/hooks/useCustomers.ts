@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
+export type TaxType = "cgst" | "igst";
+
 export interface Customer {
   id: string;
   name: string;
@@ -16,6 +18,7 @@ export interface Customer {
   created_at: string;
   updated_at: string;
   customer_type: string;
+  tax_type: string; // "cgst" or "igst" - stored as string in DB
 }
 
 export interface Address {
