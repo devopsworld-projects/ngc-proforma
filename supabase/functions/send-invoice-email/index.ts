@@ -136,8 +136,8 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Convert base64 to Uint8Array for attachment
-    const pdfBuffer = Uint8Array.from(atob(pdfBase64), (c) => c.charCodeAt(0));
+    // Keep base64 content for Resend attachment
+    const pdfContent = pdfBase64;
 
     // Sanitize values for HTML rendering
     const safeRecipientName = sanitizeHtml(recipientName);
@@ -195,7 +195,7 @@ const handler = async (req: Request): Promise<Response> => {
       attachments: [
         {
           filename: `Invoice-${safeInvoiceNo}.pdf`,
-          content: pdfBuffer,
+          content: pdfContent,
         },
       ],
     });
