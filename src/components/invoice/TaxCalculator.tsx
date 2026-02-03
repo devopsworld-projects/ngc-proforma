@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { formatCurrency, numberToWords, roundToTwo, calculateGstBreakup } from "@/lib/invoice-utils";
 import { Calculator } from "lucide-react";
 import { LineItem } from "./LineItemsEditor";
@@ -13,6 +14,7 @@ interface TaxCalculatorProps {
   onDiscountChange: (value: number) => void;
   lineItems?: LineItem[];
   taxType?: "cgst" | "igst" | null;
+  customerName?: string | null;
 }
 
 export interface CalculatedTotals {
@@ -31,6 +33,7 @@ export function TaxCalculator({
   onDiscountChange,
   lineItems = [],
   taxType,
+  customerName,
 }: TaxCalculatorProps) {
   const totals = useMemo<CalculatedTotals>(() => {
     // Subtotal is the sum of GST-inclusive line item amounts
@@ -71,10 +74,20 @@ export function TaxCalculator({
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-base flex items-center gap-2">
-          <Calculator className="h-4 w-4" />
-          Tax & Totals
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Calculator className="h-4 w-4" />
+            Tax & Totals
+          </CardTitle>
+          {taxType && (
+            <Badge 
+              variant={taxType === "igst" ? "default" : "secondary"}
+              className="text-xs"
+            >
+              {taxType === "igst" ? "IGST" : "CGST/SGST"}
+            </Badge>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Subtotal (GST Inclusive) */}
