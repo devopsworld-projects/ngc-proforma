@@ -99,7 +99,7 @@ export default function InvoicesPage() {
   const deleteInvoice = useDeleteInvoice();
   const sendNotification = useSendStatusNotification();
   
-  const { filters, setFilters, filteredInvoices, clearFilters, hasActiveFilters } = useInvoiceFilters(invoices);
+  const { filters, setFilters, filteredInvoices, clearFilters, hasActiveFilters, sortConfig, handleSort } = useInvoiceFilters(invoices);
 
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<FullInvoiceData | null>(null);
@@ -254,6 +254,8 @@ export default function InvoicesPage() {
           filters={filters}
           onFiltersChange={setFilters}
           onClearFilters={clearFilters}
+          sortConfig={sortConfig}
+          onSort={handleSort}
         />
 
         {/* Results Summary */}
