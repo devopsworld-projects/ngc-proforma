@@ -246,7 +246,7 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
     return lineItems.reduce((sum, item) => sum + item.amount, 0);
   }, [lineItems]);
 
-  const totals = useTaxCalculation(subtotal, discountPercent, taxRate);
+  const totals = useTaxCalculation(subtotal, discountPercent, lineItems);
 
   const handleCustomerSelect = (
     customer: Customer | null,
@@ -778,9 +778,8 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
             <TaxCalculator
               subtotal={subtotal}
               discountPercent={discountPercent}
-              taxRate={taxRate}
               onDiscountChange={setDiscountPercent}
-              onTaxRateChange={setTaxRate}
+              lineItems={lineItems}
             />
 
             {/* Recurring Settings */}
