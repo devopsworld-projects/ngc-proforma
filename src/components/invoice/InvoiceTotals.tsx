@@ -1,22 +1,45 @@
-import { InvoiceTotals as InvoiceTotalsType } from "@/types/invoice";
+import { InvoiceTotals as InvoiceTotalsType, InvoiceItem } from "@/types/invoice";
 import { Separator } from "@/components/ui/separator";
+import { formatCurrency, calculateGstBreakup, roundToTwo } from "@/lib/invoice-utils";
+
 interface InvoiceTotalsProps {
   totals: InvoiceTotalsType;
   totalQuantity: number;
   amountInWords: string;
+  items?: InvoiceItem[];
 }
+
 export function InvoiceTotals({
   totals,
   totalQuantity,
-  amountInWords
+  amountInWords,
+  items = []
 }: InvoiceTotalsProps) {
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      minimumFractionDigits: 2
-    }).format(amount);
+  // Calculate totals from per-item GST reverse calculation
+  const calculateTotalsFromItems = () => {
+    let totalBasePrice = 0;
+    let totalGstAmount = 0;
+    let totalInclusive = 0;
+
+    items.forEach(item => {
+      const gstPercent = item.gstPercent ?? 18;
+      const inclusiveUnitPrice = item.rate;
+      const { basePrice: baseUnitPrice, gstAmount: gstPerUnit } = calculateGstBreakup(inclusiveUnitPrice, gstPercent);
+      
+      totalBasePrice += baseUnitPrice * item.quantity;
+      totalGstAmount += gstPerUnit * item.quantity;
+      totalInclusive += item.quantity * inclusiveUnitPrice;
+    });
+
+    return {
+      basePrice: roundToTwo(totalBasePrice),
+      gstAmount: roundToTwo(totalGstAmount),
+      inclusive: roundToTwo(totalInclusive)
+    };
   };
+
+  // Use per-item calculation if items are provided, otherwise fall back to totals.taxAmount
+  const itemTotals = items.length > 0 ? calculateTotalsFromItems() : null;
   return <div className="px-3 py-3 bg-white">
       <div className="flex flex-col lg:flex-row gap-4">
         {/* Amount in Words */}
@@ -50,7 +73,9 @@ export function InvoiceTotals({
 
           <div className="flex justify-between items-center text-xs">
             <span className="text-gray-600">Total GST (included per item)</span>
-            <span className="font-medium text-black font-mono">{formatCurrency(totals.taxAmount)}</span>
+            <span className="font-medium text-black font-mono">
+              {formatCurrency(itemTotals ? itemTotals.gstAmount : totals.taxAmount)}
+            </span>
           </div>
 
           <div className="flex justify-between items-center text-xs">

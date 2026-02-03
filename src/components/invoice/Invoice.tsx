@@ -49,6 +49,7 @@ export function Invoice({ data, containerId = "invoice-container" }: InvoiceProp
         totals={data.totals}
         totalQuantity={data.totalQuantity}
         amountInWords={data.amountInWords}
+        items={data.items}
       />
 
       {/* Footer - Terms, Bank Details, Signature */}
