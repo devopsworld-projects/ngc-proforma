@@ -200,6 +200,20 @@ const handler = async (req: Request): Promise<Response> => {
       ],
     });
 
+    // Check if Resend returned an error
+    if (emailResponse.error) {
+      console.error("Resend API error:", emailResponse.error);
+      return new Response(
+        JSON.stringify({ 
+          error: emailResponse.error.message || "Failed to send email",
+          details: emailResponse.error.name === "validation_error" 
+            ? "To send emails to recipients other than your own email, please verify a domain at resend.com/domains"
+            : undefined
+        }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     console.log("Invoice email sent successfully:", emailResponse);
 
     return new Response(JSON.stringify({ success: true, data: emailResponse }), {
