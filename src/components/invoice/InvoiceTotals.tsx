@@ -1,14 +1,12 @@
 import { InvoiceTotals as InvoiceTotalsType, InvoiceItem } from "@/types/invoice";
 import { Separator } from "@/components/ui/separator";
 import { formatCurrency, calculateGstBreakup, roundToTwo } from "@/lib/invoice-utils";
-
 interface InvoiceTotalsProps {
   totals: InvoiceTotalsType;
   totalQuantity: number;
   amountInWords: string;
   items?: InvoiceItem[];
 }
-
 export function InvoiceTotals({
   totals,
   totalQuantity,
@@ -20,17 +18,17 @@ export function InvoiceTotals({
     let totalBasePrice = 0;
     let totalGstAmount = 0;
     let totalInclusive = 0;
-
     items.forEach(item => {
       const gstPercent = item.gstPercent ?? 18;
       const inclusiveUnitPrice = item.rate;
-      const { basePrice: baseUnitPrice, gstAmount: gstPerUnit } = calculateGstBreakup(inclusiveUnitPrice, gstPercent);
-      
+      const {
+        basePrice: baseUnitPrice,
+        gstAmount: gstPerUnit
+      } = calculateGstBreakup(inclusiveUnitPrice, gstPercent);
       totalBasePrice += baseUnitPrice * item.quantity;
       totalGstAmount += gstPerUnit * item.quantity;
       totalInclusive += item.quantity * inclusiveUnitPrice;
     });
-
     return {
       basePrice: roundToTwo(totalBasePrice),
       gstAmount: roundToTwo(totalGstAmount),
@@ -60,19 +58,17 @@ export function InvoiceTotals({
             <span className="font-medium text-black font-mono">{formatCurrency(totals.subtotal)}</span>
           </div>
           
-          {totals.discount > 0 && (
-            <div className="flex justify-between items-center text-xs">
+          {totals.discount > 0 && <div className="flex justify-between items-center text-xs">
               <span className="text-gray-600">
                 Discount @ {totals.discountPercent}%
               </span>
               <span className="font-medium text-green-600 font-mono">
                 - {formatCurrency(totals.discount)}
               </span>
-            </div>
-          )}
+            </div>}
 
           <div className="flex justify-between items-center text-xs">
-            <span className="text-gray-600">Total GST (included per item)</span>
+            <span className="text-gray-600">Total GST (Sum of item-wise GST)</span>
             <span className="font-medium text-black font-mono">
               {formatCurrency(itemTotals ? itemTotals.gstAmount : totals.taxAmount)}
             </span>
