@@ -146,7 +146,7 @@ const handler = async (req: Request): Promise<Response> => {
     const safeGrandTotal = sanitizeHtml(grandTotal);
 
     const emailResponse = await resend.emails.send({
-      from: `${safeCompanyName} <noreply@globalshopee.com>`,
+      from: `${safeCompanyName} <noreply@proforma-invoice.globalshopee.com>`,
       to: [recipientEmail],
       subject: `Invoice #${safeInvoiceNo} from ${safeCompanyName}`,
       html: `
