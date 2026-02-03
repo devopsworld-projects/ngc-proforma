@@ -190,15 +190,25 @@ export function useBulkCreateProducts() {
 
 export function useUpdateProduct() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   return useMutation({
     mutationFn: async ({ id, ...product }: Partial<Product> & { id: string }) => {
+      if (!user) throw new Error("Not authenticated");
+      
       const { data, error } = await supabase
         .from("products")
         .update(product)
         .eq("id", id)
         .select()
-        .single();
+        .maybeSingle();
+      
       if (error) throw error;
+      
+      // If no data returned, the update was blocked (likely RLS - not your product)
+      if (!data) {
+        throw new Error("You can only update products that you created");
+      }
+      
       return data;
     },
     onSuccess: () => {
