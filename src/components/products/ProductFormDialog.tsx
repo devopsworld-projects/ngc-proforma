@@ -9,6 +9,7 @@ import { useCreateProduct, useUpdateProduct, Product } from "@/hooks/useProducts
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { formatCurrency, calculateGstBreakup, roundToTwo } from "@/lib/invoice-utils";
 
 interface ProductFormDialogProps {
   product?: Product;
@@ -39,13 +40,17 @@ export function ProductFormDialog({ product, trigger }: ProductFormDialogProps) 
   const updateProduct = useUpdateProduct();
   const isEditing = !!product;
 
-  // Calculate GST amount and total
-  const rate = parseFloat(formData.rate) || 0;
+  // Reverse-calculate GST from inclusive price
+  // The entered rate IS the GST-inclusive price
+  const inclusiveRate = parseFloat(formData.rate) || 0;
   const qty = parseInt(formData.stock_quantity) || 0;
   const gstPercent = parseFloat(formData.gst_percent) || 0;
-  const baseAmount = rate * qty;
-  const gstAmount = (baseAmount * gstPercent) / 100;
-  const total = baseAmount + gstAmount;
+  
+  // Calculate base price and GST from inclusive price
+  const { basePrice, gstAmount: gstPerUnit } = calculateGstBreakup(inclusiveRate, gstPercent);
+  const totalBasePrice = roundToTwo(basePrice * qty);
+  const totalGstAmount = roundToTwo(gstPerUnit * qty);
+  const totalInclusive = roundToTwo(inclusiveRate * qty);
 
   const resetForm = () => {
     setFormData({
@@ -145,14 +150,6 @@ export function ProductFormDialog({ product, trigger }: ProductFormDialogProps) 
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      minimumFractionDigits: 2,
-    }).format(amount);
   };
 
   return (
@@ -290,7 +287,7 @@ export function ProductFormDialog({ product, trigger }: ProductFormDialogProps) 
             </div>
             
             <div>
-              <Label htmlFor="rate">Unit Price (₹)</Label>
+              <Label htmlFor="rate">Unit Price (₹) <span className="text-xs text-muted-foreground">(GST Inclusive)</span></Label>
               <Input
                 id="rate"
                 type="number"
@@ -325,15 +322,20 @@ export function ProductFormDialog({ product, trigger }: ProductFormDialogProps) 
             </div>
           </div>
 
-          {/* Calculated Fields */}
+          {/* Calculated Fields - Reverse GST Breakup */}
           <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+            <p className="text-xs text-muted-foreground mb-2">Price Breakup (per unit × {qty} units)</p>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">GST Amount (₹):</span>
-              <span className="font-medium">{formatCurrency(gstAmount)}</span>
+              <span className="text-muted-foreground">Base Price (Taxable):</span>
+              <span className="font-medium">{formatCurrency(totalBasePrice)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Total (₹):</span>
-              <span className="font-bold">{formatCurrency(total)}</span>
+              <span className="text-muted-foreground">GST @ {gstPercent}%:</span>
+              <span className="font-medium">{formatCurrency(totalGstAmount)}</span>
+            </div>
+            <div className="flex justify-between text-sm border-t pt-2 mt-2">
+              <span className="text-muted-foreground">Total (Inclusive):</span>
+              <span className="font-bold">{formatCurrency(totalInclusive)}</span>
             </div>
           </div>
           
