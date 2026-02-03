@@ -7,7 +7,7 @@ import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { usePdfTemplateSettings } from "@/hooks/usePdfTemplateSettings";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Edit, Printer, Download, Loader2 } from "lucide-react";
+import { ArrowLeft, Edit, Download, Loader2 } from "lucide-react";
 import { InvoiceData, CompanyInfo, SupplierInfo, InvoiceItem, InvoiceTotals } from "@/types/invoice";
 import { formatDate, numberToWords } from "@/lib/invoice-utils";
 import { downloadInvoiceAsPdf } from "@/lib/html-to-pdf";
@@ -26,9 +26,6 @@ export default function InvoicePreview() {
 
   const isLoading = invoiceLoading || settingsLoading || templateLoading;
 
-  const handlePrint = () => {
-    window.print();
-  };
 
   // Apply shadow on mount for screen display
   useEffect(() => {
@@ -218,10 +215,6 @@ export default function InvoicePreview() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={handlePrint}>
-              <Printer className="h-4 w-4 mr-2" />
-              Print
-            </Button>
             <Button 
               variant="outline" 
               onClick={handleDownloadPdf}

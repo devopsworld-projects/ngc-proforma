@@ -39,7 +39,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { FileText, Plus, Edit, RefreshCcw, MoreVertical, Send, CheckCircle, XCircle, Clock, Eye, SearchX, Mail, Loader2, Trash2, User, Printer } from "lucide-react";
+import { FileText, Plus, Edit, RefreshCcw, MoreVertical, Send, CheckCircle, XCircle, Clock, Eye, SearchX, Mail, Loader2, Trash2, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -217,10 +217,6 @@ export default function InvoicesPage() {
     };
   };
 
-  const handlePrintInvoice = (invoiceId: string) => {
-    // Open the invoice preview in a new window for printing
-    window.open(`/invoices/${invoiceId}`, '_blank');
-  };
 
   const handleSendEmail = async (invoiceId: string) => {
     if (!companySettings) {
@@ -350,14 +346,6 @@ export default function InvoicesPage() {
                         {invoice.status}
                       </Badge>
                     </div>
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      onClick={() => handlePrintInvoice(invoice.id)}
-                      title="Print / Save as PDF"
-                    >
-                      <Printer className="h-4 w-4" />
-                    </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button size="icon" variant="ghost">
@@ -372,10 +360,6 @@ export default function InvoicesPage() {
                         <DropdownMenuItem onClick={() => handleSendEmail(invoice.id)}>
                           <Mail className="h-4 w-4 mr-2" />
                           Send via Email
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handlePrintInvoice(invoice.id)}>
-                          <Printer className="h-4 w-4 mr-2" />
-                          Print / Save as PDF
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => navigate(`/invoices/${invoice.id}/edit`)}>
                           <Edit className="h-4 w-4 mr-2" />
