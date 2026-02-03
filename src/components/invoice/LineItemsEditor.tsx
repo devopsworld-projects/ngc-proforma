@@ -163,12 +163,9 @@ function SortableLineItem({
           <span>{formatCurrency(item.rate)}</span>
         </div>
         
-        {/* GST */}
+        {/* GST Amt */}
         <div className="col-span-2 text-center" onClick={onToggleExpand}>
-          <div className="text-xs">
-            <span className="text-muted-foreground">{item.gstPercent || 18}%</span>
-            <span className="block font-medium text-sm">{formatCurrency(item.gstAmount || 0)}</span>
-          </div>
+          <span className="font-medium text-sm">{formatCurrency(item.gstAmount || 0)}</span>
         </div>
         
         {/* Amount (incl. GST) */}
@@ -647,7 +644,7 @@ export function LineItemsEditor({ items, onChange, customerType, pricingSettings
               <div className="col-span-1">#</div>
               <div className="col-span-4">Product</div>
               <div className="col-span-2 text-center">Qty × Rate</div>
-              <div className="col-span-2 text-center">GST</div>
+              <div className="col-span-2 text-center">GST Amt (18%)</div>
               <div className="col-span-2 text-right">Amount</div>
               <div className="col-span-1"></div>
             </div>
