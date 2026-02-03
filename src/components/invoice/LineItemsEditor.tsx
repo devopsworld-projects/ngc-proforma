@@ -275,9 +275,29 @@ function SortableLineItem({
             </div>
             
             <div>
+              <Label className="text-xs font-medium mb-1.5 block">GST %</Label>
+              <Input
+                type="number"
+                min="0"
+                max="100"
+                step="0.01"
+                placeholder="18"
+                value={item.gstPercent || ""}
+                onChange={(e) => onUpdate("gstPercent", parseFloat(e.target.value) || 0)}
+              />
+            </div>
+            
+            <div>
               <Label className="text-xs font-medium mb-1.5 block">Amount</Label>
               <div className="h-10 px-3 flex items-center bg-background border rounded-md">
                 <span className="font-semibold">{formatCurrency(item.amount)}</span>
+              </div>
+            </div>
+            
+            <div>
+              <Label className="text-xs font-medium mb-1.5 block">GST Amount</Label>
+              <div className="h-10 px-3 flex items-center bg-background border rounded-md">
+                <span className="font-semibold">{formatCurrency(item.gstAmount || 0)}</span>
               </div>
             </div>
           </div>
