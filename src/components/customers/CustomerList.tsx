@@ -38,6 +38,7 @@ const ITEMS_PER_PAGE = 15;
 export function CustomerList() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [taxTypeFilter, setTaxTypeFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const { data: customers, isLoading } = useCustomers();
@@ -65,14 +66,18 @@ export function CustomerList() {
         typeFilter === "all" ||
         c.customer_type === typeFilter;
 
-      return matchesSearch && matchesType;
+      const matchesTaxType =
+        taxTypeFilter === "all" ||
+        c.tax_type === taxTypeFilter;
+
+      return matchesSearch && matchesType && matchesTaxType;
     }) || [];
-  }, [customers, search, typeFilter]);
+  }, [customers, search, typeFilter, taxTypeFilter]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, typeFilter]);
+  }, [search, typeFilter, taxTypeFilter]);
 
   const totalPages = Math.ceil(filteredCustomers.length / ITEMS_PER_PAGE);
   const paginatedCustomers = filteredCustomers.slice(
@@ -256,6 +261,16 @@ export function CustomerList() {
                   <SelectItem value="all">All Types</SelectItem>
                   <SelectItem value="customer">Customer</SelectItem>
                   <SelectItem value="dealer">Dealer</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={taxTypeFilter} onValueChange={setTaxTypeFilter}>
+                <SelectTrigger className="w-full sm:w-[140px]">
+                  <SelectValue placeholder="Tax Type" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover z-50">
+                  <SelectItem value="all">All Tax Types</SelectItem>
+                  <SelectItem value="cgst">CGST/SGST</SelectItem>
+                  <SelectItem value="igst">IGST</SelectItem>
                 </SelectContent>
               </Select>
             </div>

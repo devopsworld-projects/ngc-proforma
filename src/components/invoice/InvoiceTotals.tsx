@@ -6,12 +6,14 @@ interface InvoiceTotalsProps {
   totalQuantity: number;
   amountInWords: string;
   items?: InvoiceItem[];
+  taxType?: "cgst" | "igst";
 }
 export function InvoiceTotals({
   totals,
   totalQuantity,
   amountInWords,
-  items = []
+  items = [],
+  taxType = "cgst"
 }: InvoiceTotalsProps) {
   // Calculate totals from per-item GST reverse calculation
   const calculateTotalsFromItems = () => {
@@ -67,12 +69,32 @@ export function InvoiceTotals({
               </span>
             </div>}
 
-          <div className="flex justify-between items-center text-xs">
-            <span className="text-gray-600">Total GST (Sum of item-wise GST)</span>
-            <span className="font-medium text-black font-mono">
-              {formatCurrency(itemTotals ? itemTotals.gstAmount : totals.taxAmount)}
-            </span>
-          </div>
+          {/* Tax breakdown based on taxType */}
+          {taxType === "igst" ? (
+            // IGST - Single line for inter-state
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-gray-600">IGST (Integrated GST)</span>
+              <span className="font-medium text-black font-mono">
+                {formatCurrency(itemTotals ? itemTotals.gstAmount : totals.taxAmount)}
+              </span>
+            </div>
+          ) : (
+            // CGST + SGST - Two lines for intra-state (split 50/50)
+            <>
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-gray-600">CGST (Central GST)</span>
+                <span className="font-medium text-black font-mono">
+                  {formatCurrency((itemTotals ? itemTotals.gstAmount : totals.taxAmount) / 2)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-gray-600">SGST (State GST)</span>
+                <span className="font-medium text-black font-mono">
+                  {formatCurrency((itemTotals ? itemTotals.gstAmount : totals.taxAmount) / 2)}
+                </span>
+              </div>
+            </>
+          )}
 
           <div className="flex justify-between items-center text-xs">
             <span className="text-gray-600">Round Off</span>

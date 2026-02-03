@@ -131,6 +131,9 @@ export default function InvoicePreview() {
 
     const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
 
+    // Determine tax type from customer
+    const taxType = (customer?.tax_type === "igst" ? "igst" : "cgst") as "cgst" | "igst";
+
     return {
       invoiceNo: invoice.invoice_no,
       date: formatDate(invoice.date),
@@ -146,6 +149,7 @@ export default function InvoicePreview() {
       totals,
       totalQuantity,
       amountInWords: invoice.amount_in_words || numberToWords(totals.grandTotal),
+      taxType,
     };
   };
 

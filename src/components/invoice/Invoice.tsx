@@ -50,6 +50,7 @@ export function Invoice({ data, containerId = "invoice-container" }: InvoiceProp
         totalQuantity={data.totalQuantity}
         amountInWords={data.amountInWords}
         items={data.items}
+        taxType={data.taxType}
       />
 
       {/* Footer - Terms, Bank Details, Signature */}
