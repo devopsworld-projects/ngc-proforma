@@ -59,4 +59,5 @@ export interface InvoiceData {
   totals: InvoiceTotals;
   totalQuantity: number;
   amountInWords: string;
+  taxType?: "cgst" | "igst"; // Customer's tax type for CGST+SGST vs IGST display
 }
