@@ -140,6 +140,7 @@ export type Database = {
           phone: string | null
           state: string | null
           state_code: string | null
+          tax_type: string
           updated_at: string
           user_id: string | null
         }
@@ -155,6 +156,7 @@ export type Database = {
           phone?: string | null
           state?: string | null
           state_code?: string | null
+          tax_type?: string
           updated_at?: string
           user_id?: string | null
         }
@@ -170,6 +172,7 @@ export type Database = {
           phone?: string | null
           state?: string | null
           state_code?: string | null
+          tax_type?: string
           updated_at?: string
           user_id?: string | null
         }
