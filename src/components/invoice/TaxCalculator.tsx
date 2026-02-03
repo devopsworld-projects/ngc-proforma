@@ -12,6 +12,7 @@ interface TaxCalculatorProps {
   discountPercent: number;
   onDiscountChange: (value: number) => void;
   lineItems?: LineItem[];
+  taxType?: "cgst" | "igst" | null;
 }
 
 export interface CalculatedTotals {
@@ -29,6 +30,7 @@ export function TaxCalculator({
   discountPercent,
   onDiscountChange,
   lineItems = [],
+  taxType,
 }: TaxCalculatorProps) {
   const totals = useMemo<CalculatedTotals>(() => {
     // Subtotal is the sum of GST-inclusive line item amounts
@@ -111,11 +113,29 @@ export function TaxCalculator({
           <span className="font-medium">{formatCurrency(totals.taxableAmount)}</span>
         </div>
 
-        {/* GST Included */}
-        <div className="flex justify-between items-center text-sm">
-          <span className="text-muted-foreground">GST (included)</span>
-          <span className="font-medium">{formatCurrency(totals.taxAmount)}</span>
-        </div>
+        {/* GST Included - Show based on customer tax type */}
+        {taxType === "igst" ? (
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-muted-foreground">IGST (included)</span>
+            <span className="font-medium">{formatCurrency(totals.taxAmount)}</span>
+          </div>
+        ) : taxType === "cgst" ? (
+          <>
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-muted-foreground">CGST (included)</span>
+              <span className="font-medium">{formatCurrency(totals.taxAmount / 2)}</span>
+            </div>
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-muted-foreground">SGST (included)</span>
+              <span className="font-medium">{formatCurrency(totals.taxAmount / 2)}</span>
+            </div>
+          </>
+        ) : (
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-muted-foreground">GST (included)</span>
+            <span className="font-medium">{formatCurrency(totals.taxAmount)}</span>
+          </div>
+        )}
 
         {/* Round Off */}
         <div className="flex justify-between items-center text-sm">
