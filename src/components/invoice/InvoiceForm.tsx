@@ -780,6 +780,7 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
               discountPercent={discountPercent}
               onDiscountChange={setDiscountPercent}
               lineItems={lineItems}
+              taxType={selectedCustomer?.tax_type as "cgst" | "igst" | undefined}
             />
 
             {/* Recurring Settings */}
