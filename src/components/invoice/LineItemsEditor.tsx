@@ -211,7 +211,16 @@ function SortableLineItem({
       {isExpanded && (
         <div className="px-4 pb-4 pt-2 bg-muted/20 border-t border-dashed animate-fade-in">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="lg:col-span-2">
+            <div>
+              <Label className="text-xs font-medium mb-1.5 block">Product Name</Label>
+              <Input
+                placeholder="Enter product name"
+                value={item.brand}
+                onChange={(e) => onUpdate("brand", e.target.value)}
+              />
+            </div>
+            
+            <div className="lg:col-span-3">
               <Label className="text-xs font-medium mb-1.5 block">Description</Label>
               <Textarea
                 placeholder="Product/Service description"
