@@ -33,10 +33,13 @@ export function InvoiceTable({ items }: InvoiceTableProps) {
         <TableHeader>
           <TableRow className="bg-gray-100 border-none">
             <TableHead className="w-12 text-center py-2 text-gray-700 text-xs font-semibold uppercase">Sl No.</TableHead>
-            <TableHead className="min-w-[250px] py-2 text-gray-700 text-xs font-semibold uppercase">Product</TableHead>
+            <TableHead className="py-2 text-gray-700 text-xs font-semibold uppercase">Image</TableHead>
+            <TableHead className="min-w-[180px] py-2 text-gray-700 text-xs font-semibold uppercase">Product</TableHead>
             <TableHead className="text-center py-2 w-16 text-gray-700 text-xs font-semibold uppercase">Qty</TableHead>
             <TableHead className="text-right py-2 w-24 text-gray-700 text-xs font-semibold uppercase">Unit Price</TableHead>
-            <TableHead className="text-center py-2 w-24 text-gray-700 text-xs font-semibold uppercase">Image</TableHead>
+            <TableHead className="text-center py-2 w-16 text-gray-700 text-xs font-semibold uppercase">GST %</TableHead>
+            <TableHead className="text-right py-2 w-24 text-gray-700 text-xs font-semibold uppercase">GST Amt</TableHead>
+            <TableHead className="text-right py-2 w-24 text-gray-700 text-xs font-semibold uppercase">Total</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -50,6 +53,35 @@ export function InvoiceTable({ items }: InvoiceTableProps) {
                 <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-800 text-xs font-semibold">
                   {item.slNo}
                 </span>
+              </TableCell>
+              <TableCell className="py-2">
+                {item.productImage ? (
+                  <HoverCard openDelay={200} closeDelay={100}>
+                    <HoverCardTrigger asChild>
+                      <div className="relative w-14 h-14 cursor-pointer group">
+                        <img 
+                          src={item.productImage} 
+                          alt={item.brand || item.description}
+                          className="w-full h-full object-cover rounded-md border border-gray-200 shadow-sm"
+                        />
+                      </div>
+                    </HoverCardTrigger>
+                    <HoverCardContent side="right" className="w-auto p-2 no-print">
+                      <img 
+                        src={item.productImage} 
+                        alt={item.brand || item.description}
+                        className="max-w-[200px] max-h-[200px] object-contain rounded-md"
+                      />
+                      <p className="text-xs text-muted-foreground mt-2 text-center max-w-[200px] truncate">
+                        {item.brand || item.description}
+                      </p>
+                    </HoverCardContent>
+                  </HoverCard>
+                ) : (
+                  <div className="w-14 h-14 flex items-center justify-center bg-gray-100 rounded-md border border-gray-300">
+                    <ImageIcon className="w-5 h-5 text-gray-400" />
+                  </div>
+                )}
               </TableCell>
               <TableCell className="py-2">
                 <div className="space-y-0.5">
@@ -66,34 +98,14 @@ export function InvoiceTable({ items }: InvoiceTableProps) {
               <TableCell className="text-right py-2 font-medium text-black text-sm font-mono">
                 {formatCurrency(item.rate)}
               </TableCell>
-              <TableCell className="text-center py-2">
-                {item.productImage ? (
-                  <HoverCard openDelay={200} closeDelay={100}>
-                    <HoverCardTrigger asChild>
-                      <div className="relative w-14 h-14 mx-auto cursor-pointer group">
-                        <img 
-                          src={item.productImage} 
-                          alt={item.brand || item.description}
-                          className="w-full h-full object-cover rounded-md border border-gray-200 shadow-sm"
-                        />
-                      </div>
-                    </HoverCardTrigger>
-                    <HoverCardContent side="left" className="w-auto p-2 no-print">
-                      <img 
-                        src={item.productImage} 
-                        alt={item.brand || item.description}
-                        className="max-w-[200px] max-h-[200px] object-contain rounded-md"
-                      />
-                      <p className="text-xs text-muted-foreground mt-2 text-center max-w-[200px] truncate">
-                        {item.brand || item.description}
-                      </p>
-                    </HoverCardContent>
-                  </HoverCard>
-                ) : (
-                  <div className="w-14 h-14 mx-auto flex items-center justify-center bg-gray-100 rounded-md border border-gray-300">
-                    <ImageIcon className="w-5 h-5 text-gray-400" />
-                  </div>
-                )}
+              <TableCell className="text-center py-2 font-medium text-black text-sm font-mono">
+                {item.gstPercent ?? 18}%
+              </TableCell>
+              <TableCell className="text-right py-2 font-medium text-black text-sm font-mono">
+                {formatCurrency(item.gstAmount ?? (item.amount * (item.gstPercent ?? 18)) / 100)}
+              </TableCell>
+              <TableCell className="text-right py-2 font-semibold text-black text-sm font-mono">
+                {formatCurrency(item.amount + (item.gstAmount ?? (item.amount * (item.gstPercent ?? 18)) / 100))}
               </TableCell>
             </TableRow>
           ))}
