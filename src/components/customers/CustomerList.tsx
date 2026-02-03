@@ -127,6 +127,9 @@ export function CustomerList() {
                   <Badge variant={selectedCustomer.customer_type === "dealer" ? "default" : "secondary"}>
                     {selectedCustomer.customer_type === "dealer" ? "Dealer" : "Customer"}
                   </Badge>
+                  <Badge variant="outline" className="text-xs">
+                    {selectedCustomer.tax_type === "igst" ? "IGST" : "CGST/SGST"}
+                  </Badge>
                 </div>
                 {selectedCustomer.gstin && (
                   <p className="text-sm text-muted-foreground font-mono mt-1">GSTIN: {selectedCustomer.gstin}</p>
@@ -297,9 +300,14 @@ export function CustomerList() {
                           <p className="font-medium">{customer.name}</p>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={customer.customer_type === "dealer" ? "default" : "secondary"} className="text-xs">
-                            {customer.customer_type === "dealer" ? "Dealer" : "Customer"}
-                          </Badge>
+                          <div className="flex items-center gap-1.5">
+                            <Badge variant={customer.customer_type === "dealer" ? "default" : "secondary"} className="text-xs">
+                              {customer.customer_type === "dealer" ? "Dealer" : "Customer"}
+                            </Badge>
+                            <Badge variant="outline" className="text-xs">
+                              {customer.tax_type === "igst" ? "IGST" : "CGST"}
+                            </Badge>
+                          </div>
                         </TableCell>
                         <TableCell>
                           <span className="text-sm text-muted-foreground">{customer.email || "—"}</span>

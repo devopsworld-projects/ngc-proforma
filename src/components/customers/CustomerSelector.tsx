@@ -323,10 +323,13 @@ export function CustomerSelector({
                         <Building2 className="w-4 h-4 text-primary" />
                       </div>
                       <div className="flex-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <p className="font-medium">{customer.name}</p>
                           <Badge variant={customer.customer_type === "dealer" ? "default" : "secondary"} className="text-xs">
                             {customer.customer_type === "dealer" ? "Dealer" : "Customer"}
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {customer.tax_type === "igst" ? "IGST" : "CGST"}
                           </Badge>
                         </div>
                         {customer.gstin && (
