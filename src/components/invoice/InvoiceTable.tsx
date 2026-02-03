@@ -13,26 +13,13 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { ImageIcon } from "lucide-react";
+import { formatCurrency, calculateGstBreakup, roundToTwo } from "@/lib/invoice-utils";
 
 interface InvoiceTableProps {
   items: InvoiceItem[];
 }
 
 export function InvoiceTable({ items }: InvoiceTableProps) {
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      minimumFractionDigits: 2,
-    }).format(amount);
-  };
-
-  // Reverse-calculate GST from inclusive price
-  const calculateTaxBreakup = (inclusivePrice: number, gstPercent: number) => {
-    const basePrice = (inclusivePrice * 100) / (100 + gstPercent);
-    const gstAmount = inclusivePrice - basePrice;
-    return { basePrice, gstAmount };
-  };
 
   return (
     <div className="overflow-x-auto">
@@ -50,13 +37,14 @@ export function InvoiceTable({ items }: InvoiceTableProps) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {items.map((item, index) => {
+        {items.map((item, index) => {
             const gstPercent = item.gstPercent ?? 18;
             const inclusiveUnitPrice = item.rate;
-            const { basePrice: baseUnitPrice, gstAmount: gstPerUnit } = calculateTaxBreakup(inclusiveUnitPrice, gstPercent);
-            const totalBasePrice = baseUnitPrice * item.quantity;
-            const totalGstAmount = gstPerUnit * item.quantity;
-            const totalInclusive = item.quantity * inclusiveUnitPrice;
+            const { basePrice: baseUnitPrice, gstAmount: gstPerUnit } = calculateGstBreakup(inclusiveUnitPrice, gstPercent);
+            // Apply rounding only at display time
+            const totalBasePrice = roundToTwo(baseUnitPrice * item.quantity);
+            const totalGstAmount = roundToTwo(gstPerUnit * item.quantity);
+            const totalInclusive = roundToTwo(item.quantity * inclusiveUnitPrice);
 
             return (
               <TableRow 

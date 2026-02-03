@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { formatCurrency, numberToWords } from "@/lib/invoice-utils";
+import { formatCurrency, numberToWords, roundToTwo } from "@/lib/invoice-utils";
 import { Calculator } from "lucide-react";
 
 interface TaxCalculatorProps {
@@ -32,15 +32,15 @@ export function TaxCalculator({
   onTaxRateChange,
 }: TaxCalculatorProps) {
   const totals = useMemo<CalculatedTotals>(() => {
-    const discountAmount = (subtotal * discountPercent) / 100;
-    const taxableAmount = subtotal - discountAmount;
-    const taxAmount = (taxableAmount * taxRate) / 100;
+    const discountAmount = roundToTwo((subtotal * discountPercent) / 100);
+    const taxableAmount = roundToTwo(subtotal - discountAmount);
+    const taxAmount = roundToTwo((taxableAmount * taxRate) / 100);
     const exactTotal = taxableAmount + taxAmount;
     const grandTotal = Math.round(exactTotal);
-    const roundOff = grandTotal - exactTotal;
+    const roundOff = roundToTwo(grandTotal - exactTotal);
 
     return {
-      subtotal,
+      subtotal: roundToTwo(subtotal),
       discountAmount,
       taxableAmount,
       taxAmount,
@@ -147,15 +147,15 @@ export function TaxCalculator({
 
 export function useTaxCalculation(subtotal: number, discountPercent: number, taxRate: number): CalculatedTotals {
   return useMemo(() => {
-    const discountAmount = (subtotal * discountPercent) / 100;
-    const taxableAmount = subtotal - discountAmount;
-    const taxAmount = (taxableAmount * taxRate) / 100;
+    const discountAmount = roundToTwo((subtotal * discountPercent) / 100);
+    const taxableAmount = roundToTwo(subtotal - discountAmount);
+    const taxAmount = roundToTwo((taxableAmount * taxRate) / 100);
     const exactTotal = taxableAmount + taxAmount;
     const grandTotal = Math.round(exactTotal);
-    const roundOff = grandTotal - exactTotal;
+    const roundOff = roundToTwo(grandTotal - exactTotal);
 
     return {
-      subtotal,
+      subtotal: roundToTwo(subtotal),
       discountAmount,
       taxableAmount,
       taxAmount,

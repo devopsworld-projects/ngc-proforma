@@ -1,6 +1,6 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { formatCurrency, numberToWords } from "./invoice-utils";
+import { formatCurrency, numberToWords, calculateGstBreakup, roundToTwo } from "./invoice-utils";
 import { PdfTemplateSettings, defaultPdfTemplateSettings } from "@/hooks/usePdfTemplateSettings";
 
 interface InvoiceItem {
@@ -10,10 +10,12 @@ interface InvoiceItem {
   serial_numbers?: string[] | null;
   quantity: number;
   unit: string;
-  rate: number;
+  rate: number; // GST-inclusive rate
   discount_percent: number;
-  amount: number;
+  amount: number; // GST-inclusive amount
   product_image?: string | null;
+  gst_percent?: number | null;
+  gst_amount?: number | null;
 }
 
 interface CompanyInfo {
@@ -404,29 +406,41 @@ export async function generateInvoicePDF(
 
   yPos = Math.max(detailY, billY) + 10;
 
-  // ===== ITEMS TABLE =====
+  // ===== ITEMS TABLE with GST breakup =====
   const tableData = invoice.items.map((item, idx) => {
+    const gstPercent = item.gst_percent || 18;
+    const inclusiveRate = item.rate;
+    const { basePrice: baseUnitPrice, gstAmount: gstPerUnit } = calculateGstBreakup(inclusiveRate, gstPercent);
+    
+    const totalBasePrice = roundToTwo(baseUnitPrice * item.quantity);
+    const totalGstAmount = roundToTwo(gstPerUnit * item.quantity);
+    const totalInclusive = roundToTwo(item.quantity * inclusiveRate);
+
     const row: string[] = [
       (idx + 1).toString(),
       item.brand || "-",
       item.description,
       `${item.quantity} ${item.unit}`,
-      formatCurrency(item.rate),
-      item.product_image ? "[Image]" : "-",
+      formatCurrency(totalBasePrice),
+      `${gstPercent}%`,
+      formatCurrency(totalGstAmount),
+      formatCurrency(totalInclusive),
     ];
     
     return row;
   });
 
-  const tableHead = [["#", "Brand", "Description", "Qty", "Unit Price", "Image"]];
+  const tableHead = [["#", "Brand", "Description", "Qty", "Base Price", "GST %", "GST Amt", "Total"]];
 
   const columnStyles: any = {
-    0: { cellWidth: 10, halign: "center" },
-    1: { cellWidth: 30, halign: "left" },
+    0: { cellWidth: 8, halign: "center" },
+    1: { cellWidth: 25, halign: "left" },
     2: { cellWidth: "auto", halign: "left" },
-    3: { cellWidth: 22, halign: "center" },
-    4: { cellWidth: 30, halign: "right" },
-    5: { cellWidth: 18, halign: "center" },
+    3: { cellWidth: 18, halign: "center" },
+    4: { cellWidth: 22, halign: "right" },
+    5: { cellWidth: 14, halign: "center" },
+    6: { cellWidth: 22, halign: "right" },
+    7: { cellWidth: 24, halign: "right" },
   };
 
   autoTable(doc, {
@@ -498,13 +512,22 @@ export async function generateInvoicePDF(
     totalsY += 6;
   };
 
+  // Calculate total GST from per-item reverse calculation
+  let totalGstFromItems = 0;
+  invoice.items.forEach(item => {
+    const gstPercent = item.gst_percent || 18;
+    const { gstAmount: gstPerUnit } = calculateGstBreakup(item.rate, gstPercent);
+    totalGstFromItems += gstPerUnit * item.quantity;
+  });
+  totalGstFromItems = roundToTwo(totalGstFromItems);
+
   addTotalLine("Subtotal:", formatCurrency(invoice.subtotal));
   
   if (invoice.discount_amount > 0) {
     addTotalLine(`Discount (${invoice.discount_percent}%):`, `-${formatCurrency(invoice.discount_amount)}`);
   }
   
-  addTotalLine(`GST (${invoice.tax_rate}%):`, formatCurrency(invoice.tax_amount));
+  addTotalLine("Total GST (included):", formatCurrency(totalGstFromItems));
 
   if (Math.abs(invoice.round_off) > 0.001) {
     addTotalLine("Round Off:", formatCurrency(invoice.round_off));

@@ -40,7 +40,7 @@ import {
   Barcode,
   Percent,
 } from "lucide-react";
-import { formatCurrency } from "@/lib/invoice-utils";
+import { formatCurrency, calculateGstBreakup, roundToTwo } from "@/lib/invoice-utils";
 import { ExcelLineItemsUpload } from "@/components/invoice/ExcelLineItemsUpload";
 import { useSearchProducts, Product } from "@/hooks/useProducts";
 import { cn } from "@/lib/utils";
@@ -163,14 +163,21 @@ function SortableLineItem({
           <span>{formatCurrency(item.rate)}</span>
         </div>
         
-        {/* GST Amt */}
-        <div className="col-span-2 text-center" onClick={onToggleExpand}>
-          <span className="font-medium text-sm">{formatCurrency(item.gstAmount || 0)}</span>
+        {/* GST % */}
+        <div className="col-span-1 text-center" onClick={onToggleExpand}>
+          <span className="font-medium text-sm text-muted-foreground">{item.gstPercent || 18}%</span>
+        </div>
+        
+        {/* GST Amt (reverse-calculated from inclusive price) */}
+        <div className="col-span-1 text-center" onClick={onToggleExpand}>
+          <span className="font-medium text-sm">
+            {formatCurrency(roundToTwo(calculateGstBreakup(item.rate, item.gstPercent || 18).gstAmount * item.quantity))}
+          </span>
         </div>
         
         {/* Amount (incl. GST) */}
         <div className="col-span-2 text-right" onClick={onToggleExpand}>
-          <span className="font-semibold text-sm">{formatCurrency(item.amount + (item.gstAmount || 0))}</span>
+          <span className="font-semibold text-sm">{formatCurrency(roundToTwo(item.quantity * item.rate))}</span>
         </div>
         
         {/* Actions */}
@@ -403,16 +410,22 @@ export function LineItemsEditor({ items, onChange, customerType, pricingSettings
       }
     }
     
-    const itemRate = Math.round(finalRate * 100) / 100;
-    const baseAmount = qty * itemRate;
+    // Store the GST-inclusive rate
+    const itemRate = roundToTwo(finalRate);
     const gstPercent = product.gst_percent || 18;
-    const gstAmount = (baseAmount * gstPercent) / 100;
+    
+    // Reverse-calculate GST from the inclusive price
+    const { gstAmount: gstPerUnit } = calculateGstBreakup(itemRate, gstPercent);
+    const gstAmount = roundToTwo(gstPerUnit * qty);
+    
+    // The amount is the total inclusive price (rate includes GST)
+    const amount = roundToTwo(qty * itemRate);
     
     const newItem: LineItem = {
       id: crypto.randomUUID(),
       slNo: items.length + 1,
-      brand: product.name, // Use product name as brand
-      description: product.description || product.model_spec || "", // Use description or model spec
+      brand: product.name,
+      description: product.description || product.model_spec || "",
       serialNumbers: "",
       quantity: qty,
       unit: product.unit,
@@ -420,9 +433,9 @@ export function LineItemsEditor({ items, onChange, customerType, pricingSettings
       discountPercent: 0,
       gstPercent: gstPercent,
       gstAmount: gstAmount,
-      amount: baseAmount,
+      amount: amount, // This is now the GST-inclusive total
       productId: product.id,
-      productImage: product.image_url || "", // Store product image
+      productImage: product.image_url || "",
     };
     onChange([...items, newItem]);
     setSearchTerm("");
@@ -438,14 +451,21 @@ export function LineItemsEditor({ items, onChange, customerType, pricingSettings
 
       if (field === "quantity" || field === "rate" || field === "discountPercent" || field === "gstPercent") {
         const qty = field === "quantity" ? Number(value) : updatedItem.quantity;
-        const rate = field === "rate" ? Number(value) : updatedItem.rate;
+        const rate = field === "rate" ? Number(value) : updatedItem.rate; // GST-inclusive rate
         const discount = field === "discountPercent" ? Number(value) : updatedItem.discountPercent;
         const gstPercent = field === "gstPercent" ? Number(value) : (updatedItem.gstPercent || 18);
+        
+        // Calculate gross inclusive amount before discount
         const grossAmount = qty * rate;
         const discountAmount = (grossAmount * discount) / 100;
-        updatedItem.amount = grossAmount - discountAmount;
+        
+        // The amount is the total inclusive price after discount
+        updatedItem.amount = roundToTwo(grossAmount - discountAmount);
         updatedItem.gstPercent = gstPercent;
-        updatedItem.gstAmount = (updatedItem.amount * gstPercent) / 100;
+        
+        // Reverse-calculate GST from the inclusive price
+        const { gstAmount: gstPerUnit } = calculateGstBreakup(rate, gstPercent);
+        updatedItem.gstAmount = roundToTwo(gstPerUnit * qty * (1 - discount / 100));
       }
 
       return updatedItem;
