@@ -22,15 +22,37 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { SortableTableHead, SortConfig } from "@/components/ui/sortable-table-head";
 
 const ITEMS_PER_PAGE = 15;
+
+type ProductSortKey = "name" | "model_spec" | "sku" | "stock_quantity" | "rate" | "gst_percent";
 
 export default function ProductsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortConfig, setSortConfig] = useState<SortConfig<ProductSortKey>>({
+    key: null,
+    direction: null,
+  });
   const { data: products = [], isLoading } = useProducts();
   const deleteProduct = useDeleteProduct();
+
+  const handleSort = (key: ProductSortKey) => {
+    setSortConfig((prev) => {
+      if (prev.key !== key) {
+        return { key, direction: "asc" };
+      }
+      if (prev.direction === "asc") {
+        return { key, direction: "desc" };
+      }
+      if (prev.direction === "desc") {
+        return { key: null, direction: null };
+      }
+      return { key, direction: "asc" };
+    });
+  };
 
   const categories = useMemo(() => {
     const uniqueCategories = new Set<string>();
@@ -42,8 +64,8 @@ export default function ProductsPage() {
     return Array.from(uniqueCategories).sort();
   }, [products]);
 
-  const filteredProducts = useMemo(() => {
-    return products.filter((product) => {
+  const filteredAndSortedProducts = useMemo(() => {
+    let result = products.filter((product) => {
       const term = searchTerm.toLowerCase();
       const matchesSearch =
         product.name.toLowerCase().includes(term) ||
@@ -57,15 +79,38 @@ export default function ProductsPage() {
 
       return matchesSearch && matchesCategory;
     });
-  }, [products, searchTerm, categoryFilter]);
+
+    // Apply sorting
+    if (sortConfig.key && sortConfig.direction) {
+      result = [...result].sort((a, b) => {
+        const aVal = a[sortConfig.key!];
+        const bVal = b[sortConfig.key!];
+        
+        if (aVal == null && bVal == null) return 0;
+        if (aVal == null) return 1;
+        if (bVal == null) return -1;
+        
+        let comparison = 0;
+        if (typeof aVal === "string" && typeof bVal === "string") {
+          comparison = aVal.localeCompare(bVal);
+        } else {
+          comparison = (aVal as number) - (bVal as number);
+        }
+        
+        return sortConfig.direction === "desc" ? -comparison : comparison;
+      });
+    }
+
+    return result;
+  }, [products, searchTerm, categoryFilter, sortConfig]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, categoryFilter]);
+  }, [searchTerm, categoryFilter, sortConfig]);
 
-  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
-  const paginatedProducts = filteredProducts.slice(
+  const totalPages = Math.ceil(filteredAndSortedProducts.length / ITEMS_PER_PAGE);
+  const paginatedProducts = filteredAndSortedProducts.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
@@ -115,7 +160,7 @@ export default function ProductsPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">Product Inventory</CardTitle>
-              <Badge variant="secondary">{filteredProducts.length} products</Badge>
+              <Badge variant="secondary">{filteredAndSortedProducts.length} products</Badge>
             </div>
           </CardHeader>
           <CardContent>
@@ -148,7 +193,7 @@ export default function ProductsPage() {
 
             {isLoading ? (
               <div className="py-8 text-center text-muted-foreground">Loading products...</div>
-            ) : filteredProducts.length === 0 ? (
+            ) : filteredAndSortedProducts.length === 0 ? (
               <div className="py-12 text-center">
                 <Package className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
                 <h3 className="font-semibold mb-1">No products found</h3>
@@ -164,13 +209,52 @@ export default function ProductsPage() {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-12">Image</TableHead>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Model/Spec</TableHead>
-                        <TableHead>SKU</TableHead>
+                        <SortableTableHead<ProductSortKey>
+                          sortKey="name"
+                          currentSort={sortConfig}
+                          onSort={handleSort}
+                        >
+                          Name
+                        </SortableTableHead>
+                        <SortableTableHead<ProductSortKey>
+                          sortKey="model_spec"
+                          currentSort={sortConfig}
+                          onSort={handleSort}
+                        >
+                          Model/Spec
+                        </SortableTableHead>
+                        <SortableTableHead<ProductSortKey>
+                          sortKey="sku"
+                          currentSort={sortConfig}
+                          onSort={handleSort}
+                        >
+                          SKU
+                        </SortableTableHead>
                         <TableHead>Added By</TableHead>
-                        <TableHead className="text-right">Stock</TableHead>
-                        <TableHead className="text-right">Rate</TableHead>
-                        <TableHead className="text-right">GST %</TableHead>
+                        <SortableTableHead<ProductSortKey>
+                          sortKey="stock_quantity"
+                          currentSort={sortConfig}
+                          onSort={handleSort}
+                          className="text-right"
+                        >
+                          Stock
+                        </SortableTableHead>
+                        <SortableTableHead<ProductSortKey>
+                          sortKey="rate"
+                          currentSort={sortConfig}
+                          onSort={handleSort}
+                          className="text-right"
+                        >
+                          Rate
+                        </SortableTableHead>
+                        <SortableTableHead<ProductSortKey>
+                          sortKey="gst_percent"
+                          currentSort={sortConfig}
+                          onSort={handleSort}
+                          className="text-right"
+                        >
+                          GST %
+                        </SortableTableHead>
                         <TableHead className="w-10"></TableHead>
                       </TableRow>
                     </TableHeader>
@@ -282,8 +366,8 @@ export default function ProductsPage() {
                   <div className="mt-4 flex items-center justify-between">
                     <p className="text-sm text-muted-foreground">
                       Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to{" "}
-                      {Math.min(currentPage * ITEMS_PER_PAGE, filteredProducts.length)} of{" "}
-                      {filteredProducts.length} products
+                      {Math.min(currentPage * ITEMS_PER_PAGE, filteredAndSortedProducts.length)} of{" "}
+                      {filteredAndSortedProducts.length} products
                     </p>
                     <Pagination>
                       <PaginationContent>
