@@ -37,8 +37,7 @@ export function InvoiceTable({ items }: InvoiceTableProps) {
             <TableHead className="min-w-[180px] py-2 text-gray-700 text-xs font-semibold uppercase">Product</TableHead>
             <TableHead className="text-center py-2 w-16 text-gray-700 text-xs font-semibold uppercase">Qty</TableHead>
             <TableHead className="text-right py-2 w-24 text-gray-700 text-xs font-semibold uppercase">Unit Price</TableHead>
-            <TableHead className="text-center py-2 w-16 text-gray-700 text-xs font-semibold uppercase">GST %</TableHead>
-            <TableHead className="text-right py-2 w-24 text-gray-700 text-xs font-semibold uppercase">GST Amt</TableHead>
+            <TableHead className="text-right py-2 w-28 text-gray-700 text-xs font-semibold uppercase">GST Amt (18%)</TableHead>
             <TableHead className="text-right py-2 w-24 text-gray-700 text-xs font-semibold uppercase">Total</TableHead>
           </TableRow>
         </TableHeader>
@@ -97,9 +96,6 @@ export function InvoiceTable({ items }: InvoiceTableProps) {
               </TableCell>
               <TableCell className="text-right py-2 font-medium text-black text-sm font-mono">
                 {formatCurrency(item.rate)}
-              </TableCell>
-              <TableCell className="text-center py-2 font-medium text-black text-sm font-mono">
-                {item.gstPercent ?? 18}%
               </TableCell>
               <TableCell className="text-right py-2 font-medium text-black text-sm font-mono">
                 {formatCurrency(item.gstAmount ?? (item.amount * (item.gstPercent ?? 18)) / 100)}
