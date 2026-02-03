@@ -115,6 +115,8 @@ export default function InvoicePreview() {
       discountPercent: Number(item.discount_percent || 0),
       amount: Number(item.amount),
       productImage: item.product_image || "",
+      gstPercent: item.gst_percent != null ? Number(item.gst_percent) : 18,
+      gstAmount: item.gst_amount != null ? Number(item.gst_amount) : undefined,
     }));
 
     const totals: InvoiceTotals = {
