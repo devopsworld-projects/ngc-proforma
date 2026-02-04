@@ -59,6 +59,9 @@ export interface PdfTemplateSettings {
   bank_ifsc: string | null;
   bank_branch: string | null;
   
+  // Layout
+  section_order: string[];
+  
   created_at: string;
   updated_at: string;
 }

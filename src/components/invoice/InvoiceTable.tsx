@@ -17,26 +17,87 @@ import { formatCurrency, calculateGstBreakup, roundToTwo } from "@/lib/invoice-u
 
 interface InvoiceTableProps {
   items: InvoiceItem[];
+  settings?: {
+    table_header_bg: string;
+    table_header_text: string;
+    table_text_color: string;
+    show_image_column: boolean;
+    show_brand_column: boolean;
+    show_unit_column: boolean;
+    show_serial_numbers: boolean;
+    show_discount_column: boolean;
+  };
 }
 
-export function InvoiceTable({ items }: InvoiceTableProps) {
+export function InvoiceTable({ items, settings }: InvoiceTableProps) {
+  const tableHeaderBg = settings?.table_header_bg || "#f3f4f6";
+  const tableHeaderText = settings?.table_header_text || "#374151";
+  const tableTextColor = settings?.table_text_color || "#1f2937";
+  const showImageColumn = settings?.show_image_column ?? true;
+  const showBrandColumn = settings?.show_brand_column ?? true;
+  const showUnitColumn = settings?.show_unit_column ?? true;
 
   return (
     <div className="overflow-x-auto">
       <Table>
         <TableHeader>
-          <TableRow className="bg-gray-100 border-none">
-            <TableHead className="w-12 text-center py-2 text-gray-700 text-xs font-semibold uppercase">Sl No.</TableHead>
-            <TableHead className="py-2 text-gray-700 text-xs font-semibold uppercase">Image</TableHead>
-            <TableHead className="min-w-[180px] py-2 text-gray-700 text-xs font-semibold uppercase">Product</TableHead>
-            <TableHead className="text-center py-2 w-16 text-gray-700 text-xs font-semibold uppercase">Qty</TableHead>
-            <TableHead className="text-right py-2 w-28 text-gray-700 text-xs font-semibold uppercase">Base Price</TableHead>
-            <TableHead className="text-right py-2 w-20 text-gray-700 text-xs font-semibold uppercase">GST %</TableHead>
-            <TableHead className="text-right py-2 w-28 text-gray-700 text-xs font-semibold uppercase">GST Amt</TableHead>
-            <TableHead className="text-right py-2 w-28 text-gray-700 text-xs font-semibold uppercase">Total</TableHead>
+          <TableRow 
+            className="border-none"
+            style={{ backgroundColor: tableHeaderBg }}
+          >
+            <TableHead 
+              className="w-12 text-center py-2 text-xs font-semibold uppercase"
+              style={{ color: tableHeaderText }}
+            >
+              Sl No.
+            </TableHead>
+            {showImageColumn && (
+              <TableHead 
+                className="py-2 text-xs font-semibold uppercase"
+                style={{ color: tableHeaderText }}
+              >
+                Image
+              </TableHead>
+            )}
+            <TableHead 
+              className="min-w-[180px] py-2 text-xs font-semibold uppercase"
+              style={{ color: tableHeaderText }}
+            >
+              {showBrandColumn ? "Product" : "Description"}
+            </TableHead>
+            <TableHead 
+              className="text-center py-2 w-16 text-xs font-semibold uppercase"
+              style={{ color: tableHeaderText }}
+            >
+              Qty{showUnitColumn ? "" : ""}
+            </TableHead>
+            <TableHead 
+              className="text-right py-2 w-28 text-xs font-semibold uppercase"
+              style={{ color: tableHeaderText }}
+            >
+              Base Price
+            </TableHead>
+            <TableHead 
+              className="text-right py-2 w-20 text-xs font-semibold uppercase"
+              style={{ color: tableHeaderText }}
+            >
+              GST %
+            </TableHead>
+            <TableHead 
+              className="text-right py-2 w-28 text-xs font-semibold uppercase"
+              style={{ color: tableHeaderText }}
+            >
+              GST Amt
+            </TableHead>
+            <TableHead 
+              className="text-right py-2 w-28 text-xs font-semibold uppercase"
+              style={{ color: tableHeaderText }}
+            >
+              Total
+            </TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody>
+        <TableBody style={{ color: tableTextColor }}>
         {items.map((item, index) => {
             const gstPercent = item.gstPercent ?? 18;
             const inclusiveUnitPrice = item.rate;
@@ -53,64 +114,68 @@ export function InvoiceTable({ items }: InvoiceTableProps) {
                 style={{ animationDelay: `${index * 0.05}s` }}
               >
                 <TableCell className="text-center font-medium py-2">
-                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-800 text-xs font-semibold">
+                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-xs font-semibold" style={{ color: tableTextColor }}>
                     {item.slNo}
                   </span>
                 </TableCell>
-                <TableCell className="py-2">
-                  {item.productImage ? (
-                    <HoverCard openDelay={200} closeDelay={100}>
-                      <HoverCardTrigger asChild>
-                        <div className="relative w-14 h-14 cursor-pointer group">
+                {showImageColumn && (
+                  <TableCell className="py-2">
+                    {item.productImage ? (
+                      <HoverCard openDelay={200} closeDelay={100}>
+                        <HoverCardTrigger asChild>
+                          <div className="relative w-14 h-14 cursor-pointer group">
+                            <img 
+                              src={item.productImage} 
+                              alt={item.brand || item.description}
+                              className="w-full h-full object-cover rounded-md border border-gray-200 shadow-sm"
+                            />
+                          </div>
+                        </HoverCardTrigger>
+                        <HoverCardContent side="right" className="w-auto p-2 no-print">
                           <img 
                             src={item.productImage} 
                             alt={item.brand || item.description}
-                            className="w-full h-full object-cover rounded-md border border-gray-200 shadow-sm"
+                            className="max-w-[200px] max-h-[200px] object-contain rounded-md"
                           />
-                        </div>
-                      </HoverCardTrigger>
-                      <HoverCardContent side="right" className="w-auto p-2 no-print">
-                        <img 
-                          src={item.productImage} 
-                          alt={item.brand || item.description}
-                          className="max-w-[200px] max-h-[200px] object-contain rounded-md"
-                        />
-                        <p className="text-xs text-muted-foreground mt-2 text-center max-w-[200px] truncate">
-                          {item.brand || item.description}
-                        </p>
-                      </HoverCardContent>
-                    </HoverCard>
-                  ) : (
-                    <div className="w-14 h-14 flex items-center justify-center bg-gray-100 rounded-md border border-gray-300">
-                      <ImageIcon className="w-5 h-5 text-gray-400" />
-                    </div>
-                  )}
-                </TableCell>
+                          <p className="text-xs text-muted-foreground mt-2 text-center max-w-[200px] truncate">
+                            {item.brand || item.description}
+                          </p>
+                        </HoverCardContent>
+                      </HoverCard>
+                    ) : (
+                      <div className="w-14 h-14 flex items-center justify-center bg-gray-100 rounded-md border border-gray-300">
+                        <ImageIcon className="w-5 h-5 text-gray-400" />
+                      </div>
+                    )}
+                  </TableCell>
+                )}
                 <TableCell className="py-2">
                   <div className="space-y-0.5">
-                    <p className="font-semibold text-black text-sm">{item.brand || "Unnamed Product"}</p>
-                    {item.description && item.description !== item.brand && (
-                      <p className="text-xs text-gray-600">{item.description}</p>
+                    {showBrandColumn && (
+                      <p className="font-semibold text-sm" style={{ color: tableTextColor }}>{item.brand || "Unnamed Product"}</p>
+                    )}
+                    {item.description && (!showBrandColumn || item.description !== item.brand) && (
+                      <p className="text-xs opacity-70">{item.description}</p>
                     )}
                   </div>
                 </TableCell>
                 <TableCell className="text-center py-2">
-                  <span className="font-semibold text-black text-sm font-mono">{item.quantity}</span>
-                  <span className="text-gray-600 text-xs ml-1">{item.unit}</span>
+                  <span className="font-semibold text-sm font-mono" style={{ color: tableTextColor }}>{item.quantity}</span>
+                  {showUnitColumn && <span className="text-xs ml-1 opacity-70">{item.unit}</span>}
                   {item.sizeLabel && (
-                    <div className="text-[10px] text-gray-500 mt-0.5">({item.sizeLabel})</div>
+                    <div className="text-[10px] opacity-50 mt-0.5">({item.sizeLabel})</div>
                   )}
                 </TableCell>
-                <TableCell className="text-right py-2 font-medium text-black text-sm font-mono">
+                <TableCell className="text-right py-2 font-medium text-sm font-mono" style={{ color: tableTextColor }}>
                   {formatCurrency(totalBasePrice)}
                 </TableCell>
-                <TableCell className="text-right py-2 font-medium text-gray-600 text-sm font-mono">
+                <TableCell className="text-right py-2 font-medium text-sm font-mono opacity-70">
                   {gstPercent}%
                 </TableCell>
-                <TableCell className="text-right py-2 font-medium text-black text-sm font-mono">
+                <TableCell className="text-right py-2 font-medium text-sm font-mono" style={{ color: tableTextColor }}>
                   {formatCurrency(totalGstAmount)}
                 </TableCell>
-                <TableCell className="text-right py-2 font-semibold text-black text-sm font-mono">
+                <TableCell className="text-right py-2 font-semibold text-sm font-mono" style={{ color: tableTextColor }}>
                   {formatCurrency(totalInclusive)}
                 </TableCell>
               </TableRow>

@@ -384,6 +384,7 @@ export type Database = {
           invoice_title: string
           primary_color: string
           secondary_color: string
+          section_order: string[]
           show_amount_words: boolean
           show_brand_column: boolean
           show_company_state: boolean
@@ -431,6 +432,7 @@ export type Database = {
           invoice_title?: string
           primary_color?: string
           secondary_color?: string
+          section_order?: string[]
           show_amount_words?: boolean
           show_brand_column?: boolean
           show_company_state?: boolean
@@ -478,6 +480,7 @@ export type Database = {
           invoice_title?: string
           primary_color?: string
           secondary_color?: string
+          section_order?: string[]
           show_amount_words?: boolean
           show_brand_column?: boolean
           show_company_state?: boolean
