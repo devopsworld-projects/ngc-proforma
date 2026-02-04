@@ -255,6 +255,7 @@ export default function ProductsPage() {
                         >
                           GST %
                         </SortableTableHead>
+                        <TableHead>Size/Length</TableHead>
                         <TableHead className="w-10"></TableHead>
                       </TableRow>
                     </TableHeader>
@@ -315,6 +316,15 @@ export default function ProductsPage() {
                           </TableCell>
                           <TableCell className="text-right">
                             {product.gst_percent != null ? `${product.gst_percent}%` : "18%"}
+                          </TableCell>
+                          <TableCell>
+                            {product.size_label ? (
+                              <Badge variant="secondary" className="text-xs">
+                                {product.size_label}
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
                           </TableCell>
                           <TableCell>
                             <DropdownMenu>
