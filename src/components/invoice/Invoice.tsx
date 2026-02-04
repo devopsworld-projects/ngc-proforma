@@ -34,6 +34,15 @@ export function Invoice({ data, containerId = "invoice-container" }: InvoiceProp
     };
   }, [settings.bank_name, settings.bank_account_no, settings.bank_ifsc, settings.bank_branch]);
 
+  // Get spacing classes for sections
+  const getSectionSpacingClass = () => {
+    switch (settings.section_spacing) {
+      case "compact": return "py-1";
+      case "relaxed": return "py-4";
+      default: return "py-2";
+    }
+  };
+
   // Render sections based on order
   const renderSection = (sectionId: string) => {
     switch (sectionId) {
@@ -57,7 +66,14 @@ export function Invoice({ data, containerId = "invoice-container" }: InvoiceProp
               email: settings.show_customer_email ? data.supplier.email : undefined,
               phone: settings.show_customer_phone ? data.supplier.phone : undefined,
             }}
-            settings={settings}
+            settings={{
+              ...settings,
+              header_padding: settings.header_padding,
+              header_layout_style: settings.header_layout_style,
+              logo_size: settings.logo_size,
+              show_invoice_title: settings.show_invoice_title,
+              compact_header: settings.compact_header,
+            }}
           />
         );
       case "customer_details":
@@ -66,7 +82,15 @@ export function Invoice({ data, containerId = "invoice-container" }: InvoiceProp
       case "items_table":
         return (
           <div key="items_table">
-            <InvoiceTable items={data.items} settings={settings} />
+            <InvoiceTable 
+              items={data.items} 
+              settings={{
+                ...settings,
+                table_row_padding: settings.table_row_padding,
+                border_style: settings.border_style,
+                table_border_color: settings.table_border_color,
+              }} 
+            />
             <div className="border-t border-dashed border-gray-300" />
           </div>
         );

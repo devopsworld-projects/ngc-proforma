@@ -62,6 +62,18 @@ export interface PdfTemplateSettings {
   // Layout
   section_order: string[];
   
+  // Spacing & Sizing (new)
+  header_padding: string;
+  header_layout_style: string;
+  logo_size: string;
+  section_spacing: string;
+  table_row_padding: string;
+  footer_padding: string;
+  show_invoice_title: boolean;
+  compact_header: boolean;
+  border_style: string;
+  table_border_color: string;
+  
   created_at: string;
   updated_at: string;
 }
