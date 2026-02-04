@@ -3,11 +3,9 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useInvoices, useUpdateInvoiceStatus, useDeleteInvoice, Invoice } from "@/hooks/useInvoices";
 import { useIsAdmin } from "@/hooks/useAdmin";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
-import { usePdfTemplateSettings } from "@/hooks/usePdfTemplateSettings";
 import { useInvoiceFilters } from "@/hooks/useInvoiceFilters";
 import { useSendStatusNotification } from "@/hooks/useStatusNotification";
 import { InvoiceFilters } from "@/components/invoices/InvoiceFilters";
-import { SendInvoiceDialog } from "@/components/invoices/SendInvoiceDialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,7 +37,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { FileText, Plus, Edit, RefreshCcw, MoreVertical, Send, CheckCircle, XCircle, Clock, Eye, SearchX, Mail, Loader2, Trash2, User } from "lucide-react";
+import { FileText, Plus, Edit, RefreshCcw, MoreVertical, Send, CheckCircle, XCircle, Clock, Eye, SearchX, Loader2, Trash2, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -58,28 +56,6 @@ const statusIcons: Record<string, React.ReactNode> = {
   cancelled: <XCircle className="h-3 w-3" />,
 };
 
-interface FullInvoiceData {
-  id: string;
-  invoice_no: string;
-  date: string;
-  grand_total: number;
-  subtotal: number;
-  discount_percent: number;
-  discount_amount: number;
-  tax_rate: number;
-  tax_amount: number;
-  round_off: number;
-  e_way_bill_no?: string | null;
-  supplier_invoice_no?: string | null;
-  supplier_invoice_date?: string | null;
-  other_references?: string | null;
-  amount_in_words?: string | null;
-  items: any[];
-  customer?: any;
-  billing_address?: any;
-  shipping_address?: any;
-}
-
 interface StatusChangeConfirmation {
   invoiceId: string;
   invoiceNo: string;
@@ -94,15 +70,12 @@ export default function InvoicesPage() {
   const { data: invoices, isLoading } = useInvoices();
   const { data: isAdmin } = useIsAdmin();
   const { data: companySettings } = useCompanySettings();
-  const { data: templateSettings } = usePdfTemplateSettings();
   const updateStatus = useUpdateInvoiceStatus();
   const deleteInvoice = useDeleteInvoice();
   const sendNotification = useSendStatusNotification();
   
   const { filters, setFilters, filteredInvoices, clearFilters, hasActiveFilters, sortConfig, handleSort } = useInvoiceFilters(invoices);
 
-  const [sendDialogOpen, setSendDialogOpen] = useState(false);
-  const [selectedInvoice, setSelectedInvoice] = useState<FullInvoiceData | null>(null);
   
   // Status change with notification
   const [statusConfirmation, setStatusConfirmation] = useState<StatusChangeConfirmation | null>(null);
@@ -188,50 +161,6 @@ export default function InvoicesPage() {
     } finally {
       setIsDeleting(false);
       setDeleteConfirmation(null);
-    }
-  };
-
-  const fetchFullInvoice = async (invoiceId: string): Promise<FullInvoiceData | null> => {
-    const { data: invoice, error: invoiceError } = await supabase
-      .from("invoices")
-      .select("*, customers(*), billing_address:addresses!billing_address_id(*), shipping_address:addresses!shipping_address_id(*)")
-      .eq("id", invoiceId)
-      .single();
-
-    if (invoiceError) throw invoiceError;
-
-    const { data: items, error: itemsError } = await supabase
-      .from("invoice_items")
-      .select("*")
-      .eq("invoice_id", invoiceId)
-      .order("sl_no");
-
-    if (itemsError) throw itemsError;
-
-    return {
-      ...invoice,
-      items: items || [],
-      customer: invoice.customers,
-      billing_address: invoice.billing_address,
-      shipping_address: invoice.shipping_address,
-    };
-  };
-
-
-  const handleSendEmail = async (invoiceId: string) => {
-    if (!companySettings) {
-      toast.error("Please configure company settings first");
-      navigate("/settings");
-      return;
-    }
-
-    try {
-      const fullInvoice = await fetchFullInvoice(invoiceId);
-      setSelectedInvoice(fullInvoice);
-      setSendDialogOpen(true);
-    } catch (error: any) {
-      console.error("Error fetching invoice:", error);
-      toast.error(error.message || "Failed to load invoice");
     }
   };
 
@@ -359,10 +288,6 @@ export default function InvoicesPage() {
                           <Eye className="h-4 w-4 mr-2" />
                           View Proforma
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleSendEmail(invoice.id)}>
-                          <Mail className="h-4 w-4 mr-2" />
-                          Send via Email
-                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => navigate(`/invoices/${invoice.id}/edit`)}>
                           <Edit className="h-4 w-4 mr-2" />
                           Edit Proforma
@@ -419,14 +344,6 @@ export default function InvoicesPage() {
         )}
       </div>
 
-      {/* Send Invoice Email Dialog */}
-      <SendInvoiceDialog
-        open={sendDialogOpen}
-        onOpenChange={setSendDialogOpen}
-        invoice={selectedInvoice}
-        companySettings={companySettings || null}
-        templateSettings={templateSettings}
-      />
 
       {/* Status Change Confirmation Dialog */}
       <Dialog open={!!statusConfirmation} onOpenChange={(open) => !open && setStatusConfirmation(null)}>
