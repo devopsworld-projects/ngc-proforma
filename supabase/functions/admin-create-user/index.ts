@@ -13,12 +13,12 @@ if (Deno.env.get("DENO_ENV") !== "production") {
 
 function getCorsHeaders(origin: string | null): Record<string, string> {
   const allowedOrigin = origin && allowedOrigins.some(allowed => 
-    origin === allowed || origin.endsWith('.lovable.app')
+    origin === allowed || origin.endsWith('.lovable.app') || origin.endsWith('.lovableproject.com')
   ) ? origin : allowedOrigins[0];
   
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
     "Access-Control-Allow-Credentials": "true",
   };
 }
