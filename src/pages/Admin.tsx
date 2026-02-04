@@ -2,7 +2,7 @@ import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useIsAdmin, useAdminUserStats, useAdminUserInvoices, useToggleAdminRole, useApproveUser, useDeleteUser, UserStats } from "@/hooks/useAdmin";
 import { useAuth } from "@/hooks/useAuth";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -28,7 +28,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Users, FileText, DollarSign, Shield, ShieldOff, Eye, Loader2, CheckCircle, XCircle, Mail, MailX, UserCheck, UserX, Trash2, Settings, Monitor } from "lucide-react";
+import { Users, FileText, DollarSign, Shield, ShieldOff, Eye, Loader2, CheckCircle, XCircle, Mail, MailX, UserCheck, UserX, Trash2, Settings, Monitor, FileEdit } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { PricingSettingsCard } from "@/components/admin/PricingSettingsCard";
@@ -53,6 +53,7 @@ function formatCurrency(amount: number): string {
 }
 
 export default function AdminPage() {
+  const navigate = useNavigate();
   const { user, isLoading: authLoading } = useAuth();
   const { data: isAdmin, isLoading: adminLoading } = useIsAdmin();
   const { data: users, isLoading: usersLoading } = useAdminUserStats();
@@ -145,6 +146,14 @@ export default function AdminPage() {
             <p className="text-muted-foreground">Manage users, pricing, and view system-wide statistics</p>
           </div>
           <CreateUserDialog />
+        </div>
+
+        {/* Quick Actions */}
+        <div className="flex flex-wrap gap-3">
+          <Button variant="outline" onClick={() => navigate("/admin/pdf-editor")}>
+            <FileEdit className="h-4 w-4 mr-2" />
+            PDF Template Editor
+          </Button>
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">

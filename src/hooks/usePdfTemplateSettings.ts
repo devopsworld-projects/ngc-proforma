@@ -9,14 +9,40 @@ export interface PdfTemplateSettings {
   // Colors
   primary_color: string;
   secondary_color: string;
+  accent_color: string;
   header_text_color: string;
+  table_header_bg: string;
+  table_header_text: string;
   table_text_color: string;
+  grand_total_bg: string;
+  grand_total_text: string;
+  
+  // Template style
+  template_style: string;
+  header_layout: string;
+  
+  // Fonts
+  font_heading: string;
+  font_body: string;
+  font_mono: string;
+  font_size_scale: string;
+  
+  // Labels
+  invoice_title: string;
+  bill_to_label: string;
+  invoice_details_label: string;
   
   // Section visibility
   show_logo: boolean;
   show_gstin_header: boolean;
   show_contact_header: boolean;
+  show_company_state: boolean;
   show_shipping_address: boolean;
+  show_customer_email: boolean;
+  show_customer_phone: boolean;
+  show_image_column: boolean;
+  show_brand_column: boolean;
+  show_unit_column: boolean;
   show_serial_numbers: boolean;
   show_discount_column: boolean;
   show_terms: boolean;
@@ -36,30 +62,6 @@ export interface PdfTemplateSettings {
   created_at: string;
   updated_at: string;
 }
-
-export const defaultPdfTemplateSettings: Omit<PdfTemplateSettings, "id" | "user_id" | "created_at" | "updated_at"> = {
-  primary_color: "#294172",
-  secondary_color: "#3b82f6",
-  header_text_color: "#ffffff",
-  table_text_color: "#1f2937",
-  show_logo: true,
-  show_gstin_header: true,
-  show_contact_header: true,
-  show_shipping_address: false,
-  show_serial_numbers: true,
-  show_discount_column: true,
-  show_terms: true,
-  show_signature: true,
-  show_amount_words: true,
-  terms_line1: "Goods once sold will not be taken back.",
-  terms_line2: "Subject to local jurisdiction only.",
-  terms_line3: "E&OE - Errors and Omissions Excepted.",
-  custom_footer_text: null,
-  bank_name: null,
-  bank_account_no: null,
-  bank_ifsc: null,
-  bank_branch: null,
-};
 
 export function usePdfTemplateSettings() {
   const { user } = useAuth();
