@@ -28,6 +28,7 @@ export interface InvoiceItem {
   serialNumbers?: string[];
   quantity: number;
   unit: string;
+  sizeLabel?: string; // For displaying dimensions like "500 MTR" for cables
   rate: number;
   discountPercent: number;
   amount: number;
