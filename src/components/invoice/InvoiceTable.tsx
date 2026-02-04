@@ -26,8 +26,29 @@ interface InvoiceTableProps {
     show_unit_column: boolean;
     show_serial_numbers: boolean;
     show_discount_column: boolean;
+    table_row_padding?: string;
+    border_style?: string;
+    table_border_color?: string;
   };
 }
+
+// Map spacing values to CSS classes
+const getRowPaddingClass = (padding?: string) => {
+  switch (padding) {
+    case "compact": return "py-1";
+    case "relaxed": return "py-3";
+    default: return "py-2";
+  }
+};
+
+const getBorderClass = (style?: string) => {
+  switch (style) {
+    case "none": return "border-0";
+    case "medium": return "border-b-2";
+    case "bold": return "border-b-2 border-gray-400";
+    default: return "border-b";
+  }
+};
 
 export function InvoiceTable({ items, settings }: InvoiceTableProps) {
   const tableHeaderBg = settings?.table_header_bg || "#f3f4f6";
@@ -36,6 +57,9 @@ export function InvoiceTable({ items, settings }: InvoiceTableProps) {
   const showImageColumn = settings?.show_image_column ?? true;
   const showBrandColumn = settings?.show_brand_column ?? true;
   const showUnitColumn = settings?.show_unit_column ?? true;
+  const rowPaddingClass = getRowPaddingClass(settings?.table_row_padding);
+  const borderClass = getBorderClass(settings?.border_style);
+  const borderColor = settings?.table_border_color || "#e5e7eb";
 
   return (
     <div className="overflow-x-auto">
@@ -110,20 +134,23 @@ export function InvoiceTable({ items, settings }: InvoiceTableProps) {
             return (
               <TableRow 
                 key={item.id} 
-                className="border-b border-gray-200 hover:bg-gray-50"
-                style={{ animationDelay: `${index * 0.05}s` }}
+                className={`${borderClass} hover:bg-gray-50`}
+                style={{ 
+                  animationDelay: `${index * 0.05}s`,
+                  borderColor: borderColor,
+                }}
               >
-                <TableCell className="text-center font-medium py-2">
+                <TableCell className={`text-center font-medium ${rowPaddingClass}`}>
                   <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-xs font-semibold" style={{ color: tableTextColor }}>
                     {item.slNo}
                   </span>
                 </TableCell>
                 {showImageColumn && (
-                  <TableCell className="py-2">
+                  <TableCell className={rowPaddingClass}>
                     {item.productImage ? (
                       <HoverCard openDelay={200} closeDelay={100}>
                         <HoverCardTrigger asChild>
-                          <div className="relative w-14 h-14 cursor-pointer group">
+                          <div className="relative w-12 h-12 cursor-pointer group">
                             <img 
                               src={item.productImage} 
                               alt={item.brand || item.description}
@@ -143,13 +170,13 @@ export function InvoiceTable({ items, settings }: InvoiceTableProps) {
                         </HoverCardContent>
                       </HoverCard>
                     ) : (
-                      <div className="w-14 h-14 flex items-center justify-center bg-gray-100 rounded-md border border-gray-300">
-                        <ImageIcon className="w-5 h-5 text-gray-400" />
+                      <div className="w-12 h-12 flex items-center justify-center bg-gray-100 rounded-md border border-gray-300">
+                        <ImageIcon className="w-4 h-4 text-gray-400" />
                       </div>
                     )}
                   </TableCell>
                 )}
-                <TableCell className="py-2">
+                <TableCell className={rowPaddingClass}>
                   <div className="space-y-0.5">
                     {showBrandColumn && (
                       <p className="font-semibold text-sm" style={{ color: tableTextColor }}>{item.brand || "Unnamed Product"}</p>
@@ -159,23 +186,23 @@ export function InvoiceTable({ items, settings }: InvoiceTableProps) {
                     )}
                   </div>
                 </TableCell>
-                <TableCell className="text-center py-2">
+                <TableCell className={`text-center ${rowPaddingClass}`}>
                   <span className="font-semibold text-sm font-mono" style={{ color: tableTextColor }}>{item.quantity}</span>
                   {showUnitColumn && <span className="text-xs ml-1 opacity-70">{item.unit}</span>}
                   {item.sizeLabel && (
                     <div className="text-[10px] opacity-50 mt-0.5">({item.sizeLabel})</div>
                   )}
                 </TableCell>
-                <TableCell className="text-right py-2 font-medium text-sm font-mono" style={{ color: tableTextColor }}>
+                <TableCell className={`text-right ${rowPaddingClass} font-medium text-sm font-mono`} style={{ color: tableTextColor }}>
                   {formatCurrency(totalBasePrice)}
                 </TableCell>
-                <TableCell className="text-right py-2 font-medium text-sm font-mono opacity-70">
+                <TableCell className={`text-right ${rowPaddingClass} font-medium text-sm font-mono opacity-70`}>
                   {gstPercent}%
                 </TableCell>
-                <TableCell className="text-right py-2 font-medium text-sm font-mono" style={{ color: tableTextColor }}>
+                <TableCell className={`text-right ${rowPaddingClass} font-medium text-sm font-mono`} style={{ color: tableTextColor }}>
                   {formatCurrency(totalGstAmount)}
                 </TableCell>
-                <TableCell className="text-right py-2 font-semibold text-sm font-mono" style={{ color: tableTextColor }}>
+                <TableCell className={`text-right ${rowPaddingClass} font-semibold text-sm font-mono`} style={{ color: tableTextColor }}>
                   {formatCurrency(totalInclusive)}
                 </TableCell>
               </TableRow>

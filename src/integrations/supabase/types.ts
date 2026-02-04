@@ -369,22 +369,29 @@ export type Database = {
           bank_ifsc: string | null
           bank_name: string | null
           bill_to_label: string
+          border_style: string
+          compact_header: boolean
           created_at: string
           custom_footer_text: string | null
           font_body: string
           font_heading: string
           font_mono: string
           font_size_scale: string
+          footer_padding: string
           grand_total_bg: string
           grand_total_text: string
           header_layout: string
+          header_layout_style: string
+          header_padding: string
           header_text_color: string
           id: string
           invoice_details_label: string
           invoice_title: string
+          logo_size: string
           primary_color: string
           secondary_color: string
           section_order: string[]
+          section_spacing: string
           show_amount_words: boolean
           show_brand_column: boolean
           show_company_state: boolean
@@ -394,14 +401,17 @@ export type Database = {
           show_discount_column: boolean
           show_gstin_header: boolean
           show_image_column: boolean
+          show_invoice_title: boolean
           show_logo: boolean
           show_serial_numbers: boolean
           show_shipping_address: boolean
           show_signature: boolean
           show_terms: boolean
           show_unit_column: boolean
+          table_border_color: string
           table_header_bg: string
           table_header_text: string
+          table_row_padding: string
           table_text_color: string
           template_style: string
           terms_line1: string | null
@@ -417,22 +427,29 @@ export type Database = {
           bank_ifsc?: string | null
           bank_name?: string | null
           bill_to_label?: string
+          border_style?: string
+          compact_header?: boolean
           created_at?: string
           custom_footer_text?: string | null
           font_body?: string
           font_heading?: string
           font_mono?: string
           font_size_scale?: string
+          footer_padding?: string
           grand_total_bg?: string
           grand_total_text?: string
           header_layout?: string
+          header_layout_style?: string
+          header_padding?: string
           header_text_color?: string
           id?: string
           invoice_details_label?: string
           invoice_title?: string
+          logo_size?: string
           primary_color?: string
           secondary_color?: string
           section_order?: string[]
+          section_spacing?: string
           show_amount_words?: boolean
           show_brand_column?: boolean
           show_company_state?: boolean
@@ -442,14 +459,17 @@ export type Database = {
           show_discount_column?: boolean
           show_gstin_header?: boolean
           show_image_column?: boolean
+          show_invoice_title?: boolean
           show_logo?: boolean
           show_serial_numbers?: boolean
           show_shipping_address?: boolean
           show_signature?: boolean
           show_terms?: boolean
           show_unit_column?: boolean
+          table_border_color?: string
           table_header_bg?: string
           table_header_text?: string
+          table_row_padding?: string
           table_text_color?: string
           template_style?: string
           terms_line1?: string | null
@@ -465,22 +485,29 @@ export type Database = {
           bank_ifsc?: string | null
           bank_name?: string | null
           bill_to_label?: string
+          border_style?: string
+          compact_header?: boolean
           created_at?: string
           custom_footer_text?: string | null
           font_body?: string
           font_heading?: string
           font_mono?: string
           font_size_scale?: string
+          footer_padding?: string
           grand_total_bg?: string
           grand_total_text?: string
           header_layout?: string
+          header_layout_style?: string
+          header_padding?: string
           header_text_color?: string
           id?: string
           invoice_details_label?: string
           invoice_title?: string
+          logo_size?: string
           primary_color?: string
           secondary_color?: string
           section_order?: string[]
+          section_spacing?: string
           show_amount_words?: boolean
           show_brand_column?: boolean
           show_company_state?: boolean
@@ -490,14 +517,17 @@ export type Database = {
           show_discount_column?: boolean
           show_gstin_header?: boolean
           show_image_column?: boolean
+          show_invoice_title?: boolean
           show_logo?: boolean
           show_serial_numbers?: boolean
           show_shipping_address?: boolean
           show_signature?: boolean
           show_terms?: boolean
           show_unit_column?: boolean
+          table_border_color?: string
           table_header_bg?: string
           table_header_text?: string
+          table_row_padding?: string
           table_text_color?: string
           template_style?: string
           terms_line1?: string | null

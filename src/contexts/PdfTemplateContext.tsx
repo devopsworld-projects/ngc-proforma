@@ -45,6 +45,17 @@ const defaultSettings: Omit<PdfTemplateSettings, "id" | "user_id" | "created_at"
   bank_ifsc: null,
   bank_branch: null,
   section_order: ["header", "customer_details", "items_table", "totals", "bank_details", "terms", "signature"],
+  // Spacing & Sizing
+  header_padding: "normal",
+  header_layout_style: "centered",
+  logo_size: "medium",
+  section_spacing: "normal",
+  table_row_padding: "normal",
+  footer_padding: "normal",
+  show_invoice_title: true,
+  compact_header: false,
+  border_style: "subtle",
+  table_border_color: "#e5e7eb",
 };
 
 export interface PdfTemplateContextValue {

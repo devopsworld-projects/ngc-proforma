@@ -16,7 +16,8 @@ import {
   FileText, 
   Type,
   RotateCcw,
-  Rows3
+  Rows3,
+  SlidersHorizontal
 } from "lucide-react";
 import { useIsAdmin } from "@/hooks/useAdmin";
 import { usePdfTemplateSettings, useUpdatePdfTemplateSettings } from "@/hooks/usePdfTemplateSettings";
@@ -27,6 +28,7 @@ import { VisibilitySettingsPanel } from "@/components/pdf-editor/VisibilitySetti
 import { ContentSettingsPanel } from "@/components/pdf-editor/ContentSettingsPanel";
 import { FontSettingsPanel } from "@/components/pdf-editor/FontSettingsPanel";
 import { LayoutSettingsPanel } from "@/components/pdf-editor/LayoutSettingsPanel";
+import { SpacingSettingsPanel } from "@/components/pdf-editor/SpacingSettingsPanel";
 import { InvoicePreviewPane } from "@/components/pdf-editor/InvoicePreviewPane";
 import {
   ResizablePanelGroup,
@@ -78,6 +80,17 @@ const defaultSettings = {
   bank_ifsc: null as string | null,
   bank_branch: null as string | null,
   section_order: ["header", "customer_details", "items_table", "totals", "bank_details", "terms", "signature"] as string[],
+  // New spacing/sizing settings
+  header_padding: "normal",
+  header_layout_style: "centered",
+  logo_size: "medium",
+  section_spacing: "normal",
+  table_row_padding: "normal",
+  footer_padding: "normal",
+  show_invoice_title: true,
+  compact_header: false,
+  border_style: "subtle",
+  table_border_color: "#e5e7eb",
 };
 
 type SettingsType = typeof defaultSettings & { id?: string };
@@ -210,31 +223,35 @@ export default function PdfTemplateEditor() {
             <ResizablePanel defaultSize={55} minSize={40}>
               <div className="h-full flex flex-col">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-                  <div className="border-b px-4">
-                    <TabsList className="h-12">
-                      <TabsTrigger value="templates" className="gap-2">
-                        <LayoutTemplate className="h-4 w-4" />
+                  <div className="border-b px-4 overflow-x-auto">
+                    <TabsList className="h-12 flex-wrap">
+                      <TabsTrigger value="templates" className="gap-1.5 text-xs">
+                        <LayoutTemplate className="h-3.5 w-3.5" />
                         Templates
                       </TabsTrigger>
-                      <TabsTrigger value="layout" className="gap-2">
-                        <Rows3 className="h-4 w-4" />
-                        Layout
+                      <TabsTrigger value="layout" className="gap-1.5 text-xs">
+                        <Rows3 className="h-3.5 w-3.5" />
+                        Order
                       </TabsTrigger>
-                      <TabsTrigger value="colors" className="gap-2">
-                        <Palette className="h-4 w-4" />
+                      <TabsTrigger value="spacing" className="gap-1.5 text-xs">
+                        <SlidersHorizontal className="h-3.5 w-3.5" />
+                        Spacing
+                      </TabsTrigger>
+                      <TabsTrigger value="colors" className="gap-1.5 text-xs">
+                        <Palette className="h-3.5 w-3.5" />
                         Colors
                       </TabsTrigger>
-                      <TabsTrigger value="visibility" className="gap-2">
-                        <Eye className="h-4 w-4" />
+                      <TabsTrigger value="visibility" className="gap-1.5 text-xs">
+                        <Eye className="h-3.5 w-3.5" />
                         Visibility
                       </TabsTrigger>
-                      <TabsTrigger value="content" className="gap-2">
-                        <FileText className="h-4 w-4" />
+                      <TabsTrigger value="content" className="gap-1.5 text-xs">
+                        <FileText className="h-3.5 w-3.5" />
                         Content
                       </TabsTrigger>
-                      <TabsTrigger value="typography" className="gap-2">
-                        <Type className="h-4 w-4" />
-                        Typography
+                      <TabsTrigger value="typography" className="gap-1.5 text-xs">
+                        <Type className="h-3.5 w-3.5" />
+                        Fonts
                       </TabsTrigger>
                     </TabsList>
                   </div>
@@ -250,6 +267,23 @@ export default function PdfTemplateEditor() {
                     <TabsContent value="layout" className="m-0">
                       <LayoutSettingsPanel
                         sectionOrder={settings.section_order}
+                        onChange={handleSettingChange}
+                      />
+                    </TabsContent>
+
+                    <TabsContent value="spacing" className="m-0">
+                      <SpacingSettingsPanel
+                        settings={{
+                          header_padding: settings.header_padding,
+                          header_layout_style: settings.header_layout_style,
+                          logo_size: settings.logo_size,
+                          section_spacing: settings.section_spacing,
+                          table_row_padding: settings.table_row_padding,
+                          footer_padding: settings.footer_padding,
+                          show_invoice_title: settings.show_invoice_title,
+                          compact_header: settings.compact_header,
+                          border_style: settings.border_style,
+                        }}
                         onChange={handleSettingChange}
                       />
                     </TabsContent>
