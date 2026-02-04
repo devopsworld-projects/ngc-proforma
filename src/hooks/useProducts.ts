@@ -19,6 +19,7 @@ export interface Product {
   model_spec: string | null;
   gst_percent: number | null;
   image_url: string | null;
+  size_label: string | null;
   profiles?: {
     full_name: string | null;
   } | null;
