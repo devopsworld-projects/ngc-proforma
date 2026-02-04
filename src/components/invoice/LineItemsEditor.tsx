@@ -480,6 +480,7 @@ export function LineItemsEditor({ items, onChange, customerType, pricingSettings
       serialNumbers: "",
       quantity: qty,
       unit: product.unit,
+      sizeLabel: product.size_label || "",
       rate: itemRate,
       discountPercent: 0,
       gstPercent: gstPercent,
