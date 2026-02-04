@@ -44,6 +44,7 @@ export interface InvoiceItem {
   serial_numbers: string[] | null;
   quantity: number;
   unit: string;
+  size_label: string | null;
   rate: number;
   discount_percent: number;
   gst_percent: number | null;

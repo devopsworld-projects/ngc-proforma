@@ -67,6 +67,7 @@ export interface LineItem {
   serialNumbers: string;
   quantity: number;
   unit: string;
+  sizeLabel?: string; // For tracking dimensions like "500 MTR" for cables - doesn't affect price
   rate: number;
   discountPercent: number;
   gstPercent: number;
@@ -159,6 +160,11 @@ function SortableLineItem({
           <p className="font-semibold truncate text-sm">{item.brand || "Unnamed Product"}</p>
           {item.description && item.description !== item.brand && (
             <p className="text-xs text-muted-foreground truncate">{item.description}</p>
+          )}
+          {item.sizeLabel && (
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 mt-0.5">
+              {item.sizeLabel}
+            </Badge>
           )}
           {item.serialNumbers && (
             <div className="flex items-center gap-1 mt-0.5">
@@ -273,6 +279,18 @@ function SortableLineItem({
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+            
+            <div>
+              <Label className="text-xs font-medium mb-1.5 block">
+                Size/Length
+                <span className="text-muted-foreground font-normal ml-1">(e.g., 500 MTR)</span>
+              </Label>
+              <Input
+                placeholder="e.g., 500 MTR"
+                value={item.sizeLabel || ""}
+                onChange={(e) => onUpdate("sizeLabel", e.target.value)}
+              />
             </div>
             
             <div>
@@ -416,6 +434,7 @@ export function LineItemsEditor({ items, onChange, customerType, pricingSettings
       serialNumbers: "",
       quantity: 1,
       unit: "NOS",
+      sizeLabel: "",
       rate: 0,
       discountPercent: 0,
       gstPercent: 18,

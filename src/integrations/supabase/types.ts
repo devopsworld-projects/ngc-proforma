@@ -193,6 +193,7 @@ export type Database = {
           quantity: number
           rate: number
           serial_numbers: string[] | null
+          size_label: string | null
           sl_no: number
           unit: string
         }
@@ -210,6 +211,7 @@ export type Database = {
           quantity: number
           rate: number
           serial_numbers?: string[] | null
+          size_label?: string | null
           sl_no: number
           unit?: string
         }
@@ -227,6 +229,7 @@ export type Database = {
           quantity?: number
           rate?: number
           serial_numbers?: string[] | null
+          size_label?: string | null
           sl_no?: number
           unit?: string
         }
