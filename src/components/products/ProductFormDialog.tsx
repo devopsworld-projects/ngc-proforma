@@ -48,6 +48,7 @@ export function ProductFormDialog({ product, trigger }: ProductFormDialogProps) 
     model_spec: product?.model_spec || "",
     gst_percent: product?.gst_percent?.toString() || "18",
     image_url: product?.image_url || "",
+    size_label: product?.size_label || "",
   });
 
   const createProduct = useCreateProduct();
@@ -79,6 +80,7 @@ export function ProductFormDialog({ product, trigger }: ProductFormDialogProps) 
       model_spec: "",
       gst_percent: "18",
       image_url: "",
+      size_label: "",
     });
   };
 
@@ -144,6 +146,7 @@ export function ProductFormDialog({ product, trigger }: ProductFormDialogProps) 
       model_spec: formData.model_spec.trim() || null,
       gst_percent: parseFloat(formData.gst_percent) || 18,
       image_url: formData.image_url || null,
+      size_label: formData.size_label.trim() || null,
       is_active: true,
     };
 
@@ -341,6 +344,16 @@ export function ProductFormDialog({ product, trigger }: ProductFormDialogProps) 
                 value={formData.category}
                 onChange={(e) => handleChange("category", e.target.value)}
                 placeholder="e.g., Electronics"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="size_label">Size/Length</Label>
+              <Input
+                id="size_label"
+                value={formData.size_label}
+                onChange={(e) => handleChange("size_label", e.target.value)}
+                placeholder="e.g., 500 MTR, 2.5mm"
               />
             </div>
           </div>

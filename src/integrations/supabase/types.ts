@@ -543,6 +543,7 @@ export type Database = {
           name: string
           purchase_price: number | null
           rate: number
+          size_label: string | null
           sku: string | null
           stock_quantity: number | null
           supplier_contact: string | null
@@ -565,6 +566,7 @@ export type Database = {
           name: string
           purchase_price?: number | null
           rate?: number
+          size_label?: string | null
           sku?: string | null
           stock_quantity?: number | null
           supplier_contact?: string | null
@@ -587,6 +589,7 @@ export type Database = {
           name?: string
           purchase_price?: number | null
           rate?: number
+          size_label?: string | null
           sku?: string | null
           stock_quantity?: number | null
           supplier_contact?: string | null
