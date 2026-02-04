@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { useInvoices, useUpdateInvoiceStatus, useDeleteInvoice, Invoice } from "@/hooks/useInvoices";
+import { useInvoices, useUpdateInvoiceStatus, useDeleteInvoice, useRestoreInvoice, Invoice } from "@/hooks/useInvoices";
 import { useIsAdmin } from "@/hooks/useAdmin";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { useInvoiceFilters } from "@/hooks/useInvoiceFilters";
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,16 +38,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { FileText, Plus, Edit, RefreshCcw, MoreVertical, Send, CheckCircle, XCircle, Clock, Eye, SearchX, Loader2, Trash2, User } from "lucide-react";
+import { FileText, Plus, Edit, RefreshCcw, MoreVertical, Send, CheckCircle, XCircle, Clock, Eye, SearchX, Loader2, Trash2, User, RotateCcw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 const statusColors: Record<string, string> = {
   draft: "bg-muted text-muted-foreground",
   sent: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
   paid: "bg-invoice-success/10 text-invoice-success",
   cancelled: "bg-destructive/10 text-destructive",
+  deleted: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
 };
 
 const statusIcons: Record<string, React.ReactNode> = {
@@ -54,6 +57,7 @@ const statusIcons: Record<string, React.ReactNode> = {
   sent: <Send className="h-3 w-3" />,
   paid: <CheckCircle className="h-3 w-3" />,
   cancelled: <XCircle className="h-3 w-3" />,
+  deleted: <Trash2 className="h-3 w-3" />,
 };
 
 interface StatusChangeConfirmation {
@@ -72,7 +76,38 @@ export default function InvoicesPage() {
   const { data: companySettings } = useCompanySettings();
   const updateStatus = useUpdateInvoiceStatus();
   const deleteInvoice = useDeleteInvoice();
+  const restoreInvoice = useRestoreInvoice();
   const sendNotification = useSendStatusNotification();
+  
+  const [activeTab, setActiveTab] = useState("active");
+  
+  // Fetch deleted invoices for admin
+  const { data: deletedInvoices, isLoading: isLoadingDeleted } = useQuery({
+    queryKey: ["deleted-invoices"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("invoices")
+        .select("*, customers(name)")
+        .not("deleted_at", "is", null)
+        .order("deleted_at", { ascending: false });
+      if (error) throw error;
+      
+      // Fetch profiles for user names
+      const userIds = [...new Set(data.map(inv => inv.user_id).filter(Boolean))] as string[];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", userIds);
+      
+      const profileMap = new Map(profiles?.map(p => [p.id, p.full_name]) || []);
+      
+      return data.map(inv => ({
+        ...inv,
+        owner_name: inv.user_id ? profileMap.get(inv.user_id) || null : null
+      }));
+    },
+    enabled: !!isAdmin,
+  });
   
   const { filters, setFilters, filteredInvoices, clearFilters, hasActiveFilters, sortConfig, handleSort } = useInvoiceFilters(invoices);
 
@@ -85,6 +120,10 @@ export default function InvoicesPage() {
   // Delete confirmation
   const [deleteConfirmation, setDeleteConfirmation] = useState<{ id: string; invoiceNo: string; grandTotal: number } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Restore confirmation
+  const [restoreConfirmation, setRestoreConfirmation] = useState<{ id: string; invoiceNo: string } | null>(null);
+  const [isRestoring, setIsRestoring] = useState(false);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-IN", {
@@ -164,6 +203,137 @@ export default function InvoicesPage() {
     }
   };
 
+  const handleRestoreInvoice = async () => {
+    if (!restoreConfirmation) return;
+    setIsRestoring(true);
+    try {
+      await restoreInvoice.mutateAsync(restoreConfirmation.id);
+      toast.success(`Proforma #${restoreConfirmation.invoiceNo} restored successfully`);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to restore proforma");
+    } finally {
+      setIsRestoring(false);
+      setRestoreConfirmation(null);
+    }
+  };
+
+  // Render invoice card
+  const renderInvoiceCard = (invoice: any, isDeleted: boolean = false) => (
+    <Card key={invoice.id} className="hover:shadow-md transition-shadow">
+      <CardContent className="py-4">
+        <div className="flex items-center gap-4">
+          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isDeleted ? 'bg-orange-100 dark:bg-orange-900/30' : 'bg-primary/10'}`}>
+            <FileText className={`w-5 h-5 ${isDeleted ? 'text-orange-600' : 'text-primary'}`} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold">Proforma #{invoice.invoice_no}</span>
+              {invoice.is_recurring && (
+                <RefreshCcw className="h-4 w-4 text-invoice-accent" />
+              )}
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>{new Date(invoice.date).toLocaleDateString("en-IN")}</span>
+              {invoice.customers?.name && (
+                <>
+                  <span>•</span>
+                  <span className="truncate">{invoice.customers.name}</span>
+                </>
+              )}
+              {isAdmin && invoice.owner_name && (
+                <>
+                  <span>•</span>
+                  <span className="flex items-center gap-1 text-xs bg-muted px-1.5 py-0.5 rounded">
+                    <User className="h-3 w-3" />
+                    {invoice.owner_name}
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="font-semibold">{formatCurrency(Number(invoice.grand_total))}</p>
+            <Badge className={`gap-1 ${isDeleted ? statusColors.deleted : (statusColors[invoice.status] || statusColors.draft)}`}>
+              {isDeleted ? statusIcons.deleted : statusIcons[invoice.status]}
+              {isDeleted ? "deleted" : invoice.status}
+            </Badge>
+          </div>
+          {isDeleted ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setRestoreConfirmation({ id: invoice.id, invoiceNo: invoice.invoice_no })}
+              className="gap-2"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Restore
+            </Button>
+          ) : (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="icon" variant="ghost">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 bg-popover">
+                <DropdownMenuItem onClick={() => navigate(`/invoices/${invoice.id}`)}>
+                  <Eye className="h-4 w-4 mr-2" />
+                  View Proforma
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate(`/invoices/${invoice.id}/edit`)}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Proforma
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => initiateStatusChange(invoice.id, "draft")}
+                  disabled={invoice.status === "draft"}
+                >
+                  <Clock className="h-4 w-4 mr-2" />
+                  Mark as Draft
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => initiateStatusChange(invoice.id, "sent")}
+                  disabled={invoice.status === "sent"}
+                >
+                  <Send className="h-4 w-4 mr-2" />
+                  Mark as Sent
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => initiateStatusChange(invoice.id, "paid")}
+                  disabled={invoice.status === "paid"}
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Mark as Paid
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => initiateStatusChange(invoice.id, "cancelled")}
+                  disabled={invoice.status === "cancelled"}
+                  className="text-destructive"
+                >
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Mark as Cancelled
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => setDeleteConfirmation({
+                    id: invoice.id,
+                    invoiceNo: invoice.invoice_no,
+                    grandTotal: Number(invoice.grand_total),
+                  })}
+                  className="text-destructive"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Proforma
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -178,169 +348,183 @@ export default function InvoicesPage() {
           </Button>
         </div>
 
-        {/* Search and Filters */}
-        <InvoiceFilters
-          filters={filters}
-          onFiltersChange={setFilters}
-          onClearFilters={clearFilters}
-          sortConfig={sortConfig}
-          onSort={handleSort}
-        />
+        {/* Tabs for Active / Deleted (admin only) */}
+        {isAdmin ? (
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="active" className="gap-2">
+                <FileText className="h-4 w-4" />
+                Active ({invoices?.length || 0})
+              </TabsTrigger>
+              <TabsTrigger value="deleted" className="gap-2">
+                <Trash2 className="h-4 w-4" />
+                Deleted ({deletedInvoices?.length || 0})
+              </TabsTrigger>
+            </TabsList>
 
-        {/* Results Summary */}
-        {!isLoading && invoices && invoices.length > 0 && (
-          <div className="text-sm text-muted-foreground">
-            Showing {filteredInvoices.length} of {invoices.length} proforma invoices
-            {hasActiveFilters && " (filtered)"}
-          </div>
-        )}
+            <TabsContent value="active" className="space-y-4">
+              {/* Search and Filters */}
+              <InvoiceFilters
+                filters={filters}
+                onFiltersChange={setFilters}
+                onClearFilters={clearFilters}
+                sortConfig={sortConfig}
+                onSort={handleSort}
+              />
 
-        {isLoading ? (
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <Card key={i}>
-                <CardContent className="py-4">
-                  <div className="flex items-center gap-4">
-                    <Skeleton className="h-10 w-10 rounded-lg" />
-                    <div className="flex-1 space-y-2">
-                      <Skeleton className="h-5 w-32" />
-                      <Skeleton className="h-4 w-48" />
-                    </div>
-                    <Skeleton className="h-6 w-24" />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : invoices?.length === 0 ? (
-          <Card className="border-dashed">
-            <CardContent className="py-12 text-center">
-              <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">No proforma invoices yet</h3>
-              <p className="text-muted-foreground mb-4">Create your first proforma invoice to get started</p>
-              <Button className="gap-2" onClick={() => navigate("/invoices/new")}>
-                <Plus className="h-4 w-4" />
-                Create Proforma
-              </Button>
-            </CardContent>
-          </Card>
-        ) : filteredInvoices.length === 0 ? (
-          <Card className="border-dashed">
-            <CardContent className="py-12 text-center">
-              <SearchX className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">No matching proforma invoices</h3>
-              <p className="text-muted-foreground mb-4">Try adjusting your search or filters</p>
-              <Button variant="outline" onClick={clearFilters}>
-                Clear Filters
-              </Button>
-            </CardContent>
-          </Card>
+              {/* Results Summary */}
+              {!isLoading && invoices && invoices.length > 0 && (
+                <div className="text-sm text-muted-foreground">
+                  Showing {filteredInvoices.length} of {invoices.length} proforma invoices
+                  {hasActiveFilters && " (filtered)"}
+                </div>
+              )}
+
+              {isLoading ? (
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <Card key={i}>
+                      <CardContent className="py-4">
+                        <div className="flex items-center gap-4">
+                          <Skeleton className="h-10 w-10 rounded-lg" />
+                          <div className="flex-1 space-y-2">
+                            <Skeleton className="h-5 w-32" />
+                            <Skeleton className="h-4 w-48" />
+                          </div>
+                          <Skeleton className="h-6 w-24" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : invoices?.length === 0 ? (
+                <Card className="border-dashed">
+                  <CardContent className="py-12 text-center">
+                    <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-medium mb-2">No proforma invoices yet</h3>
+                    <p className="text-muted-foreground mb-4">Create your first proforma invoice to get started</p>
+                    <Button className="gap-2" onClick={() => navigate("/invoices/new")}>
+                      <Plus className="h-4 w-4" />
+                      Create Proforma
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : filteredInvoices.length === 0 ? (
+                <Card className="border-dashed">
+                  <CardContent className="py-12 text-center">
+                    <SearchX className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-medium mb-2">No matching proforma invoices</h3>
+                    <p className="text-muted-foreground mb-4">Try adjusting your search or filters</p>
+                    <Button variant="outline" onClick={clearFilters}>
+                      Clear Filters
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {filteredInvoices.map((invoice) => renderInvoiceCard(invoice, false))}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="deleted" className="space-y-4">
+              {isLoadingDeleted ? (
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <Card key={i}>
+                      <CardContent className="py-4">
+                        <div className="flex items-center gap-4">
+                          <Skeleton className="h-10 w-10 rounded-lg" />
+                          <div className="flex-1 space-y-2">
+                            <Skeleton className="h-5 w-32" />
+                            <Skeleton className="h-4 w-48" />
+                          </div>
+                          <Skeleton className="h-6 w-24" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : !deletedInvoices || deletedInvoices.length === 0 ? (
+                <Card className="border-dashed">
+                  <CardContent className="py-12 text-center">
+                    <Trash2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-medium mb-2">No deleted invoices</h3>
+                    <p className="text-muted-foreground">Deleted invoices will appear here</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {deletedInvoices.map((invoice) => renderInvoiceCard(invoice, true))}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
         ) : (
-          <div className="space-y-3">
-            {filteredInvoices.map((invoice) => (
-              <Card key={invoice.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="py-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <FileText className="w-5 h-5 text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold">Proforma #{invoice.invoice_no}</span>
-                        {invoice.is_recurring && (
-                          <RefreshCcw className="h-4 w-4 text-invoice-accent" />
-                        )}
+          <>
+            {/* Search and Filters for non-admin */}
+            <InvoiceFilters
+              filters={filters}
+              onFiltersChange={setFilters}
+              onClearFilters={clearFilters}
+              sortConfig={sortConfig}
+              onSort={handleSort}
+            />
+
+            {/* Results Summary */}
+            {!isLoading && invoices && invoices.length > 0 && (
+              <div className="text-sm text-muted-foreground">
+                Showing {filteredInvoices.length} of {invoices.length} proforma invoices
+                {hasActiveFilters && " (filtered)"}
+              </div>
+            )}
+
+            {isLoading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <Card key={i}>
+                    <CardContent className="py-4">
+                      <div className="flex items-center gap-4">
+                        <Skeleton className="h-10 w-10 rounded-lg" />
+                        <div className="flex-1 space-y-2">
+                          <Skeleton className="h-5 w-32" />
+                          <Skeleton className="h-4 w-48" />
+                        </div>
+                        <Skeleton className="h-6 w-24" />
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <span>{new Date(invoice.date).toLocaleDateString("en-IN")}</span>
-                        {(invoice as any).customers?.name && (
-                          <>
-                            <span>•</span>
-                            <span className="truncate">{(invoice as any).customers.name}</span>
-                          </>
-                        )}
-                        {isAdmin && (invoice as any).owner_name && (
-                          <>
-                            <span>•</span>
-                            <span className="flex items-center gap-1 text-xs bg-muted px-1.5 py-0.5 rounded">
-                              <User className="h-3 w-3" />
-                              {(invoice as any).owner_name}
-                            </span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold">{formatCurrency(Number(invoice.grand_total))}</p>
-                      <Badge className={`gap-1 ${statusColors[invoice.status] || statusColors.draft}`}>
-                        {statusIcons[invoice.status]}
-                        {invoice.status}
-                      </Badge>
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button size="icon" variant="ghost">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48 bg-popover">
-                        <DropdownMenuItem onClick={() => navigate(`/invoices/${invoice.id}`)}>
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Proforma
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate(`/invoices/${invoice.id}/edit`)}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit Proforma
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => initiateStatusChange(invoice.id, "draft")}
-                          disabled={invoice.status === "draft"}
-                        >
-                          <Clock className="h-4 w-4 mr-2" />
-                          Mark as Draft
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => initiateStatusChange(invoice.id, "sent")}
-                          disabled={invoice.status === "sent"}
-                        >
-                          <Send className="h-4 w-4 mr-2" />
-                          Mark as Sent
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => initiateStatusChange(invoice.id, "paid")}
-                          disabled={invoice.status === "paid"}
-                        >
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          Mark as Paid
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => initiateStatusChange(invoice.id, "cancelled")}
-                          disabled={invoice.status === "cancelled"}
-                          className="text-destructive"
-                        >
-                          <XCircle className="h-4 w-4 mr-2" />
-                          Mark as Cancelled
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => setDeleteConfirmation({
-                            id: invoice.id,
-                            invoiceNo: invoice.invoice_no,
-                            grandTotal: Number(invoice.grand_total),
-                          })}
-                          className="text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete Proforma
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : invoices?.length === 0 ? (
+              <Card className="border-dashed">
+                <CardContent className="py-12 text-center">
+                  <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No proforma invoices yet</h3>
+                  <p className="text-muted-foreground mb-4">Create your first proforma invoice to get started</p>
+                  <Button className="gap-2" onClick={() => navigate("/invoices/new")}>
+                    <Plus className="h-4 w-4" />
+                    Create Proforma
+                  </Button>
                 </CardContent>
               </Card>
-            ))}
-          </div>
+            ) : filteredInvoices.length === 0 ? (
+              <Card className="border-dashed">
+                <CardContent className="py-12 text-center">
+                  <SearchX className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No matching proforma invoices</h3>
+                  <p className="text-muted-foreground mb-4">Try adjusting your search or filters</p>
+                  <Button variant="outline" onClick={clearFilters}>
+                    Clear Filters
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {filteredInvoices.map((invoice) => renderInvoiceCard(invoice, false))}
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -418,6 +602,39 @@ export default function InvoicesPage() {
                 </>
               ) : (
                 "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Restore Confirmation Dialog */}
+      <AlertDialog open={!!restoreConfirmation} onOpenChange={(open) => !open && setRestoreConfirmation(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Restore Proforma Invoice</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to restore Proforma #{restoreConfirmation?.invoiceNo}? 
+              <br /><br />
+              This will move the invoice back to the active list with its original status.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isRestoring}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRestoreInvoice}
+              disabled={isRestoring}
+            >
+              {isRestoring ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Restoring...
+                </>
+              ) : (
+                <>
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  Restore
+                </>
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

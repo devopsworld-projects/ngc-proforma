@@ -182,6 +182,28 @@ export function useDeleteInvoice() {
   });
 }
 
+export function useRestoreInvoice() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (invoiceId: string) => {
+      // Restore: set deleted_at back to null
+      const { data, error } = await supabase
+        .from("invoices")
+        .update({ deleted_at: null })
+        .eq("id", invoiceId)
+        .select("id")
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) throw new Error("Could not restore invoice - permission denied or invoice not found");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-quotations"] });
+      queryClient.invalidateQueries({ queryKey: ["deleted-invoices"] });
+    },
+  });
+}
+
 export function useCreateInvoice() {
   const queryClient = useQueryClient();
   const { user } = useAuth();

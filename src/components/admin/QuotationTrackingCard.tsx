@@ -1,12 +1,14 @@
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin } from "@/hooks/useAdmin";
-import { FileText, TrendingUp } from "lucide-react";
+import { FileText, TrendingUp, Filter } from "lucide-react";
 import { format } from "date-fns";
 
 interface QuotationWithUser {
@@ -38,8 +40,11 @@ function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
+type StatusFilter = "all" | "active" | "deleted";
+
 export function QuotationTrackingCard() {
   const { data: isAdmin } = useIsAdmin();
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   
   const { data: quotations, isLoading } = useQuery({
     queryKey: ["admin-quotations"],
@@ -112,16 +117,39 @@ export function QuotationTrackingCard() {
     deleted: quotations?.filter(q => q.status === "deleted").length || 0,
   };
 
+  // Filter quotations based on selected filter
+  const filteredQuotations = quotations?.filter(q => {
+    if (statusFilter === "all") return true;
+    if (statusFilter === "deleted") return q.status === "deleted";
+    if (statusFilter === "active") return q.status !== "deleted";
+    return true;
+  }) || [];
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <TrendingUp className="h-5 w-5" />
-          Quotation Tracking
-        </CardTitle>
-        <CardDescription>
-          Monitor all quotations across users
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Quotation Tracking
+            </CardTitle>
+            <CardDescription>
+              Monitor all quotations across users
+            </CardDescription>
+          </div>
+          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+            <SelectTrigger className="w-36">
+              <Filter className="h-4 w-4 mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All ({stats.total})</SelectItem>
+              <SelectItem value="active">Active ({stats.total - stats.deleted})</SelectItem>
+              <SelectItem value="deleted">Deleted ({stats.deleted})</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Quick Stats */}
@@ -150,10 +178,10 @@ export function QuotationTrackingCard() {
 
         {/* Quotations Table */}
         <ScrollArea className="h-[300px]">
-          {!quotations || quotations.length === 0 ? (
+          {filteredQuotations.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
               <FileText className="h-10 w-10 mb-2" />
-              <p>No quotations found</p>
+              <p>No {statusFilter === "all" ? "" : statusFilter} quotations found</p>
             </div>
           ) : (
             <Table>
@@ -168,7 +196,7 @@ export function QuotationTrackingCard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {quotations.map((q) => (
+                {filteredQuotations.map((q) => (
                   <TableRow key={q.id}>
                     <TableCell className="font-mono text-sm">{q.invoice_no}</TableCell>
                     <TableCell>{q.customer_name || "—"}</TableCell>
