@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Tooltip,
   TooltipContent,
@@ -44,6 +45,19 @@ import { formatCurrency, calculateGstBreakup, roundToTwo } from "@/lib/invoice-u
 import { ExcelLineItemsUpload } from "@/components/invoice/ExcelLineItemsUpload";
 import { useSearchProducts, Product } from "@/hooks/useProducts";
 import { cn } from "@/lib/utils";
+
+const UNIT_OPTIONS = [
+  { value: "NOS", label: "NOS (Numbers)" },
+  { value: "MTR", label: "MTR (Meters)" },
+  { value: "KG", label: "KG (Kilograms)" },
+  { value: "LTR", label: "LTR (Liters)" },
+  { value: "PCS", label: "PCS (Pieces)" },
+  { value: "BOX", label: "BOX (Boxes)" },
+  { value: "SET", label: "SET (Sets)" },
+  { value: "ROLL", label: "ROLL (Rolls)" },
+  { value: "PAIR", label: "PAIR (Pairs)" },
+  { value: "SQM", label: "SQM (Square Meters)" },
+];
 
 export interface LineItem {
   id: string;
@@ -243,12 +257,21 @@ function SortableLineItem({
                   onChange={(e) => onUpdate("quantity", parseFloat(e.target.value) || 0)}
                   className="flex-1"
                 />
-                <Input
-                  placeholder="Unit"
-                  value={item.unit}
-                  onChange={(e) => onUpdate("unit", e.target.value)}
-                  className="w-16"
-                />
+                <Select
+                  value={item.unit || "NOS"}
+                  onValueChange={(value) => onUpdate("unit", value)}
+                >
+                  <SelectTrigger className="w-24">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {UNIT_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             
