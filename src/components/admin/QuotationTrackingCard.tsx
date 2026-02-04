@@ -19,6 +19,7 @@ interface QuotationWithUser {
   customer_name: string | null;
   user_email: string | null;
   user_name: string | null;
+  deleted_at: string | null;
 }
 
 const statusColors: Record<string, string> = {
@@ -26,6 +27,7 @@ const statusColors: Record<string, string> = {
   sent: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
   paid: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
   cancelled: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+  deleted: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
 };
 
 function formatCurrency(amount: number): string {
@@ -52,6 +54,7 @@ export function QuotationTrackingCard() {
           status,
           grand_total,
           created_at,
+          deleted_at,
           user_id,
           customers (name)
         `)
@@ -73,11 +76,12 @@ export function QuotationTrackingCard() {
         id: inv.id,
         invoice_no: inv.invoice_no,
         date: inv.date,
-        status: inv.status,
+        status: inv.deleted_at ? "deleted" : inv.status,
         grand_total: inv.grand_total,
         created_at: inv.created_at,
         customer_name: inv.customers?.name || null,
         user_name: inv.user_id ? profileMap.get(inv.user_id) || null : null,
+        deleted_at: inv.deleted_at,
       })) as QuotationWithUser[];
     },
     enabled: !!isAdmin,
@@ -105,6 +109,7 @@ export function QuotationTrackingCard() {
     draft: quotations?.filter(q => q.status === "draft").length || 0,
     sent: quotations?.filter(q => q.status === "sent").length || 0,
     paid: quotations?.filter(q => q.status === "paid").length || 0,
+    deleted: quotations?.filter(q => q.status === "deleted").length || 0,
   };
 
   return (
@@ -120,7 +125,7 @@ export function QuotationTrackingCard() {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Quick Stats */}
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-5 gap-3">
           <div className="text-center p-3 bg-muted rounded-lg">
             <p className="text-2xl font-bold">{stats.total}</p>
             <p className="text-xs text-muted-foreground">Total</p>
@@ -136,6 +141,10 @@ export function QuotationTrackingCard() {
           <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
             <p className="text-2xl font-bold text-green-600">{stats.paid}</p>
             <p className="text-xs text-green-600/70">Paid</p>
+          </div>
+          <div className="text-center p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+            <p className="text-2xl font-bold text-orange-600">{stats.deleted}</p>
+            <p className="text-xs text-orange-600/70">Deleted</p>
           </div>
         </div>
 

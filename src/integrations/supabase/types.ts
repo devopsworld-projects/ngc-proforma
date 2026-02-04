@@ -252,6 +252,7 @@ export type Database = {
           customer_id: string | null
           customer_snapshot: Json | null
           date: string
+          deleted_at: string | null
           discount_amount: number | null
           discount_percent: number | null
           e_way_bill_no: string | null
@@ -282,6 +283,7 @@ export type Database = {
           customer_id?: string | null
           customer_snapshot?: Json | null
           date?: string
+          deleted_at?: string | null
           discount_amount?: number | null
           discount_percent?: number | null
           e_way_bill_no?: string | null
@@ -312,6 +314,7 @@ export type Database = {
           customer_id?: string | null
           customer_snapshot?: Json | null
           date?: string
+          deleted_at?: string | null
           discount_amount?: number | null
           discount_percent?: number | null
           e_way_bill_no?: string | null

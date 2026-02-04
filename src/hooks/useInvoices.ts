@@ -63,7 +63,7 @@ export function useInvoices() {
     queryFn: async () => {
       if (!user) return [];
       
-      // Admin sees all invoices
+      // Admin sees all invoices (including soft-deleted)
       if (isAdmin) {
         const { data: invoices, error } = await supabase
           .from("invoices")
@@ -88,11 +88,12 @@ export function useInvoices() {
         }));
       }
       
-      // Regular user sees only their own invoices
+      // Regular user sees only their own non-deleted invoices
       const { data, error } = await supabase
         .from("invoices")
         .select("*, customers(name)")
         .eq("user_id", user.id)
+        .is("deleted_at", null)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
@@ -164,22 +165,16 @@ export function useDeleteInvoice() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (invoiceId: string) => {
-      // First delete invoice items (cascade)
-      const { error: itemsError } = await supabase
-        .from("invoice_items")
-        .delete()
-        .eq("invoice_id", invoiceId);
-      if (itemsError) throw itemsError;
-      
-      // Then delete the invoice
+      // Soft-delete: set deleted_at timestamp instead of actually deleting
       const { error } = await supabase
         .from("invoices")
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .eq("id", invoiceId);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-quotations"] });
     },
   });
 }
