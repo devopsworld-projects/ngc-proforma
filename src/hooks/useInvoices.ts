@@ -166,11 +166,14 @@ export function useDeleteInvoice() {
   return useMutation({
     mutationFn: async (invoiceId: string) => {
       // Soft-delete: set deleted_at timestamp instead of actually deleting
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("invoices")
         .update({ deleted_at: new Date().toISOString() })
-        .eq("id", invoiceId);
+        .eq("id", invoiceId)
+        .select("id")
+        .maybeSingle();
       if (error) throw error;
+      if (!data) throw new Error("Could not delete invoice - permission denied or invoice not found");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["invoices"] });
