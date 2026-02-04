@@ -410,6 +410,41 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
         const { error: itemsError } = await supabase.from("invoice_items").insert(itemsPayload);
         if (itemsError) throw itemsError;
 
+        // Auto-save manually entered products to products list
+        const manualProducts = lineItems.filter(item => !item.productId && item.brand?.trim());
+        if (manualProducts.length > 0) {
+          const newProducts = manualProducts.map(item => ({
+            name: item.brand.trim(),
+            description: item.description?.trim() || null,
+            unit: item.unit || "NOS",
+            rate: item.rate,
+            gst_percent: item.gstPercent || 18,
+            stock_quantity: 0, // Start with 0 stock for new products
+            is_active: true,
+            user_id: user.id,
+          }));
+          
+          // Insert products (ignore duplicates by name for same user)
+          for (const product of newProducts) {
+            // Check if product with same name exists for this user
+            const { data: existingProduct } = await supabase
+              .from("products")
+              .select("id")
+              .eq("user_id", user.id)
+              .eq("name", product.name)
+              .eq("is_active", true)
+              .maybeSingle();
+            
+            if (!existingProduct) {
+              await supabase.from("products").insert(product);
+            }
+          }
+          
+          if (manualProducts.length > 0) {
+            toast.info(`${manualProducts.length} new product(s) added to inventory`);
+          }
+        }
+
         // Auto-deduct stock for items with productId
         const stockDeductions = lineItems
           .filter(item => item.productId)
