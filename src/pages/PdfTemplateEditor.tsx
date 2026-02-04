@@ -15,7 +15,8 @@ import {
   Eye, 
   FileText, 
   Type,
-  RotateCcw
+  RotateCcw,
+  Rows3
 } from "lucide-react";
 import { useIsAdmin } from "@/hooks/useAdmin";
 import { usePdfTemplateSettings, useUpdatePdfTemplateSettings } from "@/hooks/usePdfTemplateSettings";
@@ -25,6 +26,7 @@ import { ColorSettingsPanel } from "@/components/pdf-editor/ColorSettingsPanel";
 import { VisibilitySettingsPanel } from "@/components/pdf-editor/VisibilitySettingsPanel";
 import { ContentSettingsPanel } from "@/components/pdf-editor/ContentSettingsPanel";
 import { FontSettingsPanel } from "@/components/pdf-editor/FontSettingsPanel";
+import { LayoutSettingsPanel } from "@/components/pdf-editor/LayoutSettingsPanel";
 import { InvoicePreviewPane } from "@/components/pdf-editor/InvoicePreviewPane";
 import {
   ResizablePanelGroup,
@@ -75,6 +77,7 @@ const defaultSettings = {
   bank_account_no: null as string | null,
   bank_ifsc: null as string | null,
   bank_branch: null as string | null,
+  section_order: ["header", "customer_details", "items_table", "totals", "bank_details", "terms", "signature"] as string[],
 };
 
 type SettingsType = typeof defaultSettings & { id?: string };
@@ -108,7 +111,7 @@ export default function PdfTemplateEditor() {
     }
   }, [isAdmin, adminLoading, navigate]);
 
-  const handleSettingChange = (key: string, value: string | boolean | null) => {
+  const handleSettingChange = (key: string, value: string | boolean | string[] | null) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
     setHasChanges(true);
   };
@@ -213,6 +216,10 @@ export default function PdfTemplateEditor() {
                         <LayoutTemplate className="h-4 w-4" />
                         Templates
                       </TabsTrigger>
+                      <TabsTrigger value="layout" className="gap-2">
+                        <Rows3 className="h-4 w-4" />
+                        Layout
+                      </TabsTrigger>
                       <TabsTrigger value="colors" className="gap-2">
                         <Palette className="h-4 w-4" />
                         Colors
@@ -237,6 +244,13 @@ export default function PdfTemplateEditor() {
                       <TemplateLibrary
                         selectedTemplate={settings.template_style}
                         onSelectTemplate={handleTemplateSelect}
+                      />
+                    </TabsContent>
+
+                    <TabsContent value="layout" className="m-0">
+                      <LayoutSettingsPanel
+                        sectionOrder={settings.section_order}
+                        onChange={handleSettingChange}
                       />
                     </TabsContent>
 

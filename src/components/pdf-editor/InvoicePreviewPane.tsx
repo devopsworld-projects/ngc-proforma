@@ -36,6 +36,7 @@ interface InvoicePreviewPaneProps {
     bank_branch: string | null;
     font_heading: string;
     font_body: string;
+    section_order?: string[];
   };
   companyName?: string;
   companyLogo?: string;
@@ -52,6 +53,229 @@ export function InvoicePreviewPane({ settings, companyName = "Your Company Name"
     settings.terms_line2,
     settings.terms_line3,
   ].filter(Boolean) as string[];
+
+  const sectionOrder = settings.section_order || ["header", "customer_details", "items_table", "totals", "bank_details", "terms", "signature"];
+
+  // Render header section
+  const renderHeader = () => (
+    <div 
+      key="header"
+      className="px-4 py-3 text-center space-y-2"
+      style={{ 
+        backgroundColor: settings.primary_color,
+        color: settings.header_text_color,
+        fontFamily: settings.font_heading,
+      }}
+    >
+      {settings.show_logo && (
+        <div className="flex justify-center">
+          {companyLogo ? (
+            <img src={companyLogo} alt="Logo" className="w-10 h-10 rounded-lg object-contain" />
+          ) : (
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: settings.accent_color }}>
+              <Building2 className="w-5 h-5" style={{ color: settings.primary_color }} />
+            </div>
+          )}
+        </div>
+      )}
+
+      <h1 className="text-base font-bold">{companyName}</h1>
+      <p className="text-xs opacity-80">123 Business Street, City, State 123456</p>
+
+      {settings.show_contact_header && (
+        <div className="flex flex-wrap justify-center gap-2 text-xs opacity-80">
+          <span className="flex items-center gap-1"><Phone className="w-2.5 h-2.5" /> +91 12345 67890</span>
+          <span className="flex items-center gap-1"><Mail className="w-2.5 h-2.5" /> email@company.com</span>
+          <span className="flex items-center gap-1"><Globe className="w-2.5 h-2.5" /> www.company.com</span>
+        </div>
+      )}
+
+      {settings.show_gstin_header && (
+        <div className="flex justify-center gap-2 text-xs">
+          <span className="px-2 py-0.5 rounded" style={{ backgroundColor: "rgba(255,255,255,0.1)" }}>
+            GSTIN: 29ABCDE1234F1ZH
+          </span>
+          {settings.show_company_state && (
+            <span className="px-2 py-0.5 rounded" style={{ backgroundColor: "rgba(255,255,255,0.1)" }}>
+              State: Karnataka (29)
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Invoice Title */}
+      <div className="pt-2 border-t border-white/20">
+        <h2 className="text-sm font-bold" style={{ color: settings.accent_color }}>
+          {settings.invoice_title}
+        </h2>
+      </div>
+
+      {/* Bill To & Invoice Details */}
+      <div className="grid grid-cols-2 gap-3 pt-2 text-left border-t border-white/20">
+        <div>
+          <p className="text-xs opacity-60 uppercase tracking-wider">{settings.bill_to_label}</p>
+          <p className="text-sm font-semibold mt-1">Customer Name</p>
+          <p className="text-xs opacity-80">123 Customer Street</p>
+          {settings.show_customer_phone && <p className="text-xs opacity-80">Phone: +91 98765 43210</p>}
+          {settings.show_customer_email && <p className="text-xs opacity-80">Email: customer@email.com</p>}
+        </div>
+        <div className="text-right">
+          <p className="text-xs opacity-60 uppercase tracking-wider">{settings.invoice_details_label}</p>
+          <p className="text-xs mt-1">Proforma No: <span className="font-semibold">INV-001</span></p>
+          <p className="text-xs">Date: <span className="font-medium">04-Feb-2026</span></p>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Render items table
+  const renderItemsTable = () => (
+    <div key="items_table" className="px-3 py-2">
+      <table className="w-full text-xs">
+        <thead>
+          <tr style={{ backgroundColor: settings.table_header_bg, color: settings.table_header_text }}>
+            <th className="py-1.5 px-2 text-left font-semibold uppercase text-[10px]">Sl</th>
+            {settings.show_image_column && <th className="py-1.5 px-2 text-left font-semibold uppercase text-[10px]">Img</th>}
+            <th className="py-1.5 px-2 text-left font-semibold uppercase text-[10px]">Product</th>
+            <th className="py-1.5 px-2 text-center font-semibold uppercase text-[10px]">Qty</th>
+            <th className="py-1.5 px-2 text-right font-semibold uppercase text-[10px]">Rate</th>
+            <th className="py-1.5 px-2 text-right font-semibold uppercase text-[10px]">Total</th>
+          </tr>
+        </thead>
+        <tbody style={{ color: settings.table_text_color }}>
+          {sampleItems.map((item) => (
+            <tr key={item.id} className="border-b border-gray-100">
+              <td className="py-1.5 px-2">{item.slNo}</td>
+              {settings.show_image_column && (
+                <td className="py-1.5 px-2">
+                  <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
+                    <ImageIcon className="w-3 h-3 text-gray-400" />
+                  </div>
+                </td>
+              )}
+              <td className="py-1.5 px-2">
+                <p className="font-medium">{item.brand}</p>
+                <p className="text-[10px] opacity-70">{item.description}</p>
+              </td>
+              <td className="py-1.5 px-2 text-center">{item.quantity}</td>
+              <td className="py-1.5 px-2 text-right font-mono">₹{item.rate.toLocaleString()}</td>
+              <td className="py-1.5 px-2 text-right font-mono font-medium">₹{item.total.toLocaleString()}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+
+  // Render totals
+  const renderTotals = () => (
+    <div key="totals" className="px-3 py-2 bg-white">
+      <div className="flex justify-between items-start">
+        {settings.show_amount_words && (
+          <div className="flex-1 p-2 bg-gray-50 border border-gray-200 mr-3">
+            <p className="text-[10px] font-semibold uppercase text-gray-500">Amount in Words</p>
+            <p className="text-xs font-medium">Five Thousand Five Hundred Only</p>
+          </div>
+        )}
+        <div className="w-40 space-y-1 text-xs">
+          <div className="flex justify-between">
+            <span className="text-gray-600">Subtotal</span>
+            <span className="font-mono">₹5,500</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-600">GST (18%)</span>
+            <span className="font-mono">₹990</span>
+          </div>
+          <div 
+            className="flex justify-between py-1.5 px-2 -mx-2 mt-2"
+            style={{ backgroundColor: settings.grand_total_bg, color: settings.grand_total_text }}
+          >
+            <span className="font-semibold">Grand Total</span>
+            <span className="font-mono font-bold">₹6,490</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Render footer sections
+  const renderFooter = () => {
+    const showTerms = sectionOrder.includes("terms") && settings.show_terms && termsArray.length > 0;
+    const showBankDetails = sectionOrder.includes("bank_details") && settings.bank_name;
+    const showSignature = sectionOrder.includes("signature") && settings.show_signature;
+
+    if (!showTerms && !showBankDetails && !showSignature) return null;
+
+    return (
+      <div 
+        key="footer"
+        className="px-3 py-2 space-y-2"
+        style={{ backgroundColor: settings.primary_color, color: settings.header_text_color }}
+      >
+        {showTerms && (
+          <div>
+            <div className="flex items-center gap-1 mb-1">
+              <FileText className="w-2.5 h-2.5 opacity-70" />
+              <p className="text-[10px] font-semibold uppercase opacity-70">Terms & Conditions</p>
+            </div>
+            <ul className="text-[10px] opacity-80 pl-3 space-y-0">
+              {termsArray.map((term, idx) => (
+                <li key={idx}>{idx + 1}. {term}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {showBankDetails && (
+          <div>
+            <div className="flex items-center gap-1 mb-1">
+              <Building2 className="w-2.5 h-2.5 opacity-70" />
+              <p className="text-[10px] font-semibold uppercase opacity-70">Bank Details</p>
+            </div>
+            <div className="text-[10px] opacity-80 pl-3">
+              {settings.bank_branch && <p>Name: {settings.bank_branch}</p>}
+              <p>Bank: {settings.bank_name}</p>
+              {settings.bank_account_no && <p>A/C: {settings.bank_account_no}</p>}
+              {settings.bank_ifsc && <p>IFSC: {settings.bank_ifsc}</p>}
+            </div>
+          </div>
+        )}
+
+        {showSignature && (
+          <div className="flex justify-end pt-2">
+            <div className="text-center w-28">
+              <p className="text-[10px] font-medium mb-4">for {companyName}</p>
+              <div className="border-t border-white/30 pt-1 flex items-center justify-center gap-1">
+                <PenLine className="w-2 h-2 opacity-70" />
+                <span className="text-[9px] opacity-70">Authorised Signatory</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Render sections in order
+  const renderSection = (sectionId: string) => {
+    switch (sectionId) {
+      case "header":
+      case "customer_details":
+        return sectionId === "header" ? renderHeader() : null;
+      case "items_table":
+        return renderItemsTable();
+      case "totals":
+        return renderTotals();
+      case "bank_details":
+      case "terms":
+      case "signature":
+        return null; // Handled by footer
+      default:
+        return null;
+    }
+  };
+
+  const mainSections = sectionOrder.filter(s => ["header", "items_table", "totals"].includes(s));
 
   return (
     <div className="sticky top-4">
@@ -71,187 +295,11 @@ export function InvoicePreviewPane({ settings, companyName = "Your Company Name"
           {/* Gold Accent Bar */}
           <div className="h-1.5" style={{ backgroundColor: settings.accent_color }} />
 
-          {/* Header */}
-          <div 
-            className="px-4 py-3 text-center space-y-2"
-            style={{ 
-              backgroundColor: settings.primary_color,
-              color: settings.header_text_color,
-              fontFamily: settings.font_heading,
-            }}
-          >
-            {settings.show_logo && (
-              <div className="flex justify-center">
-                {companyLogo ? (
-                  <img src={companyLogo} alt="Logo" className="w-10 h-10 rounded-lg object-contain" />
-                ) : (
-                  <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: settings.accent_color }}>
-                    <Building2 className="w-5 h-5" style={{ color: settings.primary_color }} />
-                  </div>
-                )}
-              </div>
-            )}
-
-            <h1 className="text-base font-bold">{companyName}</h1>
-            <p className="text-xs opacity-80">123 Business Street, City, State 123456</p>
-
-            {settings.show_contact_header && (
-              <div className="flex flex-wrap justify-center gap-2 text-xs opacity-80">
-                <span className="flex items-center gap-1"><Phone className="w-2.5 h-2.5" /> +91 12345 67890</span>
-                <span className="flex items-center gap-1"><Mail className="w-2.5 h-2.5" /> email@company.com</span>
-                <span className="flex items-center gap-1"><Globe className="w-2.5 h-2.5" /> www.company.com</span>
-              </div>
-            )}
-
-            {settings.show_gstin_header && (
-              <div className="flex justify-center gap-2 text-xs">
-                <span className="px-2 py-0.5 rounded" style={{ backgroundColor: "rgba(255,255,255,0.1)" }}>
-                  GSTIN: 29ABCDE1234F1ZH
-                </span>
-                {settings.show_company_state && (
-                  <span className="px-2 py-0.5 rounded" style={{ backgroundColor: "rgba(255,255,255,0.1)" }}>
-                    State: Karnataka (29)
-                  </span>
-                )}
-              </div>
-            )}
-
-            {/* Invoice Title */}
-            <div className="pt-2 border-t border-white/20">
-              <h2 className="text-sm font-bold" style={{ color: settings.accent_color }}>
-                {settings.invoice_title}
-              </h2>
-            </div>
-
-            {/* Bill To & Invoice Details */}
-            <div className="grid grid-cols-2 gap-3 pt-2 text-left border-t border-white/20">
-              <div>
-                <p className="text-xs opacity-60 uppercase tracking-wider">{settings.bill_to_label}</p>
-                <p className="text-sm font-semibold mt-1">Customer Name</p>
-                <p className="text-xs opacity-80">123 Customer Street</p>
-                {settings.show_customer_phone && <p className="text-xs opacity-80">Phone: +91 98765 43210</p>}
-                {settings.show_customer_email && <p className="text-xs opacity-80">Email: customer@email.com</p>}
-              </div>
-              <div className="text-right">
-                <p className="text-xs opacity-60 uppercase tracking-wider">{settings.invoice_details_label}</p>
-                <p className="text-xs mt-1">Proforma No: <span className="font-semibold">INV-001</span></p>
-                <p className="text-xs">Date: <span className="font-medium">04-Feb-2026</span></p>
-              </div>
-            </div>
-          </div>
-
-          {/* Table */}
-          <div className="px-3 py-2">
-            <table className="w-full text-xs">
-              <thead>
-                <tr style={{ backgroundColor: settings.table_header_bg, color: settings.table_header_text }}>
-                  <th className="py-1.5 px-2 text-left font-semibold uppercase text-[10px]">Sl</th>
-                  {settings.show_image_column && <th className="py-1.5 px-2 text-left font-semibold uppercase text-[10px]">Img</th>}
-                  <th className="py-1.5 px-2 text-left font-semibold uppercase text-[10px]">Product</th>
-                  <th className="py-1.5 px-2 text-center font-semibold uppercase text-[10px]">Qty</th>
-                  <th className="py-1.5 px-2 text-right font-semibold uppercase text-[10px]">Rate</th>
-                  <th className="py-1.5 px-2 text-right font-semibold uppercase text-[10px]">Total</th>
-                </tr>
-              </thead>
-              <tbody style={{ color: settings.table_text_color }}>
-                {sampleItems.map((item) => (
-                  <tr key={item.id} className="border-b border-gray-100">
-                    <td className="py-1.5 px-2">{item.slNo}</td>
-                    {settings.show_image_column && (
-                      <td className="py-1.5 px-2">
-                        <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
-                          <ImageIcon className="w-3 h-3 text-gray-400" />
-                        </div>
-                      </td>
-                    )}
-                    <td className="py-1.5 px-2">
-                      <p className="font-medium">{item.brand}</p>
-                      <p className="text-[10px] opacity-70">{item.description}</p>
-                    </td>
-                    <td className="py-1.5 px-2 text-center">{item.quantity}</td>
-                    <td className="py-1.5 px-2 text-right font-mono">₹{item.rate.toLocaleString()}</td>
-                    <td className="py-1.5 px-2 text-right font-mono font-medium">₹{item.total.toLocaleString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Totals */}
-          <div className="px-3 py-2 bg-white">
-            <div className="flex justify-between items-start">
-              {settings.show_amount_words && (
-                <div className="flex-1 p-2 bg-gray-50 border border-gray-200 mr-3">
-                  <p className="text-[10px] font-semibold uppercase text-gray-500">Amount in Words</p>
-                  <p className="text-xs font-medium">Five Thousand Five Hundred Only</p>
-                </div>
-              )}
-              <div className="w-40 space-y-1 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Subtotal</span>
-                  <span className="font-mono">₹5,500</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">GST (18%)</span>
-                  <span className="font-mono">₹990</span>
-                </div>
-                <div 
-                  className="flex justify-between py-1.5 px-2 -mx-2 mt-2"
-                  style={{ backgroundColor: settings.grand_total_bg, color: settings.grand_total_text }}
-                >
-                  <span className="font-semibold">Grand Total</span>
-                  <span className="font-mono font-bold">₹6,490</span>
-                </div>
-              </div>
-            </div>
-          </div>
+          {/* Render sections in order */}
+          {mainSections.map(sectionId => renderSection(sectionId))}
 
           {/* Footer */}
-          <div 
-            className="px-3 py-2 space-y-2"
-            style={{ backgroundColor: settings.primary_color, color: settings.header_text_color }}
-          >
-            {settings.show_terms && termsArray.length > 0 && (
-              <div>
-                <div className="flex items-center gap-1 mb-1">
-                  <FileText className="w-2.5 h-2.5 opacity-70" />
-                  <p className="text-[10px] font-semibold uppercase opacity-70">Terms & Conditions</p>
-                </div>
-                <ul className="text-[10px] opacity-80 pl-3 space-y-0">
-                  {termsArray.map((term, idx) => (
-                    <li key={idx}>{idx + 1}. {term}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {settings.bank_name && (
-              <div>
-                <div className="flex items-center gap-1 mb-1">
-                  <Building2 className="w-2.5 h-2.5 opacity-70" />
-                  <p className="text-[10px] font-semibold uppercase opacity-70">Bank Details</p>
-                </div>
-                <div className="text-[10px] opacity-80 pl-3">
-                  {settings.bank_branch && <p>Name: {settings.bank_branch}</p>}
-                  <p>Bank: {settings.bank_name}</p>
-                  {settings.bank_account_no && <p>A/C: {settings.bank_account_no}</p>}
-                  {settings.bank_ifsc && <p>IFSC: {settings.bank_ifsc}</p>}
-                </div>
-              </div>
-            )}
-
-            {settings.show_signature && (
-              <div className="flex justify-end pt-2">
-                <div className="text-center w-28">
-                  <p className="text-[10px] font-medium mb-4">for {companyName}</p>
-                  <div className="border-t border-white/30 pt-1 flex items-center justify-center gap-1">
-                    <PenLine className="w-2 h-2 opacity-70" />
-                    <span className="text-[9px] opacity-70">Authorised Signatory</span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+          {renderFooter()}
 
           {/* Bottom Accent Bar */}
           <div className="h-1.5" style={{ backgroundColor: settings.accent_color }} />

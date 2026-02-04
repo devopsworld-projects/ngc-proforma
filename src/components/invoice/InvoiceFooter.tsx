@@ -10,39 +10,52 @@ interface InvoiceFooterProps {
     ifsc?: string;
     branch?: string;
   };
+  showSignature?: boolean;
+  settings?: {
+    primary_color: string;
+    header_text_color: string;
+  };
 }
 
 export function InvoiceFooter({ 
   company, 
-  termsAndConditions = [
-    "Customer Should register the product with respective company.",
-    "In case of Warranty the customer should bare the courier charges.",
-    "Validity of this quotation is for 7 days.",
-    "Payment should be made in 100% Advance, No warranty for Burning."
-  ],
-  bankDetails = {
-    bankName: "TAMILNAD MERCANTILE BANK LTD",
-    accountNo: "171700150950039",
-    ifsc: "TMBL0000171",
-    branch: "NEW GLOBAL COMPUTERS"
-  }
+  termsAndConditions = [],
+  bankDetails,
+  showSignature = true,
+  settings,
 }: InvoiceFooterProps) {
+  const primaryColor = settings?.primary_color || "#294172";
+  const headerTextColor = settings?.header_text_color || "#ffffff";
+
+  // If nothing to show, return null
+  if (termsAndConditions.length === 0 && !bankDetails && !showSignature) {
+    return null;
+  }
+
   return (
-    <div className="px-3 py-3 bg-[hsl(var(--invoice-header-bg))] text-[hsl(var(--invoice-header-fg))] space-y-3">
+    <div 
+      className="px-3 py-3 space-y-3"
+      style={{ 
+        backgroundColor: primaryColor, 
+        color: headerTextColor,
+      }}
+    >
       {/* Terms & Conditions */}
-      <div className="space-y-0.5">
-        <div className="flex items-center gap-1.5">
-          <FileText className="w-3 h-3 opacity-70" />
-          <h4 className="text-xs font-semibold uppercase tracking-wider opacity-70">
-            Terms & Conditions
-          </h4>
+      {termsAndConditions.length > 0 && (
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-1.5">
+            <FileText className="w-3 h-3 opacity-70" />
+            <h4 className="text-xs font-semibold uppercase tracking-wider opacity-70">
+              Terms & Conditions
+            </h4>
+          </div>
+          <ul className="text-xs opacity-90 space-y-0 pl-4">
+            {termsAndConditions.map((term, idx) => (
+              <li key={idx}>{idx + 1}. {term}</li>
+            ))}
+          </ul>
         </div>
-        <ul className="text-xs opacity-90 space-y-0 pl-4">
-          {termsAndConditions.map((term, idx) => (
-            <li key={idx}>{idx + 1}. {term}</li>
-          ))}
-        </ul>
-      </div>
+      )}
 
       {/* Bank Details */}
       {bankDetails && bankDetails.bankName && (
@@ -63,19 +76,21 @@ export function InvoiceFooter({
       )}
 
       {/* Signature Section */}
-      <div className="flex justify-end">
-        <div className="text-center w-36">
-          <p className="text-xs font-semibold mb-4">
-            for {company.name}
-          </p>
-          <div className="border-t border-white/30 pt-1.5 flex items-center justify-center gap-1">
-            <PenLine className="w-2.5 h-2.5 opacity-70" />
-            <span className="text-xs font-medium opacity-80">
-              Authorised Signatory
-            </span>
+      {showSignature && (
+        <div className="flex justify-end">
+          <div className="text-center w-36">
+            <p className="text-xs font-semibold mb-4">
+              for {company.name}
+            </p>
+            <div className="border-t border-white/30 pt-1.5 flex items-center justify-center gap-1">
+              <PenLine className="w-2.5 h-2.5 opacity-70" />
+              <span className="text-xs font-medium opacity-80">
+                Authorised Signatory
+              </span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
