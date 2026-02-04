@@ -97,6 +97,9 @@ export function InvoiceTable({ items }: InvoiceTableProps) {
                 <TableCell className="text-center py-2">
                   <span className="font-semibold text-black text-sm font-mono">{item.quantity}</span>
                   <span className="text-gray-600 text-xs ml-1">{item.unit}</span>
+                  {item.sizeLabel && (
+                    <div className="text-[10px] text-gray-500 mt-0.5">({item.sizeLabel})</div>
+                  )}
                 </TableCell>
                 <TableCell className="text-right py-2 font-medium text-black text-sm font-mono">
                   {formatCurrency(totalBasePrice)}

@@ -108,6 +108,7 @@ export default function InvoicePreview() {
       serialNumbers: item.serial_numbers || [],
       quantity: Number(item.quantity),
       unit: item.unit,
+      sizeLabel: item.size_label || "",
       rate: Number(item.rate),
       discountPercent: Number(item.discount_percent || 0),
       amount: Number(item.amount),
