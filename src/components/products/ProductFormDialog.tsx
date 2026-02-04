@@ -4,11 +4,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Upload, X, Image as ImageIcon } from "lucide-react";
 import { useCreateProduct, useUpdateProduct, Product } from "@/hooks/useProducts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+
+const UNIT_OPTIONS = [
+  { value: "NOS", label: "NOS (Numbers)" },
+  { value: "MTR", label: "MTR (Meters)" },
+  { value: "KG", label: "KG (Kilograms)" },
+  { value: "LTR", label: "LTR (Liters)" },
+  { value: "PCS", label: "PCS (Pieces)" },
+  { value: "BOX", label: "BOX (Boxes)" },
+  { value: "SET", label: "SET (Sets)" },
+  { value: "ROLL", label: "ROLL (Rolls)" },
+  { value: "PAIR", label: "PAIR (Pairs)" },
+  { value: "SQM", label: "SQM (Square Meters)" },
+];
 import { formatCurrency, calculateGstBreakup, roundToTwo } from "@/lib/invoice-utils";
 
 interface ProductFormDialogProps {
@@ -278,12 +292,21 @@ export function ProductFormDialog({ product, trigger }: ProductFormDialogProps) 
             
             <div>
               <Label htmlFor="unit">Unit</Label>
-              <Input
-                id="unit"
+              <Select
                 value={formData.unit}
-                onChange={(e) => handleChange("unit", e.target.value)}
-                placeholder="e.g., NOS, KG, PCS"
-              />
+                onValueChange={(value) => handleChange("unit", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select unit" />
+                </SelectTrigger>
+                <SelectContent>
+                  {UNIT_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             
             <div>
