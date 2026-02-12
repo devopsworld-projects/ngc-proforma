@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback, useState } from "react";
+import { useRef, useEffect, useCallback, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -6,6 +6,7 @@ import { Save, Loader2, ZoomIn, ZoomOut } from "lucide-react";
 import { CanvasToolbar } from "./CanvasToolbar";
 import { CanvasPropertiesPanel } from "./CanvasPropertiesPanel";
 import { useCanvasEditor } from "./useCanvasEditor";
+import { generateTemplateCanvas } from "./generateTemplateCanvas";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   ResizablePanelGroup,
@@ -17,17 +18,63 @@ import {
 const CANVAS_WIDTH = 595;
 const CANVAS_HEIGHT = 842;
 
+interface TemplateSettings {
+  primary_color: string;
+  secondary_color: string;
+  accent_color: string;
+  header_text_color: string;
+  table_header_bg: string;
+  table_header_text: string;
+  table_text_color: string;
+  grand_total_bg: string;
+  grand_total_text: string;
+  invoice_title: string;
+  bill_to_label: string;
+  invoice_details_label: string;
+  font_heading: string;
+  font_body: string;
+  font_mono: string;
+  show_logo: boolean;
+  show_gstin_header: boolean;
+  show_contact_header: boolean;
+  show_company_state: boolean;
+  show_customer_email: boolean;
+  show_customer_phone: boolean;
+  show_terms: boolean;
+  show_signature: boolean;
+  show_amount_words: boolean;
+  terms_line1: string | null;
+  terms_line2: string | null;
+  terms_line3: string | null;
+  bank_name: string | null;
+  bank_account_no: string | null;
+  bank_ifsc: string | null;
+  bank_branch: string | null;
+  [key: string]: any;
+}
+
 interface InvoiceCanvasEditorProps {
   initialData?: string | null;
+  templateSettings?: TemplateSettings;
+  companyName?: string;
+  companyLogo?: string | null;
   onSave: (data: string) => Promise<void>;
   isSaving?: boolean;
 }
 
-export function InvoiceCanvasEditor({ initialData, onSave, isSaving }: InvoiceCanvasEditorProps) {
+export function InvoiceCanvasEditor({ initialData, templateSettings, companyName, companyLogo, onSave, isSaving }: InvoiceCanvasEditorProps) {
   const canvasElRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
   const [containerWidth, setContainerWidth] = useState(0);
+
+  // If no saved canvas data, generate from current template settings
+  const resolvedInitialData = useMemo(() => {
+    if (initialData) return initialData;
+    if (!templateSettings) return null;
+    const generated = generateTemplateCanvas(templateSettings, { name: companyName, logo_url: companyLogo });
+    return JSON.stringify(generated);
+  }, [initialData, templateSettings, companyName, companyLogo]);
 
   const {
     initCanvas,
@@ -52,7 +99,7 @@ export function InvoiceCanvasEditor({ initialData, onSave, isSaving }: InvoiceCa
   } = useCanvasEditor({
     width: CANVAS_WIDTH,
     height: CANVAS_HEIGHT,
-    initialData,
+    initialData: resolvedInitialData,
   });
 
   // Initialize canvas when element is ready
