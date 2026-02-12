@@ -1,0 +1,1 @@
+ALTER TABLE public.pdf_template_settings ADD COLUMN IF NOT EXISTS custom_canvas_data jsonb;
