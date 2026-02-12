@@ -283,6 +283,38 @@ function LayoutThumbnail({ template }: { template: TemplatePreset }) {
 
 // --- Template presets ---
 export const templatePresets: TemplatePreset[] = [
+  // ---- CLEAN B&W ----
+  {
+    id: "clean_bw",
+    name: "Clean B&W",
+    description: "Simple black & white — no color, pure professional clarity",
+    category: "centered",
+    settings: {
+      primary_color: "#000000",
+      secondary_color: "#333333",
+      accent_color: "#666666",
+      header_text_color: "#ffffff",
+      table_header_bg: "#f5f5f5",
+      table_header_text: "#000000",
+      table_text_color: "#1a1a1a",
+      grand_total_bg: "#000000",
+      grand_total_text: "#ffffff",
+      template_style: "clean_bw",
+      font_heading: "Montserrat",
+      font_body: "Inter",
+      header_padding: "normal",
+      header_layout_style: "centered",
+      logo_size: "medium",
+      section_spacing: "normal",
+      table_row_padding: "normal",
+      footer_padding: "normal",
+      show_invoice_title: true,
+      compact_header: false,
+      border_style: "subtle",
+      table_border_color: "#d4d4d4",
+    },
+  },
+
   // ---- CENTERED LAYOUTS ----
   {
     id: "bold_corporate",
