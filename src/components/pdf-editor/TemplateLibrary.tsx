@@ -1,16 +1,14 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, Sparkles } from "lucide-react";
+import { Check, LayoutTemplate } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface TemplatePreset {
   id: string;
   name: string;
   description: string;
-  preview: string;
-  tags?: string[];
+  category: "centered" | "split" | "left-aligned" | "compact" | "premium";
   settings: {
-    // Colors
     primary_color: string;
     secondary_color: string;
     accent_color: string;
@@ -21,10 +19,8 @@ export interface TemplatePreset {
     grand_total_bg: string;
     grand_total_text: string;
     template_style: string;
-    // Typography
     font_heading: string;
     font_body: string;
-    // Spacing & Layout
     header_padding: string;
     header_layout_style: string;
     logo_size: string;
@@ -38,13 +34,261 @@ export interface TemplatePreset {
   };
 }
 
+// --- Layout Thumbnail Components ---
+// These render mini structural diagrams showing where logo, text, table, footer sit
+
+function CenteredLayoutThumb({ primary, accent }: { primary: string; accent: string }) {
+  return (
+    <div className="w-full h-full flex flex-col">
+      {/* Accent bar */}
+      <div className="h-[3px]" style={{ backgroundColor: accent }} />
+      {/* Header - centered */}
+      <div className="flex-[3] flex flex-col items-center justify-center gap-[2px] px-2" style={{ backgroundColor: primary }}>
+        <div className="w-4 h-4 rounded-sm" style={{ backgroundColor: accent, opacity: 0.8 }} />
+        <div className="w-12 h-[3px] rounded-full bg-white/70" />
+        <div className="w-16 h-[2px] rounded-full bg-white/40" />
+        <div className="w-10 h-[2px] rounded-full bg-white/30" />
+      </div>
+      {/* Invoice title */}
+      <div className="h-[6px] flex items-center justify-center" style={{ backgroundColor: primary }}>
+        <div className="w-10 h-[2px] rounded-full" style={{ backgroundColor: accent }} />
+      </div>
+      {/* Bill to / Invoice details row */}
+      <div className="flex gap-1 px-1 py-[2px]" style={{ backgroundColor: primary }}>
+        <div className="flex-1 space-y-[1px]">
+          <div className="w-6 h-[2px] rounded-full bg-white/40" />
+          <div className="w-10 h-[2px] rounded-full bg-white/60" />
+        </div>
+        <div className="flex-1 flex flex-col items-end space-y-[1px]">
+          <div className="w-6 h-[2px] rounded-full bg-white/40" />
+          <div className="w-8 h-[2px] rounded-full bg-white/60" />
+        </div>
+      </div>
+      {/* Table */}
+      <div className="flex-[3] bg-white px-1 py-[2px] space-y-[2px]">
+        <div className="h-[3px] rounded-sm bg-gray-200" />
+        <div className="h-[2px] rounded-sm bg-gray-100" />
+        <div className="h-[2px] rounded-sm bg-gray-100" />
+        <div className="h-[2px] rounded-sm bg-gray-100" />
+      </div>
+      {/* Totals */}
+      <div className="flex justify-end px-1 py-[2px] bg-white">
+        <div className="w-10 h-[4px] rounded-sm" style={{ backgroundColor: primary }} />
+      </div>
+      {/* Footer */}
+      <div className="flex-[1] px-1 py-[2px]" style={{ backgroundColor: primary }}>
+        <div className="w-8 h-[2px] rounded-full bg-white/40" />
+      </div>
+      <div className="h-[3px]" style={{ backgroundColor: accent }} />
+    </div>
+  );
+}
+
+function SplitLayoutThumb({ primary, accent }: { primary: string; accent: string }) {
+  return (
+    <div className="w-full h-full flex flex-col">
+      <div className="h-[3px]" style={{ backgroundColor: accent }} />
+      {/* Header - split: logo left, info right */}
+      <div className="flex-[2] flex items-center justify-between px-2 py-1" style={{ backgroundColor: primary }}>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: accent, opacity: 0.8 }} />
+          <div className="space-y-[1px]">
+            <div className="w-8 h-[3px] rounded-full bg-white/70" />
+            <div className="w-10 h-[2px] rounded-full bg-white/40" />
+          </div>
+        </div>
+        <div className="space-y-[1px] flex flex-col items-end">
+          <div className="w-6 h-[2px] rounded-full bg-white/50" />
+          <div className="w-8 h-[2px] rounded-full bg-white/40" />
+        </div>
+      </div>
+      {/* Bill to row */}
+      <div className="flex gap-1 px-1 py-[2px]" style={{ backgroundColor: primary }}>
+        <div className="flex-1 space-y-[1px]">
+          <div className="w-5 h-[2px] rounded-full bg-white/40" />
+          <div className="w-8 h-[2px] rounded-full bg-white/60" />
+        </div>
+        <div className="flex-1 flex flex-col items-end space-y-[1px]">
+          <div className="w-5 h-[2px] rounded-full bg-white/40" />
+          <div className="w-7 h-[2px] rounded-full bg-white/60" />
+        </div>
+      </div>
+      {/* Table */}
+      <div className="flex-[3] bg-white px-1 py-[2px] space-y-[2px]">
+        <div className="h-[3px] rounded-sm bg-gray-200" />
+        <div className="h-[2px] rounded-sm bg-gray-100" />
+        <div className="h-[2px] rounded-sm bg-gray-100" />
+        <div className="h-[2px] rounded-sm bg-gray-100" />
+      </div>
+      <div className="flex justify-end px-1 py-[2px] bg-white">
+        <div className="w-10 h-[4px] rounded-sm" style={{ backgroundColor: primary }} />
+      </div>
+      <div className="flex-[1] px-1 py-[2px]" style={{ backgroundColor: primary }}>
+        <div className="w-8 h-[2px] rounded-full bg-white/40" />
+      </div>
+      <div className="h-[3px]" style={{ backgroundColor: accent }} />
+    </div>
+  );
+}
+
+function LeftAlignedLayoutThumb({ primary, accent }: { primary: string; accent: string }) {
+  return (
+    <div className="w-full h-full flex flex-col">
+      <div className="h-[3px]" style={{ backgroundColor: accent }} />
+      {/* Header - left-aligned */}
+      <div className="flex-[2] flex items-center gap-1 px-2 py-1" style={{ backgroundColor: primary }}>
+        <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: accent, opacity: 0.8 }} />
+        <div className="space-y-[1px]">
+          <div className="w-10 h-[3px] rounded-full bg-white/70" />
+          <div className="w-14 h-[2px] rounded-full bg-white/40" />
+          <div className="w-8 h-[2px] rounded-full bg-white/30" />
+        </div>
+      </div>
+      {/* Bill to row */}
+      <div className="flex gap-1 px-1 py-[2px]" style={{ backgroundColor: primary }}>
+        <div className="flex-1 space-y-[1px]">
+          <div className="w-5 h-[2px] rounded-full bg-white/40" />
+          <div className="w-9 h-[2px] rounded-full bg-white/60" />
+        </div>
+        <div className="flex-1 flex flex-col items-end space-y-[1px]">
+          <div className="w-5 h-[2px] rounded-full bg-white/40" />
+          <div className="w-7 h-[2px] rounded-full bg-white/60" />
+        </div>
+      </div>
+      {/* Table */}
+      <div className="flex-[3] bg-white px-1 py-[2px] space-y-[2px]">
+        <div className="h-[3px] rounded-sm bg-gray-200" />
+        <div className="h-[2px] rounded-sm bg-gray-100" />
+        <div className="h-[2px] rounded-sm bg-gray-100" />
+        <div className="h-[2px] rounded-sm bg-gray-100" />
+      </div>
+      <div className="flex justify-end px-1 py-[2px] bg-white">
+        <div className="w-10 h-[4px] rounded-sm" style={{ backgroundColor: primary }} />
+      </div>
+      <div className="flex-[1] px-1 py-[2px]" style={{ backgroundColor: primary }}>
+        <div className="w-8 h-[2px] rounded-full bg-white/40" />
+      </div>
+      <div className="h-[3px]" style={{ backgroundColor: accent }} />
+    </div>
+  );
+}
+
+function CompactLayoutThumb({ primary, accent }: { primary: string; accent: string }) {
+  return (
+    <div className="w-full h-full flex flex-col">
+      <div className="h-[3px]" style={{ backgroundColor: accent }} />
+      {/* Header - ultra compact, single line */}
+      <div className="flex items-center justify-between px-2 py-[3px]" style={{ backgroundColor: primary }}>
+        <div className="flex items-center gap-1">
+          <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: accent, opacity: 0.8 }} />
+          <div className="w-8 h-[3px] rounded-full bg-white/70" />
+        </div>
+        <div className="w-6 h-[2px] rounded-full bg-white/40" />
+      </div>
+      {/* Bill to - compact */}
+      <div className="flex gap-1 px-1 py-[2px]" style={{ backgroundColor: primary }}>
+        <div className="flex-1">
+          <div className="w-8 h-[2px] rounded-full bg-white/60" />
+        </div>
+        <div className="flex-1 flex justify-end">
+          <div className="w-7 h-[2px] rounded-full bg-white/60" />
+        </div>
+      </div>
+      {/* Table - takes most space */}
+      <div className="flex-[5] bg-white px-1 py-[2px] space-y-[2px]">
+        <div className="h-[3px] rounded-sm bg-gray-200" />
+        <div className="h-[2px] rounded-sm bg-gray-100" />
+        <div className="h-[2px] rounded-sm bg-gray-100" />
+        <div className="h-[2px] rounded-sm bg-gray-100" />
+        <div className="h-[2px] rounded-sm bg-gray-100" />
+        <div className="h-[2px] rounded-sm bg-gray-100" />
+      </div>
+      <div className="flex justify-end px-1 py-[2px] bg-white">
+        <div className="w-10 h-[4px] rounded-sm" style={{ backgroundColor: primary }} />
+      </div>
+      <div className="px-1 py-[2px]" style={{ backgroundColor: primary }}>
+        <div className="w-6 h-[2px] rounded-full bg-white/40" />
+      </div>
+      <div className="h-[3px]" style={{ backgroundColor: accent }} />
+    </div>
+  );
+}
+
+function PremiumLayoutThumb({ primary, accent }: { primary: string; accent: string }) {
+  return (
+    <div className="w-full h-full flex flex-col">
+      <div className="h-[4px]" style={{ backgroundColor: accent }} />
+      {/* Header - large centered logo, spacious */}
+      <div className="flex-[4] flex flex-col items-center justify-center gap-[3px] px-2" style={{ backgroundColor: primary }}>
+        <div className="w-6 h-6 rounded-md" style={{ backgroundColor: accent, opacity: 0.8 }} />
+        <div className="w-14 h-[3px] rounded-full bg-white/70" />
+        <div className="w-18 h-[2px] rounded-full bg-white/40" />
+        <div className="w-12 h-[2px] rounded-full bg-white/30" />
+        <div className="w-12 h-[2px] rounded-full mt-1" style={{ backgroundColor: accent, opacity: 0.6 }} />
+      </div>
+      {/* Bill to */}
+      <div className="flex gap-2 px-2 py-[3px]" style={{ backgroundColor: primary }}>
+        <div className="flex-1 space-y-[1px]">
+          <div className="w-6 h-[2px] rounded-full bg-white/40" />
+          <div className="w-10 h-[2px] rounded-full bg-white/60" />
+        </div>
+        <div className="flex-1 flex flex-col items-end space-y-[1px]">
+          <div className="w-6 h-[2px] rounded-full bg-white/40" />
+          <div className="w-9 h-[2px] rounded-full bg-white/60" />
+        </div>
+      </div>
+      {/* Table */}
+      <div className="flex-[2] bg-white px-1 py-[2px] space-y-[2px]">
+        <div className="h-[3px] rounded-sm bg-gray-200" />
+        <div className="h-[2px] rounded-sm bg-gray-100" />
+        <div className="h-[2px] rounded-sm bg-gray-100" />
+      </div>
+      <div className="flex justify-end px-1 py-[3px] bg-white">
+        <div className="w-12 h-[5px] rounded-sm" style={{ backgroundColor: primary }} />
+      </div>
+      <div className="flex-[1] px-2 py-[3px]" style={{ backgroundColor: primary }}>
+        <div className="w-10 h-[2px] rounded-full bg-white/40" />
+      </div>
+      <div className="h-[4px]" style={{ backgroundColor: accent }} />
+    </div>
+  );
+}
+
+// --- Category labels ---
+const categoryLabels: Record<string, string> = {
+  centered: "Centered Header",
+  split: "Split Header",
+  "left-aligned": "Left-Aligned",
+  compact: "Compact / Dense",
+  premium: "Premium / Spacious",
+};
+
+// --- Thumbnail selector ---
+function LayoutThumbnail({ template }: { template: TemplatePreset }) {
+  const { primary_color, accent_color } = template.settings;
+  switch (template.category) {
+    case "split":
+      return <SplitLayoutThumb primary={primary_color} accent={accent_color} />;
+    case "left-aligned":
+      return <LeftAlignedLayoutThumb primary={primary_color} accent={accent_color} />;
+    case "compact":
+      return <CompactLayoutThumb primary={primary_color} accent={accent_color} />;
+    case "premium":
+      return <PremiumLayoutThumb primary={primary_color} accent={accent_color} />;
+    case "centered":
+    default:
+      return <CenteredLayoutThumb primary={primary_color} accent={accent_color} />;
+  }
+}
+
+// --- Template presets ---
 export const templatePresets: TemplatePreset[] = [
+  // ---- CENTERED LAYOUTS ----
   {
     id: "bold_corporate",
     name: "Bold Corporate",
-    description: "Deep navy with gold accents - professional and premium look",
-    preview: "linear-gradient(135deg, #1e2a4a 0%, #d4a02c 100%)",
-    tags: ["Premium", "Professional"],
+    description: "Centered header with logo, navy & gold — classic business look",
+    category: "centered",
     settings: {
       primary_color: "#294172",
       secondary_color: "#3b82f6",
@@ -71,73 +315,10 @@ export const templatePresets: TemplatePreset[] = [
     },
   },
   {
-    id: "compact_professional",
-    name: "Compact Professional",
-    description: "Space-efficient design - maximizes content area with split header",
-    preview: "linear-gradient(135deg, #1e3a5f 0%, #0ea5e9 100%)",
-    tags: ["Compact", "Efficient"],
-    settings: {
-      primary_color: "#1e3a5f",
-      secondary_color: "#0284c7",
-      accent_color: "#0ea5e9",
-      header_text_color: "#ffffff",
-      table_header_bg: "#f0f9ff",
-      table_header_text: "#1e3a5f",
-      table_text_color: "#1e3a5f",
-      grand_total_bg: "#1e3a5f",
-      grand_total_text: "#ffffff",
-      template_style: "compact_professional",
-      font_heading: "Inter",
-      font_body: "Inter",
-      header_padding: "compact",
-      header_layout_style: "split",
-      logo_size: "small",
-      section_spacing: "compact",
-      table_row_padding: "compact",
-      footer_padding: "compact",
-      show_invoice_title: true,
-      compact_header: true,
-      border_style: "subtle",
-      table_border_color: "#e0f2fe",
-    },
-  },
-  {
-    id: "minimal_modern",
-    name: "Minimal Modern",
-    description: "Clean black and white with subtle grays - ultra clean aesthetic",
-    preview: "linear-gradient(135deg, #111827 0%, #6b7280 100%)",
-    tags: ["Minimal", "Clean"],
-    settings: {
-      primary_color: "#111827",
-      secondary_color: "#4b5563",
-      accent_color: "#374151",
-      header_text_color: "#ffffff",
-      table_header_bg: "#f9fafb",
-      table_header_text: "#111827",
-      table_text_color: "#374151",
-      grand_total_bg: "#111827",
-      grand_total_text: "#ffffff",
-      template_style: "minimal_modern",
-      font_heading: "Inter",
-      font_body: "Inter",
-      header_padding: "compact",
-      header_layout_style: "left-aligned",
-      logo_size: "medium",
-      section_spacing: "normal",
-      table_row_padding: "compact",
-      footer_padding: "compact",
-      show_invoice_title: true,
-      compact_header: true,
-      border_style: "none",
-      table_border_color: "#e5e7eb",
-    },
-  },
-  {
-    id: "ocean_blue",
+    id: "ocean_centered",
     name: "Ocean Blue",
-    description: "Calm blue tones with teal accents - fresh and modern",
-    preview: "linear-gradient(135deg, #0369a1 0%, #14b8a6 100%)",
-    tags: ["Fresh", "Modern"],
+    description: "Centered header with calm blue tones and teal accents",
+    category: "centered",
     settings: {
       primary_color: "#0369a1",
       secondary_color: "#0ea5e9",
@@ -148,7 +329,7 @@ export const templatePresets: TemplatePreset[] = [
       table_text_color: "#1e3a5f",
       grand_total_bg: "#0369a1",
       grand_total_text: "#ffffff",
-      template_style: "ocean_blue",
+      template_style: "ocean_centered",
       font_heading: "Montserrat",
       font_body: "Inter",
       header_padding: "normal",
@@ -163,12 +344,43 @@ export const templatePresets: TemplatePreset[] = [
       table_border_color: "#bae6fd",
     },
   },
+
+  // ---- SPLIT LAYOUTS ----
   {
-    id: "forest_green",
+    id: "split_professional",
+    name: "Split Professional",
+    description: "Logo left, contact right — efficient two-column header",
+    category: "split",
+    settings: {
+      primary_color: "#1e3a5f",
+      secondary_color: "#0284c7",
+      accent_color: "#0ea5e9",
+      header_text_color: "#ffffff",
+      table_header_bg: "#f0f9ff",
+      table_header_text: "#1e3a5f",
+      table_text_color: "#1e3a5f",
+      grand_total_bg: "#1e3a5f",
+      grand_total_text: "#ffffff",
+      template_style: "split_professional",
+      font_heading: "Inter",
+      font_body: "Inter",
+      header_padding: "normal",
+      header_layout_style: "split",
+      logo_size: "medium",
+      section_spacing: "normal",
+      table_row_padding: "normal",
+      footer_padding: "normal",
+      show_invoice_title: true,
+      compact_header: false,
+      border_style: "subtle",
+      table_border_color: "#e0f2fe",
+    },
+  },
+  {
+    id: "forest_split",
     name: "Forest Green",
-    description: "Natural green palette with earthy tones - eco-friendly feel",
-    preview: "linear-gradient(135deg, #166534 0%, #84cc16 100%)",
-    tags: ["Natural", "Eco"],
+    description: "Split header with earthy green palette and natural feel",
+    category: "split",
     settings: {
       primary_color: "#166534",
       secondary_color: "#22c55e",
@@ -179,7 +391,7 @@ export const templatePresets: TemplatePreset[] = [
       table_text_color: "#1a3a1a",
       grand_total_bg: "#166534",
       grand_total_text: "#ffffff",
-      template_style: "forest_green",
+      template_style: "forest_split",
       font_heading: "Montserrat",
       font_body: "Inter",
       header_padding: "normal",
@@ -194,12 +406,43 @@ export const templatePresets: TemplatePreset[] = [
       table_border_color: "#bbf7d0",
     },
   },
+
+  // ---- LEFT-ALIGNED LAYOUTS ----
   {
-    id: "burgundy_classic",
+    id: "modern_left",
+    name: "Modern Left",
+    description: "Left-aligned header — clean, minimal, contemporary layout",
+    category: "left-aligned",
+    settings: {
+      primary_color: "#111827",
+      secondary_color: "#4b5563",
+      accent_color: "#374151",
+      header_text_color: "#ffffff",
+      table_header_bg: "#f9fafb",
+      table_header_text: "#111827",
+      table_text_color: "#374151",
+      grand_total_bg: "#111827",
+      grand_total_text: "#ffffff",
+      template_style: "modern_left",
+      font_heading: "Inter",
+      font_body: "Inter",
+      header_padding: "normal",
+      header_layout_style: "left-aligned",
+      logo_size: "medium",
+      section_spacing: "normal",
+      table_row_padding: "normal",
+      footer_padding: "normal",
+      show_invoice_title: true,
+      compact_header: false,
+      border_style: "none",
+      table_border_color: "#e5e7eb",
+    },
+  },
+  {
+    id: "burgundy_left",
     name: "Burgundy Classic",
-    description: "Rich burgundy with cream accents - elegant and timeless",
-    preview: "linear-gradient(135deg, #7f1d1d 0%, #d97706 100%)",
-    tags: ["Elegant", "Classic"],
+    description: "Left-aligned with rich burgundy and cream accents",
+    category: "left-aligned",
     settings: {
       primary_color: "#7f1d1d",
       secondary_color: "#b91c1c",
@@ -210,58 +453,28 @@ export const templatePresets: TemplatePreset[] = [
       table_text_color: "#44403c",
       grand_total_bg: "#7f1d1d",
       grand_total_text: "#ffffff",
-      template_style: "burgundy_classic",
-      font_heading: "Montserrat",
-      font_body: "Inter",
-      header_padding: "relaxed",
-      header_layout_style: "centered",
-      logo_size: "large",
-      section_spacing: "relaxed",
-      table_row_padding: "relaxed",
-      footer_padding: "relaxed",
-      show_invoice_title: true,
-      compact_header: false,
-      border_style: "medium",
-      table_border_color: "#fde68a",
-    },
-  },
-  {
-    id: "purple_royal",
-    name: "Purple Royal",
-    description: "Regal purple with violet highlights - luxurious feel",
-    preview: "linear-gradient(135deg, #581c87 0%, #a855f7 100%)",
-    tags: ["Luxury", "Regal"],
-    settings: {
-      primary_color: "#581c87",
-      secondary_color: "#7c3aed",
-      accent_color: "#a855f7",
-      header_text_color: "#ffffff",
-      table_header_bg: "#faf5ff",
-      table_header_text: "#581c87",
-      table_text_color: "#3b0764",
-      grand_total_bg: "#581c87",
-      grand_total_text: "#ffffff",
-      template_style: "purple_royal",
+      template_style: "burgundy_left",
       font_heading: "Montserrat",
       font_body: "Inter",
       header_padding: "normal",
-      header_layout_style: "centered",
+      header_layout_style: "left-aligned",
       logo_size: "large",
       section_spacing: "normal",
       table_row_padding: "normal",
       footer_padding: "normal",
       show_invoice_title: true,
       compact_header: false,
-      border_style: "subtle",
-      table_border_color: "#e9d5ff",
+      border_style: "medium",
+      table_border_color: "#fde68a",
     },
   },
+
+  // ---- COMPACT / DENSE LAYOUTS ----
   {
     id: "ultra_compact",
     name: "Ultra Compact",
-    description: "Maximum content space - smallest possible header footprint",
-    preview: "linear-gradient(135deg, #334155 0%, #64748b 100%)",
-    tags: ["Ultra Compact", "Dense"],
+    description: "Maximum content space — smallest header, no title, dense table",
+    category: "compact",
     settings: {
       primary_color: "#334155",
       secondary_color: "#475569",
@@ -288,11 +501,42 @@ export const templatePresets: TemplatePreset[] = [
     },
   },
   {
+    id: "compact_teal",
+    name: "Compact Teal",
+    description: "Dense layout with a vibrant teal — small logo, tight spacing",
+    category: "compact",
+    settings: {
+      primary_color: "#115e59",
+      secondary_color: "#0d9488",
+      accent_color: "#2dd4bf",
+      header_text_color: "#ffffff",
+      table_header_bg: "#f0fdfa",
+      table_header_text: "#115e59",
+      table_text_color: "#134e4a",
+      grand_total_bg: "#115e59",
+      grand_total_text: "#ffffff",
+      template_style: "compact_teal",
+      font_heading: "Inter",
+      font_body: "Inter",
+      header_padding: "compact",
+      header_layout_style: "left-aligned",
+      logo_size: "small",
+      section_spacing: "compact",
+      table_row_padding: "compact",
+      footer_padding: "compact",
+      show_invoice_title: true,
+      compact_header: true,
+      border_style: "subtle",
+      table_border_color: "#99f6e4",
+    },
+  },
+
+  // ---- PREMIUM / SPACIOUS LAYOUTS ----
+  {
     id: "executive_gold",
     name: "Executive Gold",
-    description: "Premium black with gold accents - executive presentation",
-    preview: "linear-gradient(135deg, #0f172a 0%, #eab308 100%)",
-    tags: ["Executive", "Premium"],
+    description: "Premium centered layout — extra-large logo, relaxed spacing",
+    category: "premium",
     settings: {
       primary_color: "#0f172a",
       secondary_color: "#1e293b",
@@ -318,7 +562,40 @@ export const templatePresets: TemplatePreset[] = [
       table_border_color: "#fde047",
     },
   },
+  {
+    id: "royal_purple",
+    name: "Royal Purple",
+    description: "Spacious centered layout — regal purple with violet highlights",
+    category: "premium",
+    settings: {
+      primary_color: "#581c87",
+      secondary_color: "#7c3aed",
+      accent_color: "#a855f7",
+      header_text_color: "#ffffff",
+      table_header_bg: "#faf5ff",
+      table_header_text: "#581c87",
+      table_text_color: "#3b0764",
+      grand_total_bg: "#581c87",
+      grand_total_text: "#ffffff",
+      template_style: "royal_purple",
+      font_heading: "Montserrat",
+      font_body: "Inter",
+      header_padding: "relaxed",
+      header_layout_style: "centered",
+      logo_size: "large",
+      section_spacing: "relaxed",
+      table_row_padding: "normal",
+      footer_padding: "relaxed",
+      show_invoice_title: true,
+      compact_header: false,
+      border_style: "subtle",
+      table_border_color: "#e9d5ff",
+    },
+  },
 ];
+
+// --- Group templates by category ---
+const categories = ["centered", "split", "left-aligned", "compact", "premium"] as const;
 
 interface TemplateLibraryProps {
   selectedTemplate: string;
@@ -327,70 +604,58 @@ interface TemplateLibraryProps {
 
 export function TemplateLibrary({ selectedTemplate, onSelectTemplate }: TemplateLibraryProps) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-primary" />
-          <h3 className="text-lg font-semibold">Template Library</h3>
+          <LayoutTemplate className="h-5 w-5 text-primary" />
+          <h3 className="text-lg font-semibold">Template Layouts</h3>
         </div>
-        <Badge variant="secondary">{templatePresets.length} templates</Badge>
+        <Badge variant="secondary">{templatePresets.length} layouts</Badge>
       </div>
 
       <p className="text-sm text-muted-foreground">
-        Each template includes colors, typography, spacing, and layout settings. Click to apply a complete look instantly.
+        Each template defines a unique layout structure, spacing, and color scheme. Click to apply instantly.
       </p>
-      
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-        {templatePresets.map((template) => (
-          <Card
-            key={template.id}
-            className={cn(
-              "cursor-pointer transition-all hover:shadow-md relative overflow-hidden group",
-              selectedTemplate === template.id && "ring-2 ring-primary"
-            )}
-            onClick={() => onSelectTemplate(template)}
-          >
-            <div 
-              className="h-14 w-full relative"
-              style={{ background: template.preview }}
-            >
-              {/* Compact indicator */}
-              {template.settings.compact_header && (
-                <div className="absolute top-1 right-1 px-1.5 py-0.5 bg-black/50 rounded text-[10px] text-white font-medium">
-                  Compact
-                </div>
-              )}
-            </div>
-            <CardContent className="p-2.5">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-sm truncate">{template.name}</p>
-                  <p className="text-[11px] text-muted-foreground line-clamp-2 leading-tight mt-0.5">
-                    {template.description}
-                  </p>
-                  {template.tags && template.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-1.5">
-                      {template.tags.map((tag) => (
-                        <span 
-                          key={tag} 
-                          className="px-1.5 py-0.5 bg-muted text-[10px] font-medium rounded text-muted-foreground"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
+
+      {categories.map((cat) => {
+        const templates = templatePresets.filter((t) => t.category === cat);
+        if (templates.length === 0) return null;
+        return (
+          <div key={cat} className="space-y-2">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              {categoryLabels[cat]}
+            </h4>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {templates.map((template) => (
+                <Card
+                  key={template.id}
+                  className={cn(
+                    "cursor-pointer transition-all hover:shadow-md relative overflow-hidden group",
+                    selectedTemplate === template.id && "ring-2 ring-primary"
                   )}
-                </div>
-                {selectedTemplate === template.id && (
-                  <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                    <Check className="w-3 h-3 text-primary-foreground" />
+                  onClick={() => onSelectTemplate(template)}
+                >
+                  {/* Layout thumbnail */}
+                  <div className="h-28 w-full relative border-b bg-white">
+                    <LayoutThumbnail template={template} />
+                    {selectedTemplate === template.id && (
+                      <div className="absolute top-1 right-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                        <Check className="w-3 h-3 text-primary-foreground" />
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                  <CardContent className="p-2.5">
+                    <p className="font-medium text-sm truncate">{template.name}</p>
+                    <p className="text-[11px] text-muted-foreground line-clamp-2 leading-tight mt-0.5">
+                      {template.description}
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
