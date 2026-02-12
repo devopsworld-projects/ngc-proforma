@@ -279,9 +279,9 @@ export function InvoiceHeader({
       }}
     >
       {/* Render layout based on style */}
-      {headerLayoutStyle === "split" && renderSplitLayout()}
-      {headerLayoutStyle === "left-aligned" && renderLeftAlignedLayout()}
-      {headerLayoutStyle === "centered" && renderCenteredLayout()}
+      {headerLayoutStyle === "split" ? renderSplitLayout()
+        : headerLayoutStyle === "left-aligned" ? renderLeftAlignedLayout()
+        : renderCenteredLayout()}
 
       {/* Proforma Invoice Title */}
       {showInvoiceTitle && (
