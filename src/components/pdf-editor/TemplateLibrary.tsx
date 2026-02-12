@@ -7,7 +7,7 @@ export interface TemplatePreset {
   id: string;
   name: string;
   description: string;
-  category: "centered" | "split" | "left-aligned" | "compact" | "premium";
+  category: "centered" | "split" | "left-aligned" | "compact";
   settings: {
     primary_color: string;
     secondary_color: string;
@@ -214,53 +214,12 @@ function CompactLayoutThumb({ primary, accent }: { primary: string; accent: stri
   );
 }
 
-function PremiumLayoutThumb({ primary, accent }: { primary: string; accent: string }) {
-  return (
-    <div className="w-full h-full flex flex-col">
-      <div className="h-[4px]" style={{ backgroundColor: accent }} />
-      {/* Header - large centered logo, spacious */}
-      <div className="flex-[4] flex flex-col items-center justify-center gap-[3px] px-2" style={{ backgroundColor: primary }}>
-        <div className="w-6 h-6 rounded-md" style={{ backgroundColor: accent, opacity: 0.8 }} />
-        <div className="w-14 h-[3px] rounded-full bg-white/70" />
-        <div className="w-18 h-[2px] rounded-full bg-white/40" />
-        <div className="w-12 h-[2px] rounded-full bg-white/30" />
-        <div className="w-12 h-[2px] rounded-full mt-1" style={{ backgroundColor: accent, opacity: 0.6 }} />
-      </div>
-      {/* Bill to */}
-      <div className="flex gap-2 px-2 py-[3px]" style={{ backgroundColor: primary }}>
-        <div className="flex-1 space-y-[1px]">
-          <div className="w-6 h-[2px] rounded-full bg-white/40" />
-          <div className="w-10 h-[2px] rounded-full bg-white/60" />
-        </div>
-        <div className="flex-1 flex flex-col items-end space-y-[1px]">
-          <div className="w-6 h-[2px] rounded-full bg-white/40" />
-          <div className="w-9 h-[2px] rounded-full bg-white/60" />
-        </div>
-      </div>
-      {/* Table */}
-      <div className="flex-[2] bg-white px-1 py-[2px] space-y-[2px]">
-        <div className="h-[3px] rounded-sm bg-gray-200" />
-        <div className="h-[2px] rounded-sm bg-gray-100" />
-        <div className="h-[2px] rounded-sm bg-gray-100" />
-      </div>
-      <div className="flex justify-end px-1 py-[3px] bg-white">
-        <div className="w-12 h-[5px] rounded-sm" style={{ backgroundColor: primary }} />
-      </div>
-      <div className="flex-[1] px-2 py-[3px]" style={{ backgroundColor: primary }}>
-        <div className="w-10 h-[2px] rounded-full bg-white/40" />
-      </div>
-      <div className="h-[4px]" style={{ backgroundColor: accent }} />
-    </div>
-  );
-}
-
 // --- Category labels ---
 const categoryLabels: Record<string, string> = {
   centered: "Centered Header",
   split: "Split Header",
   "left-aligned": "Left-Aligned",
   compact: "Compact / Dense",
-  premium: "Premium / Spacious",
 };
 
 // --- Thumbnail selector ---
@@ -273,8 +232,6 @@ function LayoutThumbnail({ template }: { template: TemplatePreset }) {
       return <LeftAlignedLayoutThumb primary={primary_color} accent={accent_color} />;
     case "compact":
       return <CompactLayoutThumb primary={primary_color} accent={accent_color} />;
-    case "premium":
-      return <PremiumLayoutThumb primary={primary_color} accent={accent_color} />;
     case "centered":
     default:
       return <CenteredLayoutThumb primary={primary_color} accent={accent_color} />;
@@ -283,11 +240,11 @@ function LayoutThumbnail({ template }: { template: TemplatePreset }) {
 
 // --- Template presets ---
 export const templatePresets: TemplatePreset[] = [
-  // ---- CLEAN B&W ----
+  // ---- CLEAN B&W CENTERED ----
   {
     id: "clean_bw",
     name: "Clean B&W",
-    description: "Simple black & white — no color, pure professional clarity",
+    description: "Simple black & white centered — professional clarity, compact fit",
     category: "centered",
     settings: {
       primary_color: "#000000",
@@ -300,26 +257,26 @@ export const templatePresets: TemplatePreset[] = [
       grand_total_bg: "#000000",
       grand_total_text: "#ffffff",
       template_style: "clean_bw",
-      font_heading: "Montserrat",
+      font_heading: "Inter",
       font_body: "Inter",
-      header_padding: "normal",
+      header_padding: "compact",
       header_layout_style: "centered",
-      logo_size: "medium",
-      section_spacing: "normal",
-      table_row_padding: "normal",
-      footer_padding: "normal",
+      logo_size: "small",
+      section_spacing: "compact",
+      table_row_padding: "compact",
+      footer_padding: "compact",
       show_invoice_title: true,
-      compact_header: false,
+      compact_header: true,
       border_style: "subtle",
       table_border_color: "#d4d4d4",
     },
   },
 
-  // ---- B&W SPLIT ----
+  // ---- CLEAN B&W SPLIT ----
   {
     id: "clean_bw_split",
     name: "Clean B&W Split",
-    description: "Black & white with split header — logo left, contact right, zero color",
+    description: "Black & white split header — logo left, contact right, zero color",
     category: "split",
     settings: {
       primary_color: "#000000",
@@ -334,22 +291,24 @@ export const templatePresets: TemplatePreset[] = [
       template_style: "clean_bw_split",
       font_heading: "Inter",
       font_body: "Inter",
-      header_padding: "normal",
+      header_padding: "compact",
       header_layout_style: "split",
-      logo_size: "medium",
-      section_spacing: "normal",
-      table_row_padding: "normal",
-      footer_padding: "normal",
+      logo_size: "small",
+      section_spacing: "compact",
+      table_row_padding: "compact",
+      footer_padding: "compact",
       show_invoice_title: true,
-      compact_header: false,
+      compact_header: true,
       border_style: "subtle",
       table_border_color: "#d4d4d4",
     },
   },
+
+  // ---- CLEAN B&W LEFT ----
   {
     id: "clean_bw_left",
     name: "Clean B&W Left",
-    description: "Black & white with left-aligned header — minimal and modern",
+    description: "Black & white left-aligned — minimal and modern",
     category: "left-aligned",
     settings: {
       primary_color: "#000000",
@@ -364,222 +323,36 @@ export const templatePresets: TemplatePreset[] = [
       template_style: "clean_bw_left",
       font_heading: "Inter",
       font_body: "Inter",
-      header_padding: "normal",
+      header_padding: "compact",
       header_layout_style: "left-aligned",
-      logo_size: "medium",
-      section_spacing: "normal",
-      table_row_padding: "normal",
-      footer_padding: "normal",
+      logo_size: "small",
+      section_spacing: "compact",
+      table_row_padding: "compact",
+      footer_padding: "compact",
       show_invoice_title: true,
-      compact_header: false,
+      compact_header: true,
       border_style: "none",
       table_border_color: "#d4d4d4",
     },
   },
 
-  // ---- CENTERED LAYOUTS ----
+  // ---- COMPACT B&W ----
   {
-    id: "bold_corporate",
-    name: "Bold Corporate",
-    description: "Centered header with logo, navy & gold — classic business look",
-    category: "centered",
-    settings: {
-      primary_color: "#294172",
-      secondary_color: "#3b82f6",
-      accent_color: "#d4a02c",
-      header_text_color: "#ffffff",
-      table_header_bg: "#f3f4f6",
-      table_header_text: "#374151",
-      table_text_color: "#1f2937",
-      grand_total_bg: "#1e2a4a",
-      grand_total_text: "#ffffff",
-      template_style: "bold_corporate",
-      font_heading: "Montserrat",
-      font_body: "Inter",
-      header_padding: "normal",
-      header_layout_style: "centered",
-      logo_size: "medium",
-      section_spacing: "normal",
-      table_row_padding: "normal",
-      footer_padding: "normal",
-      show_invoice_title: true,
-      compact_header: false,
-      border_style: "subtle",
-      table_border_color: "#e5e7eb",
-    },
-  },
-  {
-    id: "ocean_centered",
-    name: "Ocean Blue",
-    description: "Centered header with calm blue tones and teal accents",
-    category: "centered",
-    settings: {
-      primary_color: "#0369a1",
-      secondary_color: "#0ea5e9",
-      accent_color: "#14b8a6",
-      header_text_color: "#ffffff",
-      table_header_bg: "#f0f9ff",
-      table_header_text: "#0369a1",
-      table_text_color: "#1e3a5f",
-      grand_total_bg: "#0369a1",
-      grand_total_text: "#ffffff",
-      template_style: "ocean_centered",
-      font_heading: "Montserrat",
-      font_body: "Inter",
-      header_padding: "normal",
-      header_layout_style: "centered",
-      logo_size: "large",
-      section_spacing: "normal",
-      table_row_padding: "normal",
-      footer_padding: "normal",
-      show_invoice_title: true,
-      compact_header: false,
-      border_style: "subtle",
-      table_border_color: "#bae6fd",
-    },
-  },
-
-  // ---- SPLIT LAYOUTS ----
-  {
-    id: "split_professional",
-    name: "Split Professional",
-    description: "Logo left, contact right — efficient two-column header",
-    category: "split",
-    settings: {
-      primary_color: "#1e3a5f",
-      secondary_color: "#0284c7",
-      accent_color: "#0ea5e9",
-      header_text_color: "#ffffff",
-      table_header_bg: "#f0f9ff",
-      table_header_text: "#1e3a5f",
-      table_text_color: "#1e3a5f",
-      grand_total_bg: "#1e3a5f",
-      grand_total_text: "#ffffff",
-      template_style: "split_professional",
-      font_heading: "Inter",
-      font_body: "Inter",
-      header_padding: "normal",
-      header_layout_style: "split",
-      logo_size: "medium",
-      section_spacing: "normal",
-      table_row_padding: "normal",
-      footer_padding: "normal",
-      show_invoice_title: true,
-      compact_header: false,
-      border_style: "subtle",
-      table_border_color: "#e0f2fe",
-    },
-  },
-  {
-    id: "forest_split",
-    name: "Forest Green",
-    description: "Split header with earthy green palette and natural feel",
-    category: "split",
-    settings: {
-      primary_color: "#166534",
-      secondary_color: "#22c55e",
-      accent_color: "#84cc16",
-      header_text_color: "#ffffff",
-      table_header_bg: "#f0fdf4",
-      table_header_text: "#166534",
-      table_text_color: "#1a3a1a",
-      grand_total_bg: "#166534",
-      grand_total_text: "#ffffff",
-      template_style: "forest_split",
-      font_heading: "Montserrat",
-      font_body: "Inter",
-      header_padding: "normal",
-      header_layout_style: "split",
-      logo_size: "medium",
-      section_spacing: "normal",
-      table_row_padding: "normal",
-      footer_padding: "normal",
-      show_invoice_title: true,
-      compact_header: false,
-      border_style: "subtle",
-      table_border_color: "#bbf7d0",
-    },
-  },
-
-  // ---- LEFT-ALIGNED LAYOUTS ----
-  {
-    id: "modern_left",
-    name: "Modern Left",
-    description: "Left-aligned header — clean, minimal, contemporary layout",
-    category: "left-aligned",
-    settings: {
-      primary_color: "#111827",
-      secondary_color: "#4b5563",
-      accent_color: "#374151",
-      header_text_color: "#ffffff",
-      table_header_bg: "#f9fafb",
-      table_header_text: "#111827",
-      table_text_color: "#374151",
-      grand_total_bg: "#111827",
-      grand_total_text: "#ffffff",
-      template_style: "modern_left",
-      font_heading: "Inter",
-      font_body: "Inter",
-      header_padding: "normal",
-      header_layout_style: "left-aligned",
-      logo_size: "medium",
-      section_spacing: "normal",
-      table_row_padding: "normal",
-      footer_padding: "normal",
-      show_invoice_title: true,
-      compact_header: false,
-      border_style: "none",
-      table_border_color: "#e5e7eb",
-    },
-  },
-  {
-    id: "burgundy_left",
-    name: "Burgundy Classic",
-    description: "Left-aligned with rich burgundy and cream accents",
-    category: "left-aligned",
-    settings: {
-      primary_color: "#7f1d1d",
-      secondary_color: "#b91c1c",
-      accent_color: "#d97706",
-      header_text_color: "#ffffff",
-      table_header_bg: "#fef3c7",
-      table_header_text: "#7f1d1d",
-      table_text_color: "#44403c",
-      grand_total_bg: "#7f1d1d",
-      grand_total_text: "#ffffff",
-      template_style: "burgundy_left",
-      font_heading: "Montserrat",
-      font_body: "Inter",
-      header_padding: "normal",
-      header_layout_style: "left-aligned",
-      logo_size: "large",
-      section_spacing: "normal",
-      table_row_padding: "normal",
-      footer_padding: "normal",
-      show_invoice_title: true,
-      compact_header: false,
-      border_style: "medium",
-      table_border_color: "#fde68a",
-    },
-  },
-
-  // ---- COMPACT / DENSE LAYOUTS ----
-  {
-    id: "ultra_compact",
-    name: "Ultra Compact",
-    description: "Maximum content space — smallest header, no title, dense table",
+    id: "clean_bw_compact",
+    name: "B&W Ultra Compact",
+    description: "Maximum content space — no title, dense table, smallest header",
     category: "compact",
     settings: {
-      primary_color: "#334155",
-      secondary_color: "#475569",
-      accent_color: "#64748b",
+      primary_color: "#000000",
+      secondary_color: "#333333",
+      accent_color: "#555555",
       header_text_color: "#ffffff",
-      table_header_bg: "#f1f5f9",
-      table_header_text: "#334155",
-      table_text_color: "#334155",
-      grand_total_bg: "#334155",
+      table_header_bg: "#f5f5f5",
+      table_header_text: "#000000",
+      table_text_color: "#1a1a1a",
+      grand_total_bg: "#000000",
       grand_total_text: "#ffffff",
-      template_style: "ultra_compact",
+      template_style: "clean_bw_compact",
       font_heading: "Inter",
       font_body: "Inter",
       header_padding: "compact",
@@ -591,105 +364,13 @@ export const templatePresets: TemplatePreset[] = [
       show_invoice_title: false,
       compact_header: true,
       border_style: "none",
-      table_border_color: "#cbd5e1",
-    },
-  },
-  {
-    id: "compact_teal",
-    name: "Compact Teal",
-    description: "Dense layout with a vibrant teal — small logo, tight spacing",
-    category: "compact",
-    settings: {
-      primary_color: "#115e59",
-      secondary_color: "#0d9488",
-      accent_color: "#2dd4bf",
-      header_text_color: "#ffffff",
-      table_header_bg: "#f0fdfa",
-      table_header_text: "#115e59",
-      table_text_color: "#134e4a",
-      grand_total_bg: "#115e59",
-      grand_total_text: "#ffffff",
-      template_style: "compact_teal",
-      font_heading: "Inter",
-      font_body: "Inter",
-      header_padding: "compact",
-      header_layout_style: "left-aligned",
-      logo_size: "small",
-      section_spacing: "compact",
-      table_row_padding: "compact",
-      footer_padding: "compact",
-      show_invoice_title: true,
-      compact_header: true,
-      border_style: "subtle",
-      table_border_color: "#99f6e4",
-    },
-  },
-
-  // ---- PREMIUM / SPACIOUS LAYOUTS ----
-  {
-    id: "executive_gold",
-    name: "Executive Gold",
-    description: "Premium centered layout — extra-large logo, relaxed spacing",
-    category: "premium",
-    settings: {
-      primary_color: "#0f172a",
-      secondary_color: "#1e293b",
-      accent_color: "#eab308",
-      header_text_color: "#ffffff",
-      table_header_bg: "#fefce8",
-      table_header_text: "#0f172a",
-      table_text_color: "#1e293b",
-      grand_total_bg: "#0f172a",
-      grand_total_text: "#eab308",
-      template_style: "executive_gold",
-      font_heading: "Montserrat",
-      font_body: "Inter",
-      header_padding: "relaxed",
-      header_layout_style: "centered",
-      logo_size: "xlarge",
-      section_spacing: "relaxed",
-      table_row_padding: "relaxed",
-      footer_padding: "relaxed",
-      show_invoice_title: true,
-      compact_header: false,
-      border_style: "bold",
-      table_border_color: "#fde047",
-    },
-  },
-  {
-    id: "royal_purple",
-    name: "Royal Purple",
-    description: "Spacious centered layout — regal purple with violet highlights",
-    category: "premium",
-    settings: {
-      primary_color: "#581c87",
-      secondary_color: "#7c3aed",
-      accent_color: "#a855f7",
-      header_text_color: "#ffffff",
-      table_header_bg: "#faf5ff",
-      table_header_text: "#581c87",
-      table_text_color: "#3b0764",
-      grand_total_bg: "#581c87",
-      grand_total_text: "#ffffff",
-      template_style: "royal_purple",
-      font_heading: "Montserrat",
-      font_body: "Inter",
-      header_padding: "relaxed",
-      header_layout_style: "centered",
-      logo_size: "large",
-      section_spacing: "relaxed",
-      table_row_padding: "normal",
-      footer_padding: "relaxed",
-      show_invoice_title: true,
-      compact_header: false,
-      border_style: "subtle",
-      table_border_color: "#e9d5ff",
+      table_border_color: "#d4d4d4",
     },
   },
 ];
 
 // --- Group templates by category ---
-const categories = ["centered", "split", "left-aligned", "compact", "premium"] as const;
+const categories = ["centered", "split", "left-aligned", "compact"] as const;
 
 interface TemplateLibraryProps {
   selectedTemplate: string;

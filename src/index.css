@@ -168,7 +168,7 @@
   }
 
   .invoice-accent-bar {
-    @apply h-1.5 bg-[hsl(var(--invoice-accent))];
+    @apply h-1 bg-[hsl(var(--invoice-accent))];
   }
 
   .invoice-table-header {
