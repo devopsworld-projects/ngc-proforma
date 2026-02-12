@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,8 @@ import {
   Type,
   RotateCcw,
   Rows3,
-  SlidersHorizontal
+  SlidersHorizontal,
+  PenTool,
 } from "lucide-react";
 import { useIsAdmin } from "@/hooks/useAdmin";
 import { usePdfTemplateSettings, useUpdatePdfTemplateSettings } from "@/hooks/usePdfTemplateSettings";
@@ -30,6 +31,7 @@ import { FontSettingsPanel } from "@/components/pdf-editor/FontSettingsPanel";
 import { LayoutSettingsPanel } from "@/components/pdf-editor/LayoutSettingsPanel";
 import { SpacingSettingsPanel } from "@/components/pdf-editor/SpacingSettingsPanel";
 import { InvoicePreviewPane } from "@/components/pdf-editor/InvoicePreviewPane";
+import { InvoiceCanvasEditor } from "@/components/canvas-editor/InvoiceCanvasEditor";
 import {
   ResizablePanelGroup,
   ResizablePanel,
@@ -91,6 +93,7 @@ const defaultSettings = {
   compact_header: false,
   border_style: "subtle",
   table_border_color: "#e5e7eb",
+  custom_canvas_data: null as any | null,
 };
 
 type SettingsType = typeof defaultSettings & { id?: string };
@@ -158,6 +161,18 @@ export default function PdfTemplateEditor() {
     toast.info("Settings reset to defaults");
   };
 
+  const handleCanvasSave = useCallback(async (canvasData: string) => {
+    try {
+      await updateSettings.mutateAsync({
+        ...settings,
+        id: existingSettings?.id,
+        custom_canvas_data: JSON.parse(canvasData),
+      });
+    } catch (error) {
+      throw error;
+    }
+  }, [settings, existingSettings, updateSettings]);
+
   if (adminLoading || settingsLoading) {
     return (
       <AppLayout>
@@ -218,121 +233,137 @@ export default function PdfTemplateEditor() {
 
         {/* Main Content */}
         <div className="flex-1 overflow-hidden">
-          <ResizablePanelGroup direction="horizontal">
-            {/* Settings Panel */}
-            <ResizablePanel defaultSize={55} minSize={40}>
-              <div className="h-full flex flex-col">
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-                  <div className="border-b px-4 overflow-x-auto">
-                    <TabsList className="h-12 flex-wrap">
-                      <TabsTrigger value="templates" className="gap-1.5 text-xs">
-                        <LayoutTemplate className="h-3.5 w-3.5" />
-                        Templates
-                      </TabsTrigger>
-                      <TabsTrigger value="layout" className="gap-1.5 text-xs">
-                        <Rows3 className="h-3.5 w-3.5" />
-                        Order
-                      </TabsTrigger>
-                      <TabsTrigger value="spacing" className="gap-1.5 text-xs">
-                        <SlidersHorizontal className="h-3.5 w-3.5" />
-                        Spacing
-                      </TabsTrigger>
-                      <TabsTrigger value="colors" className="gap-1.5 text-xs">
-                        <Palette className="h-3.5 w-3.5" />
-                        Colors
-                      </TabsTrigger>
-                      <TabsTrigger value="visibility" className="gap-1.5 text-xs">
-                        <Eye className="h-3.5 w-3.5" />
-                        Visibility
-                      </TabsTrigger>
-                      <TabsTrigger value="content" className="gap-1.5 text-xs">
-                        <FileText className="h-3.5 w-3.5" />
-                        Content
-                      </TabsTrigger>
-                      <TabsTrigger value="typography" className="gap-1.5 text-xs">
-                        <Type className="h-3.5 w-3.5" />
-                        Fonts
-                      </TabsTrigger>
-                    </TabsList>
-                  </div>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+            <div className="border-b px-4 overflow-x-auto">
+              <TabsList className="h-12 flex-wrap">
+                <TabsTrigger value="canvas" className="gap-1.5 text-xs">
+                  <PenTool className="h-3.5 w-3.5" />
+                  Canvas Editor
+                </TabsTrigger>
+                <TabsTrigger value="templates" className="gap-1.5 text-xs">
+                  <LayoutTemplate className="h-3.5 w-3.5" />
+                  Templates
+                </TabsTrigger>
+                <TabsTrigger value="layout" className="gap-1.5 text-xs">
+                  <Rows3 className="h-3.5 w-3.5" />
+                  Order
+                </TabsTrigger>
+                <TabsTrigger value="spacing" className="gap-1.5 text-xs">
+                  <SlidersHorizontal className="h-3.5 w-3.5" />
+                  Spacing
+                </TabsTrigger>
+                <TabsTrigger value="colors" className="gap-1.5 text-xs">
+                  <Palette className="h-3.5 w-3.5" />
+                  Colors
+                </TabsTrigger>
+                <TabsTrigger value="visibility" className="gap-1.5 text-xs">
+                  <Eye className="h-3.5 w-3.5" />
+                  Visibility
+                </TabsTrigger>
+                <TabsTrigger value="content" className="gap-1.5 text-xs">
+                  <FileText className="h-3.5 w-3.5" />
+                  Content
+                </TabsTrigger>
+                <TabsTrigger value="typography" className="gap-1.5 text-xs">
+                  <Type className="h-3.5 w-3.5" />
+                  Fonts
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
-                  <ScrollArea className="flex-1 p-4">
-                    <TabsContent value="templates" className="m-0">
-                      <TemplateLibrary
-                        selectedTemplate={settings.template_style}
-                        onSelectTemplate={handleTemplateSelect}
-                      />
-                    </TabsContent>
+            {/* Canvas Editor - Full Width */}
+            <TabsContent value="canvas" className="flex-1 m-0 overflow-hidden">
+              <InvoiceCanvasEditor
+                initialData={existingSettings?.custom_canvas_data ? JSON.stringify(existingSettings.custom_canvas_data) : null}
+                onSave={handleCanvasSave}
+                isSaving={updateSettings.isPending}
+              />
+            </TabsContent>
 
-                    <TabsContent value="layout" className="m-0">
-                      <LayoutSettingsPanel
-                        sectionOrder={settings.section_order}
-                        onChange={handleSettingChange}
-                      />
-                    </TabsContent>
+            {/* Settings tabs - with preview panel */}
+            {activeTab !== "canvas" && (
+              <div className="flex-1 overflow-hidden">
+                <ResizablePanelGroup direction="horizontal">
+                  {/* Settings Panel */}
+                  <ResizablePanel defaultSize={55} minSize={40}>
+                    <ScrollArea className="h-full p-4">
+                      <TabsContent value="templates" className="m-0">
+                        <TemplateLibrary
+                          selectedTemplate={settings.template_style}
+                          onSelectTemplate={handleTemplateSelect}
+                        />
+                      </TabsContent>
 
-                    <TabsContent value="spacing" className="m-0">
-                      <SpacingSettingsPanel
-                        settings={{
-                          header_padding: settings.header_padding,
-                          header_layout_style: settings.header_layout_style,
-                          logo_size: settings.logo_size,
-                          section_spacing: settings.section_spacing,
-                          table_row_padding: settings.table_row_padding,
-                          footer_padding: settings.footer_padding,
-                          show_invoice_title: settings.show_invoice_title,
-                          compact_header: settings.compact_header,
-                          border_style: settings.border_style,
-                        }}
-                        onChange={handleSettingChange}
-                      />
-                    </TabsContent>
+                      <TabsContent value="layout" className="m-0">
+                        <LayoutSettingsPanel
+                          sectionOrder={settings.section_order}
+                          onChange={handleSettingChange}
+                        />
+                      </TabsContent>
 
-                    <TabsContent value="colors" className="m-0">
-                      <ColorSettingsPanel
+                      <TabsContent value="spacing" className="m-0">
+                        <SpacingSettingsPanel
+                          settings={{
+                            header_padding: settings.header_padding,
+                            header_layout_style: settings.header_layout_style,
+                            logo_size: settings.logo_size,
+                            section_spacing: settings.section_spacing,
+                            table_row_padding: settings.table_row_padding,
+                            footer_padding: settings.footer_padding,
+                            show_invoice_title: settings.show_invoice_title,
+                            compact_header: settings.compact_header,
+                            border_style: settings.border_style,
+                          }}
+                          onChange={handleSettingChange}
+                        />
+                      </TabsContent>
+
+                      <TabsContent value="colors" className="m-0">
+                        <ColorSettingsPanel
+                          settings={settings}
+                          onChange={handleSettingChange}
+                        />
+                      </TabsContent>
+
+                      <TabsContent value="visibility" className="m-0">
+                        <VisibilitySettingsPanel
+                          settings={settings}
+                          onChange={handleSettingChange}
+                        />
+                      </TabsContent>
+
+                      <TabsContent value="content" className="m-0">
+                        <ContentSettingsPanel
+                          settings={settings}
+                          onChange={handleSettingChange}
+                        />
+                      </TabsContent>
+
+                      <TabsContent value="typography" className="m-0">
+                        <FontSettingsPanel
+                          settings={settings}
+                          onChange={handleSettingChange}
+                        />
+                      </TabsContent>
+                    </ScrollArea>
+                  </ResizablePanel>
+
+                  <ResizableHandle withHandle />
+
+                  {/* Preview Panel */}
+                  <ResizablePanel defaultSize={45} minSize={30}>
+                    <ScrollArea className="h-full p-4 bg-muted/30">
+                      <InvoicePreviewPane
                         settings={settings}
-                        onChange={handleSettingChange}
+                        companyName={companySettings?.name}
+                        companyLogo={companySettings?.logo_url || undefined}
                       />
-                    </TabsContent>
-
-                    <TabsContent value="visibility" className="m-0">
-                      <VisibilitySettingsPanel
-                        settings={settings}
-                        onChange={handleSettingChange}
-                      />
-                    </TabsContent>
-
-                    <TabsContent value="content" className="m-0">
-                      <ContentSettingsPanel
-                        settings={settings}
-                        onChange={handleSettingChange}
-                      />
-                    </TabsContent>
-
-                    <TabsContent value="typography" className="m-0">
-                      <FontSettingsPanel
-                        settings={settings}
-                        onChange={handleSettingChange}
-                      />
-                    </TabsContent>
-                  </ScrollArea>
-                </Tabs>
+                    </ScrollArea>
+                  </ResizablePanel>
+                </ResizablePanelGroup>
               </div>
-            </ResizablePanel>
-
-            <ResizableHandle withHandle />
-
-            {/* Preview Panel */}
-            <ResizablePanel defaultSize={45} minSize={30}>
-              <ScrollArea className="h-full p-4 bg-muted/30">
-                <InvoicePreviewPane
-                  settings={settings}
-                  companyName={companySettings?.name}
-                  companyLogo={companySettings?.logo_url || undefined}
-                />
-              </ScrollArea>
-            </ResizablePanel>
-          </ResizablePanelGroup>
+            )}
+          </Tabs>
         </div>
       </div>
     </AppLayout>
