@@ -56,6 +56,7 @@ const defaultSettings: Omit<PdfTemplateSettings, "id" | "user_id" | "created_at"
   compact_header: false,
   border_style: "subtle",
   table_border_color: "#e5e7eb",
+  custom_canvas_data: null,
 };
 
 export interface PdfTemplateContextValue {

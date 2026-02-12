@@ -74,6 +74,9 @@ export interface PdfTemplateSettings {
   border_style: string;
   table_border_color: string;
   
+  // Canvas data
+  custom_canvas_data: any | null;
+  
   created_at: string;
   updated_at: string;
 }
