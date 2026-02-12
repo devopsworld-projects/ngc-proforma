@@ -19,7 +19,6 @@ import {
   ArrowUpFromLine,
   ArrowDownFromLine,
   Eraser,
-  RotateCcw,
 } from "lucide-react";
 import { useRef } from "react";
 
@@ -36,7 +35,6 @@ interface CanvasToolbarProps {
   onBringForward: () => void;
   onSendBackward: () => void;
   onClear: () => void;
-  onRegenerateFromTemplate?: () => void;
   hasSelection: boolean;
 }
 
@@ -53,7 +51,6 @@ export function CanvasToolbar({
   onBringForward,
   onSendBackward,
   onClear,
-  onRegenerateFromTemplate,
   hasSelection,
 }: CanvasToolbarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -69,29 +66,6 @@ export function CanvasToolbar({
   return (
     <TooltipProvider delayDuration={300}>
       <div className="flex items-center gap-1 p-2 border-b bg-background flex-wrap">
-        {/* Regenerate from Template */}
-        {onRegenerateFromTemplate && (
-          <>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 text-xs gap-1.5"
-                  onClick={onRegenerateFromTemplate}
-                >
-                  <RotateCcw className="h-3.5 w-3.5" />
-                  Load Template
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-xs">
-                Regenerate canvas from current template settings
-              </TooltipContent>
-            </Tooltip>
-            <Separator orientation="vertical" className="h-6 mx-1" />
-          </>
-        )}
-
         {/* Add Elements */}
         <div className="flex items-center gap-0.5">
           <ToolbarButton icon={Type} label="Add Text" onClick={onAddText} />

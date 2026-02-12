@@ -312,21 +312,6 @@ export function useCanvasEditor({ width, height, initialData }: UseCanvasEditorO
     setHasChanges(true);
   }, []);
 
-  const loadJSON = useCallback((jsonData: string) => {
-    const canvas = fabricRef.current;
-    if (!canvas) return;
-    try {
-      const parsed = typeof jsonData === "string" ? JSON.parse(jsonData) : jsonData;
-      canvas.loadFromJSON(parsed).then(() => {
-        canvas.requestRenderAll();
-        setHasChanges(true);
-        saveToHistory();
-      });
-    } catch (e) {
-      console.error("Failed to load canvas JSON:", e);
-    }
-  }, [saveToHistory]);
-
   // Cleanup
   useEffect(() => {
     return () => {
@@ -388,6 +373,5 @@ export function useCanvasEditor({ width, height, initialData }: UseCanvasEditorO
     redo,
     toJSON,
     clearCanvas,
-    loadJSON,
   };
 }

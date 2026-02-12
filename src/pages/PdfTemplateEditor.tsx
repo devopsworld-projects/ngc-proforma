@@ -360,7 +360,6 @@ export default function PdfTemplateEditor() {
                         settings={settings}
                         companyName={companySettings?.name}
                         companyLogo={companySettings?.logo_url || undefined}
-                        onSectionOrderChange={(newOrder) => handleSettingChange("section_order", newOrder)}
                       />
                     </ScrollArea>
                   </ResizablePanel>

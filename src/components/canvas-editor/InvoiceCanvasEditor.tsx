@@ -96,19 +96,11 @@ export function InvoiceCanvasEditor({ initialData, templateSettings, companyName
     redo,
     toJSON,
     clearCanvas,
-    loadJSON,
   } = useCanvasEditor({
     width: CANVAS_WIDTH,
     height: CANVAS_HEIGHT,
     initialData: resolvedInitialData,
   });
-
-  const handleRegenerateFromTemplate = useCallback(() => {
-    if (!templateSettings) return;
-    const generated = generateTemplateCanvas(templateSettings, { name: companyName, logo_url: companyLogo });
-    loadJSON(JSON.stringify(generated));
-    toast.success("Canvas regenerated from current template settings");
-  }, [templateSettings, companyName, companyLogo, loadJSON]);
 
   // Initialize canvas when element is ready
   useEffect(() => {
@@ -165,7 +157,6 @@ export function InvoiceCanvasEditor({ initialData, templateSettings, companyName
         onBringForward={bringForward}
         onSendBackward={sendBackward}
         onClear={clearCanvas}
-        onRegenerateFromTemplate={handleRegenerateFromTemplate}
         hasSelection={!!selectedObject}
       />
 
