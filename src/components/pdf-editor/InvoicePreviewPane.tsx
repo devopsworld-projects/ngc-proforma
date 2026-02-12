@@ -1,7 +1,24 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Phone, Mail, Globe, PenLine, FileText, ImageIcon } from "lucide-react";
+import { Building2, Phone, Mail, Globe, PenLine, FileText, ImageIcon, GripVertical } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface InvoicePreviewPaneProps {
   settings: {
@@ -37,7 +54,6 @@ interface InvoicePreviewPaneProps {
     font_heading: string;
     font_body: string;
     section_order?: string[];
-    // Structural / layout settings
     header_layout_style?: string;
     header_padding?: string;
     compact_header?: boolean;
@@ -51,9 +67,45 @@ interface InvoicePreviewPaneProps {
   };
   companyName?: string;
   companyLogo?: string;
+  onSectionOrderChange?: (newOrder: string[]) => void;
 }
 
-export function InvoicePreviewPane({ settings, companyName = "Your Company Name", companyLogo }: InvoicePreviewPaneProps) {
+function SortableSection({ id, children }: { id: string; children: React.ReactNode }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : undefined,
+    opacity: isDragging ? 0.8 : 1,
+    position: "relative" as const,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="group">
+      <div
+        {...attributes}
+        {...listeners}
+        className="absolute left-0 top-0 bottom-0 w-6 flex items-center justify-center cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity z-10 bg-black/5 hover:bg-black/10 rounded-l"
+        title="Drag to reorder"
+      >
+        <GripVertical className="w-3.5 h-3.5 text-gray-500" />
+      </div>
+      <div className={isDragging ? "ring-2 ring-primary/40 rounded" : ""}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+export function InvoicePreviewPane({ settings, companyName = "Your Company Name", companyLogo, onSectionOrderChange }: InvoicePreviewPaneProps) {
   const sampleItems = useMemo(() => [
     { id: "1", slNo: 1, brand: "Sample Product A", description: "High quality product", quantity: 2, unit: "NOS", rate: 1500, gstPercent: 18, total: 3000 },
     { id: "2", slNo: 2, brand: "Sample Product B", description: "Premium edition", quantity: 1, unit: "NOS", rate: 2500, gstPercent: 18, total: 2500 },
@@ -78,7 +130,6 @@ export function InvoicePreviewPane({ settings, companyName = "Your Company Name"
   const borderStyle = settings.border_style || "subtle";
   const tableBorderColor = settings.table_border_color || "#e5e7eb";
 
-  // Spacing helpers
   const headerPaddingClass = headerPadding === "compact" ? "px-3 py-2" : headerPadding === "relaxed" ? "px-5 py-5" : "px-4 py-3";
   const sectionSpacingClass = sectionSpacing === "compact" ? "py-1" : sectionSpacing === "relaxed" ? "py-3" : "py-2";
   const tableRowPaddingClass = tableRowPadding === "compact" ? "py-0.5 px-1.5" : tableRowPadding === "relaxed" ? "py-2.5 px-3" : "py-1.5 px-2";
@@ -87,7 +138,6 @@ export function InvoicePreviewPane({ settings, companyName = "Your Company Name"
   const logoIconClass = logoSize === "small" ? "w-3.5 h-3.5" : logoSize === "large" ? "w-7 h-7" : "w-5 h-5";
   const tableBorder = borderStyle === "none" ? "border-transparent" : borderStyle === "bold" ? "border-b-2" : "border-b";
 
-  // Logo element
   const logoElement = settings.show_logo ? (
     companyLogo ? (
       <img src={companyLogo} alt="Logo" className={`${logoSizeClass} rounded-lg object-contain`} />
@@ -98,16 +148,14 @@ export function InvoicePreviewPane({ settings, companyName = "Your Company Name"
     )
   ) : null;
 
-  // Render header section based on layout style
+  // --- Header renderers (split / left-aligned / centered) ---
   const renderHeader = () => {
     if (headerLayout === "split") {
       return (
         <div
-          key="header"
           className={`${headerPaddingClass} space-y-2`}
           style={{ backgroundColor: settings.primary_color, color: settings.header_text_color, fontFamily: settings.font_heading }}
         >
-          {/* Split: logo+name left, contact right */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {logoElement}
@@ -123,35 +171,17 @@ export function InvoicePreviewPane({ settings, companyName = "Your Company Name"
               </div>
             )}
           </div>
-
           {settings.show_gstin_header && (
             <div className="flex gap-2 text-xs">
               <span className="px-2 py-0.5 rounded" style={{ backgroundColor: "rgba(255,255,255,0.1)" }}>GSTIN: 29ABCDE1234F1ZH</span>
               {settings.show_company_state && <span className="px-2 py-0.5 rounded" style={{ backgroundColor: "rgba(255,255,255,0.1)" }}>State: Karnataka (29)</span>}
             </div>
           )}
-
           {showInvoiceTitle && (
             <div className="pt-1 border-t border-white/20">
               <h2 className="text-sm font-bold" style={{ color: settings.accent_color }}>{settings.invoice_title}</h2>
             </div>
           )}
-
-          {/* Bill To & Invoice Details */}
-          <div className="grid grid-cols-2 gap-3 pt-1 text-left border-t border-white/20">
-            <div>
-              <p className="text-xs opacity-60 uppercase tracking-wider">{settings.bill_to_label}</p>
-              <p className="text-sm font-semibold mt-1">Customer Name</p>
-              <p className="text-xs opacity-80">123 Customer Street</p>
-              {settings.show_customer_phone && <p className="text-xs opacity-80">Phone: +91 98765 43210</p>}
-              {settings.show_customer_email && <p className="text-xs opacity-80">Email: customer@email.com</p>}
-            </div>
-            <div className="text-right">
-              <p className="text-xs opacity-60 uppercase tracking-wider">{settings.invoice_details_label}</p>
-              <p className="text-xs mt-1">Proforma No: <span className="font-semibold">INV-001</span></p>
-              <p className="text-xs">Date: <span className="font-medium">04-Feb-2026</span></p>
-            </div>
-          </div>
         </div>
       );
     }
@@ -159,11 +189,9 @@ export function InvoicePreviewPane({ settings, companyName = "Your Company Name"
     if (headerLayout === "left-aligned") {
       return (
         <div
-          key="header"
           className={`${headerPaddingClass} space-y-2`}
           style={{ backgroundColor: settings.primary_color, color: settings.header_text_color, fontFamily: settings.font_heading }}
         >
-          {/* Left-aligned: logo + name + contact all left */}
           <div className="flex items-center gap-2">
             {logoElement}
             <div>
@@ -178,50 +206,30 @@ export function InvoicePreviewPane({ settings, companyName = "Your Company Name"
               )}
             </div>
           </div>
-
           {settings.show_gstin_header && (
             <div className="flex gap-2 text-xs">
               <span className="px-2 py-0.5 rounded" style={{ backgroundColor: "rgba(255,255,255,0.1)" }}>GSTIN: 29ABCDE1234F1ZH</span>
               {settings.show_company_state && <span className="px-2 py-0.5 rounded" style={{ backgroundColor: "rgba(255,255,255,0.1)" }}>State: Karnataka (29)</span>}
             </div>
           )}
-
           {showInvoiceTitle && (
             <div className="pt-1 border-t border-white/20">
               <h2 className="text-sm font-bold" style={{ color: settings.accent_color }}>{settings.invoice_title}</h2>
             </div>
           )}
-
-          <div className="grid grid-cols-2 gap-3 pt-1 text-left border-t border-white/20">
-            <div>
-              <p className="text-xs opacity-60 uppercase tracking-wider">{settings.bill_to_label}</p>
-              <p className="text-sm font-semibold mt-1">Customer Name</p>
-              <p className="text-xs opacity-80">123 Customer Street</p>
-              {settings.show_customer_phone && <p className="text-xs opacity-80">Phone: +91 98765 43210</p>}
-              {settings.show_customer_email && <p className="text-xs opacity-80">Email: customer@email.com</p>}
-            </div>
-            <div className="text-right">
-              <p className="text-xs opacity-60 uppercase tracking-wider">{settings.invoice_details_label}</p>
-              <p className="text-xs mt-1">Proforma No: <span className="font-semibold">INV-001</span></p>
-              <p className="text-xs">Date: <span className="font-medium">04-Feb-2026</span></p>
-            </div>
-          </div>
         </div>
       );
     }
 
-    // Default: centered layout
+    // Centered (default)
     return (
       <div
-        key="header"
         className={`${headerPaddingClass} text-center space-y-2`}
         style={{ backgroundColor: settings.primary_color, color: settings.header_text_color, fontFamily: settings.font_heading }}
       >
         {logoElement && <div className="flex justify-center">{logoElement}</div>}
-
         <h1 className={`${isCompactHeader ? "text-sm" : "text-base"} font-bold`}>{companyName}</h1>
         <p className="text-xs opacity-80">123 Business Street, City, State 123456</p>
-
         {settings.show_contact_header && (
           <div className="flex flex-wrap justify-center gap-2 text-xs opacity-80">
             <span className="flex items-center gap-1"><Phone className="w-2.5 h-2.5" /> +91 12345 67890</span>
@@ -229,41 +237,44 @@ export function InvoicePreviewPane({ settings, companyName = "Your Company Name"
             <span className="flex items-center gap-1"><Globe className="w-2.5 h-2.5" /> www.company.com</span>
           </div>
         )}
-
         {settings.show_gstin_header && (
           <div className="flex justify-center gap-2 text-xs">
             <span className="px-2 py-0.5 rounded" style={{ backgroundColor: "rgba(255,255,255,0.1)" }}>GSTIN: 29ABCDE1234F1ZH</span>
             {settings.show_company_state && <span className="px-2 py-0.5 rounded" style={{ backgroundColor: "rgba(255,255,255,0.1)" }}>State: Karnataka (29)</span>}
           </div>
         )}
-
         {showInvoiceTitle && (
           <div className="pt-2 border-t border-white/20">
             <h2 className="text-sm font-bold" style={{ color: settings.accent_color }}>{settings.invoice_title}</h2>
           </div>
         )}
-
-        <div className="grid grid-cols-2 gap-3 pt-2 text-left border-t border-white/20">
-          <div>
-            <p className="text-xs opacity-60 uppercase tracking-wider">{settings.bill_to_label}</p>
-            <p className="text-sm font-semibold mt-1">Customer Name</p>
-            <p className="text-xs opacity-80">123 Customer Street</p>
-            {settings.show_customer_phone && <p className="text-xs opacity-80">Phone: +91 98765 43210</p>}
-            {settings.show_customer_email && <p className="text-xs opacity-80">Email: customer@email.com</p>}
-          </div>
-          <div className="text-right">
-            <p className="text-xs opacity-60 uppercase tracking-wider">{settings.invoice_details_label}</p>
-            <p className="text-xs mt-1">Proforma No: <span className="font-semibold">INV-001</span></p>
-            <p className="text-xs">Date: <span className="font-medium">04-Feb-2026</span></p>
-          </div>
-        </div>
       </div>
     );
   };
 
-  // Render items table
+  // Customer details
+  const renderCustomerDetails = () => (
+    <div className={`px-3 ${sectionSpacingClass}`} style={{ fontFamily: settings.font_body }}>
+      <div className="grid grid-cols-2 gap-3 text-left">
+        <div>
+          <p className="text-xs opacity-60 uppercase tracking-wider font-semibold">{settings.bill_to_label}</p>
+          <p className="text-sm font-semibold mt-1">Customer Name</p>
+          <p className="text-xs opacity-80">123 Customer Street</p>
+          {settings.show_customer_phone && <p className="text-xs opacity-80">Phone: +91 98765 43210</p>}
+          {settings.show_customer_email && <p className="text-xs opacity-80">Email: customer@email.com</p>}
+        </div>
+        <div className="text-right">
+          <p className="text-xs opacity-60 uppercase tracking-wider font-semibold">{settings.invoice_details_label}</p>
+          <p className="text-xs mt-1">Proforma No: <span className="font-semibold">INV-001</span></p>
+          <p className="text-xs">Date: <span className="font-medium">04-Feb-2026</span></p>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Items table
   const renderItemsTable = () => (
-    <div key="items_table" className={`px-3 ${sectionSpacingClass}`}>
+    <div className={`px-3 ${sectionSpacingClass}`}>
       <table className="w-full text-xs" style={{ borderColor: tableBorderColor }}>
         <thead>
           <tr style={{ backgroundColor: settings.table_header_bg, color: settings.table_header_text }}>
@@ -300,9 +311,9 @@ export function InvoicePreviewPane({ settings, companyName = "Your Company Name"
     </div>
   );
 
-  // Render totals
+  // Totals
   const renderTotals = () => (
-    <div key="totals" className="px-3 py-2 bg-white">
+    <div className="px-3 py-2 bg-white">
       <div className="flex justify-between items-start">
         {settings.show_amount_words && (
           <div className="flex-1 p-2 bg-gray-50 border border-gray-200 mr-3">
@@ -319,7 +330,7 @@ export function InvoicePreviewPane({ settings, companyName = "Your Company Name"
             <span className="text-gray-600">GST (18%)</span>
             <span className="font-mono">₹990</span>
           </div>
-          <div 
+          <div
             className="flex justify-between py-1.5 px-2 -mx-2 mt-2"
             style={{ backgroundColor: settings.grand_total_bg, color: settings.grand_total_text }}
           >
@@ -331,96 +342,133 @@ export function InvoicePreviewPane({ settings, companyName = "Your Company Name"
     </div>
   );
 
-  // Render footer sections
-  const renderFooter = () => {
-    const showTerms = sectionOrder.includes("terms") && settings.show_terms && termsArray.length > 0;
-    const showBankDetails = sectionOrder.includes("bank_details") && settings.bank_name;
-    const showSignature = sectionOrder.includes("signature") && settings.show_signature;
-
-    if (!showTerms && !showBankDetails && !showSignature) return null;
-
+  // Bank details
+  const renderBankDetails = () => {
+    if (!settings.bank_name) return null;
     return (
-      <div 
-        key="footer"
-        className={`${footerPaddingClass} space-y-2`}
-        style={{ backgroundColor: settings.primary_color, color: settings.header_text_color }}
-      >
-        {showTerms && (
-          <div>
-            <div className="flex items-center gap-1 mb-1">
-              <FileText className="w-2.5 h-2.5 opacity-70" />
-              <p className="text-[10px] font-semibold uppercase opacity-70">Terms & Conditions</p>
-            </div>
-            <ul className="text-[10px] opacity-80 pl-3 space-y-0">
-              {termsArray.map((term, idx) => (
-                <li key={idx}>{idx + 1}. {term}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {showBankDetails && (
-          <div>
-            <div className="flex items-center gap-1 mb-1">
-              <Building2 className="w-2.5 h-2.5 opacity-70" />
-              <p className="text-[10px] font-semibold uppercase opacity-70">Bank Details</p>
-            </div>
-            <div className="text-[10px] opacity-80 pl-3">
-              {settings.bank_branch && <p>Name: {settings.bank_branch}</p>}
-              <p>Bank: {settings.bank_name}</p>
-              {settings.bank_account_no && <p>A/C: {settings.bank_account_no}</p>}
-              {settings.bank_ifsc && <p>IFSC: {settings.bank_ifsc}</p>}
-            </div>
-          </div>
-        )}
-
-        {showSignature && (
-          <div className="flex justify-end pt-2">
-            <div className="text-center w-28">
-              <p className="text-[10px] font-medium mb-4">for {companyName}</p>
-              <div className="border-t border-white/30 pt-1 flex items-center justify-center gap-1">
-                <PenLine className="w-2 h-2 opacity-70" />
-                <span className="text-[9px] opacity-70">Authorised Signatory</span>
-              </div>
-            </div>
-          </div>
-        )}
+      <div className={`${footerPaddingClass}`} style={{ backgroundColor: settings.primary_color, color: settings.header_text_color }}>
+        <div className="flex items-center gap-1 mb-1">
+          <Building2 className="w-2.5 h-2.5 opacity-70" />
+          <p className="text-[10px] font-semibold uppercase opacity-70">Bank Details</p>
+        </div>
+        <div className="text-[10px] opacity-80 pl-3">
+          {settings.bank_branch && <p>Name: {settings.bank_branch}</p>}
+          <p>Bank: {settings.bank_name}</p>
+          {settings.bank_account_no && <p>A/C: {settings.bank_account_no}</p>}
+          {settings.bank_ifsc && <p>IFSC: {settings.bank_ifsc}</p>}
+        </div>
       </div>
     );
   };
 
-  // Render sections in order
+  // Terms
+  const renderTerms = () => {
+    if (!settings.show_terms || termsArray.length === 0) return null;
+    return (
+      <div className={`${footerPaddingClass}`} style={{ backgroundColor: settings.primary_color, color: settings.header_text_color }}>
+        <div className="flex items-center gap-1 mb-1">
+          <FileText className="w-2.5 h-2.5 opacity-70" />
+          <p className="text-[10px] font-semibold uppercase opacity-70">Terms & Conditions</p>
+        </div>
+        <ul className="text-[10px] opacity-80 pl-3 space-y-0">
+          {termsArray.map((term, idx) => (
+            <li key={idx}>{idx + 1}. {term}</li>
+          ))}
+        </ul>
+      </div>
+    );
+  };
+
+  // Signature
+  const renderSignature = () => {
+    if (!settings.show_signature) return null;
+    return (
+      <div className={`${footerPaddingClass}`} style={{ backgroundColor: settings.primary_color, color: settings.header_text_color }}>
+        <div className="flex justify-end pt-2">
+          <div className="text-center w-28">
+            <p className="text-[10px] font-medium mb-4">for {companyName}</p>
+            <div className="border-t border-white/30 pt-1 flex items-center justify-center gap-1">
+              <PenLine className="w-2 h-2 opacity-70" />
+              <span className="text-[9px] opacity-70">Authorised Signatory</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Section renderer
   const renderSection = (sectionId: string) => {
     switch (sectionId) {
-      case "header":
-      case "customer_details":
-        return sectionId === "header" ? renderHeader() : null;
-      case "items_table":
-        return renderItemsTable();
-      case "totals":
-        return renderTotals();
-      case "bank_details":
-      case "terms":
-      case "signature":
-        return null; // Handled by footer
-      default:
-        return null;
+      case "header": return renderHeader();
+      case "customer_details": return renderCustomerDetails();
+      case "items_table": return renderItemsTable();
+      case "totals": return renderTotals();
+      case "bank_details": return renderBankDetails();
+      case "terms": return renderTerms();
+      case "signature": return renderSignature();
+      default: return null;
     }
   };
 
-  const mainSections = sectionOrder.filter(s => ["header", "items_table", "totals"].includes(s));
+  // Section label for drag handle tooltip
+  const sectionLabel = (id: string) => {
+    const map: Record<string, string> = {
+      header: "Header",
+      customer_details: "Customer Details",
+      items_table: "Items Table",
+      totals: "Totals",
+      bank_details: "Bank Details",
+      terms: "Terms & Conditions",
+      signature: "Signature",
+    };
+    return map[id] || id;
+  };
+
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = sectionOrder.indexOf(active.id as string);
+    const newIndex = sectionOrder.indexOf(over.id as string);
+    const newOrder = arrayMove(sectionOrder, oldIndex, newIndex);
+
+    onSectionOrderChange?.(newOrder);
+  };
+
+  // Filter to visible sections only
+  const visibleSections = sectionOrder.filter((id) => {
+    const content = renderSection(id);
+    return content !== null;
+  });
+
+  const isDraggable = !!onSectionOrderChange;
 
   return (
     <div className="sticky top-4">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-lg font-semibold">Live Preview</h3>
-        <Badge variant="outline">A4 Size</Badge>
+        <div className="flex items-center gap-2">
+          {isDraggable && (
+            <Badge variant="outline" className="text-xs">
+              <GripVertical className="w-3 h-3 mr-1" />
+              Drag to reorder
+            </Badge>
+          )}
+          <Badge variant="outline">A4 Size</Badge>
+        </div>
       </div>
-      
+
       <Card className="overflow-hidden shadow-lg">
-        <div 
+        <div
           className="bg-white overflow-y-auto"
-          style={{ 
+          style={{
             maxHeight: "70vh",
             fontFamily: settings.font_body,
           }}
@@ -428,11 +476,21 @@ export function InvoicePreviewPane({ settings, companyName = "Your Company Name"
           {/* Gold Accent Bar */}
           <div className="h-1.5" style={{ backgroundColor: settings.accent_color }} />
 
-          {/* Render sections in order */}
-          {mainSections.map(sectionId => renderSection(sectionId))}
-
-          {/* Footer */}
-          {renderFooter()}
+          {isDraggable ? (
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={visibleSections} strategy={verticalListSortingStrategy}>
+                {visibleSections.map((sectionId) => (
+                  <SortableSection key={sectionId} id={sectionId}>
+                    {renderSection(sectionId)}
+                  </SortableSection>
+                ))}
+              </SortableContext>
+            </DndContext>
+          ) : (
+            sectionOrder.map((sectionId) => (
+              <div key={sectionId}>{renderSection(sectionId)}</div>
+            ))
+          )}
 
           {/* Bottom Accent Bar */}
           <div className="h-1.5" style={{ backgroundColor: settings.accent_color }} />
