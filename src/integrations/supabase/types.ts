@@ -372,6 +372,7 @@ export type Database = {
           border_style: string
           compact_header: boolean
           created_at: string
+          custom_canvas_data: Json | null
           custom_footer_text: string | null
           font_body: string
           font_heading: string
@@ -430,6 +431,7 @@ export type Database = {
           border_style?: string
           compact_header?: boolean
           created_at?: string
+          custom_canvas_data?: Json | null
           custom_footer_text?: string | null
           font_body?: string
           font_heading?: string
@@ -488,6 +490,7 @@ export type Database = {
           border_style?: string
           compact_header?: boolean
           created_at?: string
+          custom_canvas_data?: Json | null
           custom_footer_text?: string | null
           font_body?: string
           font_heading?: string
