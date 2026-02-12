@@ -40,14 +40,14 @@ import {
 
 // Default settings matching the database schema
 const defaultSettings = {
-  primary_color: "#294172",
-  secondary_color: "#3b82f6",
-  accent_color: "#d4a02c",
+  primary_color: "#000000",
+  secondary_color: "#333333",
+  accent_color: "#666666",
   header_text_color: "#ffffff",
-  table_header_bg: "#f3f4f6",
-  table_header_text: "#374151",
-  table_text_color: "#1f2937",
-  grand_total_bg: "#1e2a4a",
+  table_header_bg: "#f5f5f5",
+  table_header_text: "#000000",
+  table_text_color: "#1a1a1a",
+  grand_total_bg: "#000000",
   grand_total_text: "#ffffff",
   template_style: "bold_corporate",
   invoice_title: "PROFORMA INVOICE",
