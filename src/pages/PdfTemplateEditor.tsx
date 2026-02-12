@@ -275,6 +275,9 @@ export default function PdfTemplateEditor() {
             <TabsContent value="canvas" className="flex-1 m-0 overflow-hidden">
               <InvoiceCanvasEditor
                 initialData={existingSettings?.custom_canvas_data ? JSON.stringify(existingSettings.custom_canvas_data) : null}
+                templateSettings={settings}
+                companyName={companySettings?.name}
+                companyLogo={companySettings?.logo_url}
                 onSave={handleCanvasSave}
                 isSaving={updateSettings.isPending}
               />
