@@ -88,6 +88,7 @@ export function Invoice({ data, containerId = "invoice-container" }: InvoiceProp
               items={data.items} 
               settings={{
                 ...settings,
+                show_gst: settings.show_gst,
                 table_row_padding: settings.table_row_padding,
                 border_style: settings.border_style,
                 table_border_color: settings.table_border_color,
