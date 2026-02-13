@@ -342,60 +342,50 @@ export function InvoicePreviewPane({ settings, companyName = "Your Company Name"
     </div>
   );
 
-  // Render footer sections
-  const renderFooter = () => {
-    const showTerms = sectionOrder.includes("terms") && settings.show_terms && termsArray.length > 0;
-    const showBankDetails = sectionOrder.includes("bank_details") && settings.bank_name;
-    const showSignature = sectionOrder.includes("signature") && settings.show_signature;
-
-    if (!showTerms && !showBankDetails && !showSignature) return null;
-
+  // Render individual footer-type sections
+  const renderBankDetails = () => {
+    if (!settings.bank_name) return null;
     return (
-      <div 
-        key="footer"
-        className={`${footerPaddingClass} space-y-2`}
-        style={{ backgroundColor: settings.primary_color, color: settings.header_text_color }}
-      >
-        {showTerms && (
-          <div>
-            <div className="flex items-center gap-1 mb-1">
-              <FileText className="w-2.5 h-2.5 opacity-70" />
-              <p className="text-[10px] font-semibold uppercase opacity-70">Terms & Conditions</p>
-            </div>
-            <ul className="text-[10px] opacity-80 pl-3 space-y-0">
-              {termsArray.map((term, idx) => (
-                <li key={idx}>{idx + 1}. {term}</li>
-              ))}
-            </ul>
-          </div>
-        )}
+      <div key="bank_details" className={`${footerPaddingClass}`} style={{ backgroundColor: settings.primary_color, color: settings.header_text_color }}>
+        <p className="text-[10px] font-semibold uppercase opacity-70 mb-1">Bank Details</p>
+        <p className="text-xs">{settings.bank_name}</p>
+        {settings.bank_account_no && <p className="text-[10px] opacity-80">A/C: {settings.bank_account_no}</p>}
+        {settings.bank_ifsc && <p className="text-[10px] opacity-80">IFSC: {settings.bank_ifsc}</p>}
+        {settings.bank_branch && <p className="text-[10px] opacity-80">Branch: {settings.bank_branch}</p>}
+      </div>
+    );
+  };
 
-        {showBankDetails && (
-          <div>
-            <div className="flex items-center gap-1 mb-1">
-              <Building2 className="w-2.5 h-2.5 opacity-70" />
-              <p className="text-[10px] font-semibold uppercase opacity-70">Bank Details</p>
-            </div>
-            <div className="text-[10px] opacity-80 pl-3">
-              {settings.bank_branch && <p>Name: {settings.bank_branch}</p>}
-              <p>Bank: {settings.bank_name}</p>
-              {settings.bank_account_no && <p>A/C: {settings.bank_account_no}</p>}
-              {settings.bank_ifsc && <p>IFSC: {settings.bank_ifsc}</p>}
-            </div>
-          </div>
-        )}
+  const renderTerms = () => {
+    if (!settings.show_terms || termsArray.length === 0) return null;
+    return (
+      <div key="terms" className={`${footerPaddingClass}`} style={{ backgroundColor: settings.primary_color, color: settings.header_text_color }}>
+        <div className="flex items-center gap-1 mb-1">
+          <FileText className="w-2.5 h-2.5 opacity-70" />
+          <p className="text-[10px] font-semibold uppercase opacity-70">Terms & Conditions</p>
+        </div>
+        <ul className="text-[10px] opacity-80 pl-3 space-y-0">
+          {termsArray.map((term, idx) => (
+            <li key={idx}>{idx + 1}. {term}</li>
+          ))}
+        </ul>
+      </div>
+    );
+  };
 
-        {showSignature && (
-          <div className="flex justify-end pt-2">
-            <div className="text-center w-28">
-              <p className="text-[10px] font-medium mb-4">for {companyName}</p>
-              <div className="border-t border-white/30 pt-1 flex items-center justify-center gap-1">
-                <PenLine className="w-2 h-2 opacity-70" />
-                <span className="text-[9px] opacity-70">Authorised Signatory</span>
-              </div>
+  const renderSignature = () => {
+    if (!settings.show_signature) return null;
+    return (
+      <div key="signature" className={`${footerPaddingClass}`} style={{ backgroundColor: settings.primary_color, color: settings.header_text_color }}>
+        <div className="flex justify-end pt-2">
+          <div className="text-center w-28">
+            <p className="text-[10px] font-medium mb-4">for {companyName}</p>
+            <div className="border-t border-white/30 pt-1 flex items-center justify-center gap-1">
+              <PenLine className="w-2 h-2 opacity-70" />
+              <span className="text-[9px] opacity-70">Authorised Signatory</span>
             </div>
           </div>
-        )}
+        </div>
       </div>
     );
   };
@@ -404,22 +394,23 @@ export function InvoicePreviewPane({ settings, companyName = "Your Company Name"
   const renderSection = (sectionId: string) => {
     switch (sectionId) {
       case "header":
+        return renderHeader();
       case "customer_details":
-        return sectionId === "header" ? renderHeader() : null;
+        return null;
       case "items_table":
         return renderItemsTable();
       case "totals":
         return renderTotals();
       case "bank_details":
+        return renderBankDetails();
       case "terms":
+        return renderTerms();
       case "signature":
-        return null; // Handled by footer
+        return renderSignature();
       default:
         return null;
     }
   };
-
-  const mainSections = sectionOrder.filter(s => ["header", "items_table", "totals"].includes(s));
 
   return (
     <div className="sticky top-4">
@@ -439,11 +430,8 @@ export function InvoicePreviewPane({ settings, companyName = "Your Company Name"
           {/* Gold Accent Bar */}
           <div className="h-1.5" style={{ backgroundColor: settings.accent_color }} />
 
-          {/* Render sections in order */}
-          {mainSections.map(sectionId => renderSection(sectionId))}
-
-          {/* Footer */}
-          {renderFooter()}
+          {/* Render ALL sections in order */}
+          {sectionOrder.map(sectionId => renderSection(sectionId))}
 
           {/* Bottom Accent Bar */}
           <div className="h-1.5" style={{ backgroundColor: settings.accent_color }} />

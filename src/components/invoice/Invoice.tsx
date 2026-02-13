@@ -120,31 +120,48 @@ export function Invoice({ data, containerId = "invoice-container" }: InvoiceProp
           />
         );
       case "bank_details":
+        if (!settings.bank_name) return null;
+        return (
+          <InvoiceFooter
+            key="bank_details"
+            company={data.company}
+            termsAndConditions={[]}
+            bankDetails={bankDetails}
+            showSignature={false}
+            settings={settings}
+          />
+        );
       case "terms":
+        if (!settings.show_terms) return null;
+        return (
+          <InvoiceFooter
+            key="terms"
+            company={data.company}
+            termsAndConditions={termsArray}
+            bankDetails={undefined}
+            showSignature={false}
+            settings={settings}
+          />
+        );
       case "signature":
-        // These are handled by InvoiceFooter
-        return null;
+        if (!settings.show_signature) return null;
+        return (
+          <InvoiceFooter
+            key="signature"
+            company={data.company}
+            termsAndConditions={[]}
+            bankDetails={undefined}
+            showSignature={true}
+            settings={settings}
+          />
+        );
       default:
         return null;
     }
   };
 
-  // Get footer visibility based on section order
-  const footerSections = useMemo(() => {
-    const order = settings.section_order || [];
-    return {
-      showBankDetails: order.includes("bank_details") && !!settings.bank_name,
-      showTerms: order.includes("terms") && settings.show_terms,
-      showSignature: order.includes("signature") && settings.show_signature,
-    };
-  }, [settings.section_order, settings.bank_name, settings.show_terms, settings.show_signature]);
-
-  // Determine if we should show the footer
-  const showFooter = footerSections.showBankDetails || footerSections.showTerms || footerSections.showSignature;
-
-  // Filter section order to only include main sections
-  const mainSections = (settings.section_order || ["header", "customer_details", "items_table", "totals"])
-    .filter(s => ["header", "customer_details", "items_table", "totals"].includes(s));
+  // Use full section order for rendering
+  const allSections = settings.section_order || ["header", "customer_details", "items_table", "totals", "bank_details", "terms", "signature"];
 
   return (
     <div 
@@ -166,19 +183,8 @@ export function Invoice({ data, containerId = "invoice-container" }: InvoiceProp
       {/* Gold Accent Bar */}
       <div className="invoice-accent-bar" style={{ backgroundColor: settings.accent_color }} />
       
-      {/* Render sections in order */}
-      {mainSections.map(sectionId => renderSection(sectionId))}
-
-      {/* Footer - Terms, Bank Details, Signature */}
-      {showFooter && (
-        <InvoiceFooter 
-          company={data.company} 
-          termsAndConditions={footerSections.showTerms ? termsArray : []}
-          bankDetails={footerSections.showBankDetails ? bankDetails : undefined}
-          showSignature={footerSections.showSignature}
-          settings={settings}
-        />
-      )}
+      {/* Render ALL sections in order */}
+      {allSections.map(sectionId => renderSection(sectionId))}
 
       {/* Bottom Gold Accent */}
       <div className="invoice-accent-bar" style={{ backgroundColor: settings.accent_color }} />
