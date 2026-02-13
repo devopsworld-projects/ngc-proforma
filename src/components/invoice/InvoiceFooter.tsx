@@ -32,6 +32,10 @@ export function InvoiceFooter({
     return null;
   }
 
+  const hasTerms = termsAndConditions.length > 0;
+  const hasBankDetails = !!(bankDetails && bankDetails.bankName);
+  const hasBothTermsAndBank = hasTerms && hasBankDetails;
+
   return (
     <div 
       className="px-3 py-3 space-y-3"
@@ -40,38 +44,43 @@ export function InvoiceFooter({
         color: headerTextColor,
       }}
     >
-      {/* Terms & Conditions */}
-      {termsAndConditions.length > 0 && (
-        <div className="space-y-0.5">
-          <div className="flex items-center gap-1.5">
-            <FileText className="w-3 h-3 opacity-70" />
-            <h4 className="text-xs font-semibold uppercase tracking-wider opacity-70">
-              Terms & Conditions
-            </h4>
-          </div>
-          <ul className="text-xs opacity-90 space-y-0 pl-4">
-            {termsAndConditions.map((term, idx) => (
-              <li key={idx}>{idx + 1}. {term}</li>
-            ))}
-          </ul>
-        </div>
-      )}
+      {/* Terms & Bank Details - side by side when both present */}
+      {(hasTerms || hasBankDetails) && (
+        <div className={hasBothTermsAndBank ? "grid grid-cols-2 gap-4" : ""}>
+          {/* Terms & Conditions */}
+          {hasTerms && (
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-1.5">
+                <FileText className="w-3 h-3 opacity-70" />
+                <h4 className="text-xs font-semibold uppercase tracking-wider opacity-70">
+                  Terms & Conditions
+                </h4>
+              </div>
+              <ul className="text-xs opacity-90 space-y-0 pl-4">
+                {termsAndConditions.map((term, idx) => (
+                  <li key={idx}>{idx + 1}. {term}</li>
+                ))}
+              </ul>
+            </div>
+          )}
 
-      {/* Bank Details */}
-      {bankDetails && bankDetails.bankName && (
-        <div className="space-y-0.5">
-          <div className="flex items-center gap-1.5">
-            <Building2 className="w-3 h-3 opacity-70" />
-            <h4 className="text-xs font-semibold uppercase tracking-wider opacity-70">
-              Bank Details
-            </h4>
-          </div>
-          <div className="text-xs opacity-90 space-y-0 pl-4">
-            {bankDetails.branch && <p>Name: {bankDetails.branch}</p>}
-            {bankDetails.bankName && <p>Bank: {bankDetails.bankName}</p>}
-            {bankDetails.accountNo && <p>A/C No: {bankDetails.accountNo}</p>}
-            {bankDetails.ifsc && <p>IFSC: {bankDetails.ifsc}</p>}
-          </div>
+          {/* Bank Details */}
+          {hasBankDetails && (
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-1.5">
+                <Building2 className="w-3 h-3 opacity-70" />
+                <h4 className="text-xs font-semibold uppercase tracking-wider opacity-70">
+                  Bank Details
+                </h4>
+              </div>
+              <div className="text-xs opacity-90 space-y-0 pl-4">
+                {bankDetails!.branch && <p>Name: {bankDetails!.branch}</p>}
+                {bankDetails!.bankName && <p>Bank: {bankDetails!.bankName}</p>}
+                {bankDetails!.accountNo && <p>A/C No: {bankDetails!.accountNo}</p>}
+                {bankDetails!.ifsc && <p>IFSC: {bankDetails!.ifsc}</p>}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
