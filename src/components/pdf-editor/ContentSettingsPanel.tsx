@@ -12,6 +12,7 @@ interface ContentSettingsPanelProps {
     terms_line1: string | null;
     terms_line2: string | null;
     terms_line3: string | null;
+    terms_line4: string | null;
     custom_footer_text: string | null;
     bank_name: string | null;
     bank_account_no: string | null;
@@ -91,6 +92,14 @@ export function ContentSettingsPanel({ settings, onChange }: ContentSettingsPane
               value={settings.terms_line3 || ""}
               onChange={(e) => onChange("terms_line3", e.target.value || null)}
               placeholder="E&OE - Errors and Omissions Excepted."
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Term Line 4</Label>
+            <Input
+              value={settings.terms_line4 || ""}
+              onChange={(e) => onChange("terms_line4", e.target.value || null)}
+              placeholder="Additional term..."
             />
           </div>
           <div className="space-y-1.5">

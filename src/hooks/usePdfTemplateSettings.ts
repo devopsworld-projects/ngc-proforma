@@ -48,11 +48,13 @@ export interface PdfTemplateSettings {
   show_terms: boolean;
   show_signature: boolean;
   show_amount_words: boolean;
+  show_gst: boolean;
   
   // Custom content
   terms_line1: string | null;
   terms_line2: string | null;
   terms_line3: string | null;
+  terms_line4: string | null;
   custom_footer_text: string | null;
   bank_name: string | null;
   bank_account_no: string | null;

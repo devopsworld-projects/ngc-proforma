@@ -20,6 +20,7 @@ interface VisibilitySettingsPanelProps {
     show_terms: boolean;
     show_signature: boolean;
     show_amount_words: boolean;
+    show_gst: boolean;
   };
   onChange: (key: string, value: boolean) => void;
 }
@@ -96,6 +97,16 @@ export function VisibilitySettingsPanel({ settings, onChange }: VisibilitySettin
             label="Customer Phone"
             checked={settings.show_customer_phone}
             onCheckedChange={(v) => onChange("show_customer_phone", v)}
+          />
+        </div>
+
+        <div className="space-y-1 py-3 border-b">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Tax</p>
+          <ToggleItem
+            label="GST (18%)"
+            description="Show GST breakdown on invoice"
+            checked={settings.show_gst}
+            onCheckedChange={(v) => onChange("show_gst", v)}
           />
         </div>
 
