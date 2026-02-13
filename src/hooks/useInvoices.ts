@@ -39,26 +39,31 @@ export interface InvoiceItem {
   id: string;
   invoice_id: string;
   sl_no: number;
+  brand: string | null;
   description: string;
   serial_numbers: string[] | null;
   quantity: number;
   unit: string;
+  size_label: string | null;
   rate: number;
   discount_percent: number;
+  gst_percent: number | null;
+  gst_amount: number | null;
   amount: number;
+  product_image: string | null;
   created_at: string;
 }
 
 export function useInvoices() {
   const { user } = useAuth();
-  const { data: isAdmin } = useIsAdmin();
+  const { data: isAdmin, isLoading: isAdminLoading } = useIsAdmin();
   
   return useQuery({
     queryKey: ["invoices", user?.id, isAdmin],
     queryFn: async () => {
       if (!user) return [];
       
-      // Admin sees all invoices
+      // Admin sees all invoices (including soft-deleted)
       if (isAdmin) {
         const { data: invoices, error } = await supabase
           .from("invoices")
@@ -83,16 +88,17 @@ export function useInvoices() {
         }));
       }
       
-      // Regular user sees only their own invoices
+      // Regular user sees only their own non-deleted invoices
       const { data, error } = await supabase
         .from("invoices")
         .select("*, customers(name)")
         .eq("user_id", user.id)
+        .is("deleted_at", null)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
-    enabled: !!user,
+    enabled: !!user && !isAdminLoading,
   });
 }
 
@@ -159,22 +165,41 @@ export function useDeleteInvoice() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (invoiceId: string) => {
-      // First delete invoice items (cascade)
-      const { error: itemsError } = await supabase
-        .from("invoice_items")
-        .delete()
-        .eq("invoice_id", invoiceId);
-      if (itemsError) throw itemsError;
-      
-      // Then delete the invoice
-      const { error } = await supabase
+      // Soft-delete: set deleted_at timestamp instead of actually deleting
+      const { data, error } = await supabase
         .from("invoices")
-        .delete()
-        .eq("id", invoiceId);
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", invoiceId)
+        .select("id")
+        .maybeSingle();
       if (error) throw error;
+      if (!data) throw new Error("Could not delete invoice - permission denied or invoice not found");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-quotations"] });
+    },
+  });
+}
+
+export function useRestoreInvoice() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (invoiceId: string) => {
+      // Restore: set deleted_at back to null
+      const { data, error } = await supabase
+        .from("invoices")
+        .update({ deleted_at: null })
+        .eq("id", invoiceId)
+        .select("id")
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) throw new Error("Could not restore invoice - permission denied or invoice not found");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-quotations"] });
+      queryClient.invalidateQueries({ queryKey: ["deleted-invoices"] });
     },
   });
 }

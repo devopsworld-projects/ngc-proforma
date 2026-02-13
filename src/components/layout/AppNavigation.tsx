@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Users, LayoutDashboard, RefreshCcw, PlusCircle, BarChart3, Settings, Package, LogOut, Shield, UserCircle, Menu, X, ChevronDown, FileText } from "lucide-react";
+import { Users, LayoutDashboard, RefreshCcw, PlusCircle, BarChart3, Settings, Package, LogOut, Shield, UserCircle, Menu, X, ChevronDown, Globe, FileText } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsAdmin } from "@/hooks/useAdmin";
+import { SessionActivityIndicator } from "@/components/auth/SessionActivityIndicator";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -15,11 +16,11 @@ const mainNavItems = [{
 }];
 const invoiceItems = [{
   path: "/invoices/new",
-  label: "Create Invoice",
+  label: "Create Proforma",
   icon: PlusCircle
 }, {
   path: "/invoices",
-  label: "All Invoices",
+  label: "All Proformas",
   icon: LayoutDashboard
 }, {
   path: "/recurring",
@@ -81,7 +82,7 @@ export function AppNavigation() {
           <ChevronDown className="h-3 w-3" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-48 bg-popover border shadow-lg z-50">
+      <DropdownMenuContent align="start" className="w-48 bg-background border border-border shadow-lg z-[100]">
         {items.map(item => <DropdownMenuItem key={item.path} asChild>
             <Link to={item.path} className={cn("flex items-center gap-2 cursor-pointer", isActive(item.path) && "bg-accent")}>
               <item.icon className="h-4 w-4" />
@@ -95,16 +96,16 @@ export function AppNavigation() {
         <div className="flex items-center justify-between h-14">
           {/* Logo / Brand */}
           <Link to="/dashboard" className="flex items-center gap-2 font-semibold text-lg">
-            <FileText className="h-5 w-5 text-primary" />
+            <Globe className="h-5 w-5 text-primary" />
             <span className="hidden sm:inline">Global Shopee </span>
           </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-1">
             {mainNavItems.map(item => <NavLink key={item.path} {...item} />)}
-            <DropdownNavGroup label="Invoices" icon={FileText} items={invoiceItems} />
+            <DropdownNavGroup label="Proforma Invoice" icon={FileText} items={invoiceItems} />
             <DropdownNavGroup label="Management" icon={Package} items={managementItems} />
-            <NavLink path="/settings" label="Settings" icon={Settings} />
+            {isAdmin && <NavLink path="/settings" label="Settings" icon={Settings} />}
             {isAdmin && <Link to="/admin" className={cn("flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors", isActive("/admin") ? "bg-amber-500 text-white" : "text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/20")}>
                 <Shield className="h-4 w-4" />
                 Admin
@@ -113,19 +114,20 @@ export function AppNavigation() {
 
           {/* Right Section */}
           <div className="flex items-center gap-2">
-            <ThemeToggle />
+            {/* Session Activity Indicator - isolated to prevent parent re-renders */}
+            {user && <SessionActivityIndicator />}
             
+            <ThemeToggle />
+
             {/* User Menu - Desktop */}
             {user && <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="hidden md:flex gap-2">
                     <UserCircle className="h-4 w-4" />
-                    <span className="max-w-[100px] truncate">
-                      {user.email?.split("@")[0]}
-                    </span>
+                    <span className="max-w-[100px] truncate">{user.email?.split("@")[0]}</span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 bg-popover border shadow-lg z-50">
+                <DropdownMenuContent align="end" className="w-48 bg-background border border-border shadow-lg z-[100]">
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium leading-none">Account</p>
@@ -159,11 +161,11 @@ export function AppNavigation() {
       {mobileMenuOpen && <div className="md:hidden border-t bg-background">
           <div className="px-4 py-3 space-y-1">
             {mainNavItems.map(item => <NavLink key={item.path} {...item} />)}
-            
-            {/* Invoice Section */}
+
+            {/* Proforma Invoice Section */}
             <div className="pt-2">
               <p className="px-3 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Invoices
+                Proforma Invoices
               </p>
               {invoiceItems.map(item => <NavLink key={item.path} {...item} />)}
             </div>
@@ -178,7 +180,7 @@ export function AppNavigation() {
 
             {/* System Section */}
             <div className="pt-2 border-t">
-              <NavLink path="/settings" label="Settings" icon={Settings} />
+              {isAdmin && <NavLink path="/settings" label="Settings" icon={Settings} />}
               {isAdmin && <Link to="/admin" onClick={() => setMobileMenuOpen(false)} className={cn("flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors", isActive("/admin") ? "bg-amber-500 text-white" : "text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/20")}>
                   <Shield className="h-4 w-4" />
                   Admin
@@ -187,9 +189,7 @@ export function AppNavigation() {
 
             {/* User Section - Mobile */}
             {user && <div className="pt-2 border-t">
-                <div className="px-3 py-2 text-sm text-muted-foreground truncate">
-                  {user.email}
-                </div>
+                <div className="px-3 py-2 text-sm text-muted-foreground truncate">{user.email}</div>
                 <NavLink path="/profile" label="Profile" icon={UserCircle} />
                 <button onClick={() => {
             setMobileMenuOpen(false);

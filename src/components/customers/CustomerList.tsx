@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { useCustomers, useCustomer, Address, useDeleteAddress } from "@/hooks/useCustomers";
+import { useCustomers, useCustomer, Address, useDeleteAddress, useDeleteCustomer } from "@/hooks/useCustomers";
 import { CustomerFormDialog } from "./CustomerFormDialog";
 import { AddressFormDialog } from "./AddressFormDialog";
 import { Button } from "@/components/ui/button";
@@ -9,9 +9,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Search, Users, ArrowLeft, MapPin, Pencil, Trash2, Star, MoreHorizontal, Filter, Eye } from "lucide-react";
 import { toast } from "sonner";
+import { format } from "date-fns";
 import {
   Pagination,
   PaginationContent,
@@ -31,20 +32,53 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { SortableTableHead, SortConfig } from "@/components/ui/sortable-table-head";
 
 const ITEMS_PER_PAGE = 15;
+
+type CustomerSortKey = "name" | "customer_type" | "email" | "phone" | "gstin" | "created_at";
 
 export function CustomerList() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [taxTypeFilter, setTaxTypeFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+  const [sortConfig, setSortConfig] = useState<SortConfig<CustomerSortKey>>({
+    key: null,
+    direction: null,
+  });
   const { data: customers, isLoading } = useCustomers();
   const { data: selectedCustomer } = useCustomer(selectedCustomerId || undefined);
   const deleteAddress = useDeleteAddress();
+  const deleteCustomer = useDeleteCustomer();
 
-  const filteredCustomers = useMemo(() => {
-    return customers?.filter((c) => {
+  const handleSort = (key: CustomerSortKey) => {
+    setSortConfig((prev) => {
+      if (prev.key !== key) {
+        return { key, direction: "asc" };
+      }
+      if (prev.direction === "asc") {
+        return { key, direction: "desc" };
+      }
+      if (prev.direction === "desc") {
+        return { key: null, direction: null };
+      }
+      return { key, direction: "asc" };
+    });
+  };
+
+  const handleDeleteCustomer = async (id: string, name: string) => {
+    try {
+      await deleteCustomer.mutateAsync(id);
+      toast.success(`Customer "${name}" deleted successfully`);
+    } catch (error) {
+      toast.error("Failed to delete customer");
+    }
+  };
+
+  const filteredAndSortedCustomers = useMemo(() => {
+    let result = customers?.filter((c) => {
       const matchesSearch =
         c.name.toLowerCase().includes(search.toLowerCase()) ||
         c.email?.toLowerCase().includes(search.toLowerCase()) ||
@@ -54,17 +88,47 @@ export function CustomerList() {
         typeFilter === "all" ||
         c.customer_type === typeFilter;
 
-      return matchesSearch && matchesType;
+      const matchesTaxType =
+        taxTypeFilter === "all" ||
+        c.tax_type === taxTypeFilter;
+
+      return matchesSearch && matchesType && matchesTaxType;
     }) || [];
-  }, [customers, search, typeFilter]);
+
+    // Apply sorting
+    if (sortConfig.key && sortConfig.direction) {
+      result = [...result].sort((a, b) => {
+        const key = sortConfig.key!;
+        const aVal = a[key];
+        const bVal = b[key];
+        
+        if (aVal == null && bVal == null) return 0;
+        if (aVal == null) return 1;
+        if (bVal == null) return -1;
+        
+        let comparison = 0;
+        if (typeof aVal === "string" && typeof bVal === "string") {
+          comparison = aVal.localeCompare(bVal);
+        } else if (typeof aVal === "number" && typeof bVal === "number") {
+          comparison = aVal - bVal;
+        } else {
+          comparison = String(aVal).localeCompare(String(bVal));
+        }
+        
+        return sortConfig.direction === "desc" ? -comparison : comparison;
+      });
+    }
+
+    return result;
+  }, [customers, search, typeFilter, taxTypeFilter, sortConfig]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, typeFilter]);
+  }, [search, typeFilter, taxTypeFilter, sortConfig]);
 
-  const totalPages = Math.ceil(filteredCustomers.length / ITEMS_PER_PAGE);
-  const paginatedCustomers = filteredCustomers.slice(
+  const totalPages = Math.ceil(filteredAndSortedCustomers.length / ITEMS_PER_PAGE);
+  const paginatedCustomers = filteredAndSortedCustomers.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
@@ -115,6 +179,9 @@ export function CustomerList() {
                   <CardTitle className="text-2xl font-serif">{selectedCustomer.name}</CardTitle>
                   <Badge variant={selectedCustomer.customer_type === "dealer" ? "default" : "secondary"}>
                     {selectedCustomer.customer_type === "dealer" ? "Dealer" : "Customer"}
+                  </Badge>
+                  <Badge variant="outline" className="text-xs">
+                    {selectedCustomer.tax_type === "igst" ? "IGST" : "CGST/SGST"}
                   </Badge>
                 </div>
                 {selectedCustomer.gstin && (
@@ -218,7 +285,7 @@ export function CustomerList() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-base">Customer List</CardTitle>
-            <Badge variant="secondary">{filteredCustomers.length} customers</Badge>
+            <Badge variant="secondary">{filteredAndSortedCustomers.length} customers</Badge>
           </div>
         </CardHeader>
         <CardContent>
@@ -244,6 +311,16 @@ export function CustomerList() {
                   <SelectItem value="dealer">Dealer</SelectItem>
                 </SelectContent>
               </Select>
+              <Select value={taxTypeFilter} onValueChange={setTaxTypeFilter}>
+                <SelectTrigger className="w-full sm:w-[140px]">
+                  <SelectValue placeholder="Tax Type" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover z-50">
+                  <SelectItem value="all">All Tax Types</SelectItem>
+                  <SelectItem value="cgst">CGST/SGST</SelectItem>
+                  <SelectItem value="igst">IGST</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <CustomerFormDialog />
           </div>
@@ -254,7 +331,7 @@ export function CustomerList() {
                 <Skeleton key={i} className="h-12 w-full" />
               ))}
             </div>
-          ) : filteredCustomers.length === 0 ? (
+          ) : filteredAndSortedCustomers.length === 0 ? (
             <div className="py-12 text-center">
               <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium mb-2">No customers found</h3>
@@ -269,12 +346,49 @@ export function CustomerList() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Phone</TableHead>
-                      <TableHead>GSTIN</TableHead>
-                      <TableHead>State</TableHead>
+                      <SortableTableHead<CustomerSortKey>
+                        sortKey="name"
+                        currentSort={sortConfig}
+                        onSort={handleSort}
+                      >
+                        Name
+                      </SortableTableHead>
+                      <SortableTableHead<CustomerSortKey>
+                        sortKey="customer_type"
+                        currentSort={sortConfig}
+                        onSort={handleSort}
+                      >
+                        Type
+                      </SortableTableHead>
+                      <SortableTableHead<CustomerSortKey>
+                        sortKey="email"
+                        currentSort={sortConfig}
+                        onSort={handleSort}
+                      >
+                        Email
+                      </SortableTableHead>
+                      <SortableTableHead<CustomerSortKey>
+                        sortKey="phone"
+                        currentSort={sortConfig}
+                        onSort={handleSort}
+                      >
+                        Phone
+                      </SortableTableHead>
+                      <SortableTableHead<CustomerSortKey>
+                        sortKey="gstin"
+                        currentSort={sortConfig}
+                        onSort={handleSort}
+                      >
+                        GSTIN
+                      </SortableTableHead>
+                      <TableHead>Added By</TableHead>
+                      <SortableTableHead<CustomerSortKey>
+                        sortKey="created_at"
+                        currentSort={sortConfig}
+                        onSort={handleSort}
+                      >
+                        Date Added
+                      </SortableTableHead>
                       <TableHead className="w-10"></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -285,9 +399,14 @@ export function CustomerList() {
                           <p className="font-medium">{customer.name}</p>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={customer.customer_type === "dealer" ? "default" : "secondary"} className="text-xs">
-                            {customer.customer_type === "dealer" ? "Dealer" : "Customer"}
-                          </Badge>
+                          <div className="flex items-center gap-1.5">
+                            <Badge variant={customer.customer_type === "dealer" ? "default" : "secondary"} className="text-xs">
+                              {customer.customer_type === "dealer" ? "Dealer" : "Customer"}
+                            </Badge>
+                            <Badge variant="outline" className="text-xs">
+                              {customer.tax_type === "igst" ? "IGST" : "CGST"}
+                            </Badge>
+                          </div>
                         </TableCell>
                         <TableCell>
                           <span className="text-sm text-muted-foreground">{customer.email || "—"}</span>
@@ -305,15 +424,13 @@ export function CustomerList() {
                           )}
                         </TableCell>
                         <TableCell>
-                          <span className="text-sm">
-                            {customer.state ? (
-                              <>
-                                {customer.state}
-                                {customer.state_code && <span className="text-muted-foreground"> ({customer.state_code})</span>}
-                              </>
-                            ) : (
-                              <span className="text-muted-foreground">—</span>
-                            )}
+                          <span className="text-sm text-muted-foreground">
+                            {(customer as any).creator_name || "—"}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm text-muted-foreground">
+                            {format(new Date(customer.created_at), "dd MMM yyyy")}
                           </span>
                         </TableCell>
                         <TableCell>
@@ -339,6 +456,14 @@ export function CustomerList() {
                                   }
                                 />
                               </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                className="text-destructive focus:text-destructive"
+                                onClick={() => handleDeleteCustomer(customer.id, customer.name)}
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
@@ -352,8 +477,8 @@ export function CustomerList() {
                 <div className="mt-4 flex items-center justify-between">
                   <p className="text-sm text-muted-foreground">
                     Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to{" "}
-                    {Math.min(currentPage * ITEMS_PER_PAGE, filteredCustomers.length)} of{" "}
-                    {filteredCustomers.length} customers
+                    {Math.min(currentPage * ITEMS_PER_PAGE, filteredAndSortedCustomers.length)} of{" "}
+                    {filteredAndSortedCustomers.length} customers
                   </p>
                   <Pagination>
                     <PaginationContent>

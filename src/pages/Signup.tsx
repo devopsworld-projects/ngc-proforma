@@ -84,7 +84,7 @@ export default function SignupPage() {
             <FileText className="h-6 w-6" />
           </div>
           <CardTitle className="text-2xl">Create an account</CardTitle>
-          <CardDescription>Start managing your invoices today</CardDescription>
+          <CardDescription>Start managing your proforma invoices today</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">

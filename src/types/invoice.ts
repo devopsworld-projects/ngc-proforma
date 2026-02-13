@@ -7,6 +7,7 @@ export interface CompanyInfo {
   stateCode: string;
   email: string;
   website: string;
+  logoUrl?: string;
 }
 
 export interface SupplierInfo {
@@ -15,18 +16,25 @@ export interface SupplierInfo {
   gstin: string;
   state: string;
   stateCode: string;
+  email?: string;
+  phone?: string;
 }
 
 export interface InvoiceItem {
   id: string;
   slNo: number;
+  brand?: string;
   description: string;
   serialNumbers?: string[];
   quantity: number;
   unit: string;
+  sizeLabel?: string; // For displaying dimensions like "500 MTR" for cables
   rate: number;
   discountPercent: number;
   amount: number;
+  productImage?: string;
+  gstPercent?: number;
+  gstAmount?: number;
 }
 
 export interface InvoiceTotals {
@@ -52,4 +60,5 @@ export interface InvoiceData {
   totals: InvoiceTotals;
   totalQuantity: number;
   amountInWords: string;
+  taxType?: "cgst" | "igst"; // Customer's tax type for CGST+SGST vs IGST display
 }

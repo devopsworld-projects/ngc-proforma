@@ -3,15 +3,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { formatCurrency, numberToWords } from "@/lib/invoice-utils";
+import { Badge } from "@/components/ui/badge";
+import { formatCurrency, numberToWords, roundToTwo, calculateGstBreakup } from "@/lib/invoice-utils";
 import { Calculator } from "lucide-react";
+import { LineItem } from "./LineItemsEditor";
 
 interface TaxCalculatorProps {
   subtotal: number;
   discountPercent: number;
-  taxRate: number;
   onDiscountChange: (value: number) => void;
-  onTaxRateChange: (value: number) => void;
+  lineItems?: LineItem[];
+  taxType?: "cgst" | "igst" | null;
+  customerName?: string | null;
 }
 
 export interface CalculatedTotals {
@@ -27,20 +30,38 @@ export interface CalculatedTotals {
 export function TaxCalculator({
   subtotal,
   discountPercent,
-  taxRate,
   onDiscountChange,
-  onTaxRateChange,
+  lineItems = [],
+  taxType,
+  customerName,
 }: TaxCalculatorProps) {
   const totals = useMemo<CalculatedTotals>(() => {
-    const discountAmount = (subtotal * discountPercent) / 100;
-    const taxableAmount = subtotal - discountAmount;
-    const taxAmount = (taxableAmount * taxRate) / 100;
-    const exactTotal = taxableAmount + taxAmount;
+    // Subtotal is the sum of GST-inclusive line item amounts
+    const discountAmount = roundToTwo((subtotal * discountPercent) / 100);
+    
+    // Calculate extracted GST from line items (GST is already included in prices)
+    let totalGstAmount = 0;
+    let totalBasePrice = 0;
+    
+    lineItems.forEach(item => {
+      const gstPercent = item.gstPercent || 18;
+      const { basePrice, gstAmount } = calculateGstBreakup(item.rate, gstPercent);
+      totalBasePrice += basePrice * item.quantity;
+      totalGstAmount += gstAmount * item.quantity;
+    });
+    
+    // Apply discount proportionally to base and GST
+    const discountRatio = discountPercent / 100;
+    const taxableAmount = roundToTwo(totalBasePrice * (1 - discountRatio));
+    const taxAmount = roundToTwo(totalGstAmount * (1 - discountRatio));
+    
+    // Grand total is subtotal minus discount (GST is already included)
+    const exactTotal = subtotal - discountAmount;
     const grandTotal = Math.round(exactTotal);
-    const roundOff = grandTotal - exactTotal;
+    const roundOff = roundToTwo(grandTotal - exactTotal);
 
     return {
-      subtotal,
+      subtotal: roundToTwo(subtotal),
       discountAmount,
       taxableAmount,
       taxAmount,
@@ -48,20 +69,30 @@ export function TaxCalculator({
       grandTotal,
       amountInWords: numberToWords(grandTotal),
     };
-  }, [subtotal, discountPercent, taxRate]);
+  }, [subtotal, discountPercent, lineItems]);
 
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-base flex items-center gap-2">
-          <Calculator className="h-4 w-4" />
-          Tax & Totals
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Calculator className="h-4 w-4" />
+            Tax & Totals
+          </CardTitle>
+          {taxType && (
+            <Badge 
+              variant={taxType === "igst" ? "default" : "secondary"}
+              className="text-xs"
+            >
+              {taxType === "igst" ? "IGST" : "CGST/SGST"}
+            </Badge>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Subtotal */}
+        {/* Subtotal (GST Inclusive) */}
         <div className="flex justify-between items-center text-sm">
-          <span className="text-muted-foreground">Subtotal</span>
+          <span className="text-muted-foreground">Subtotal (incl. GST)</span>
           <span className="font-medium">{formatCurrency(totals.subtotal)}</span>
         </div>
 
@@ -89,31 +120,35 @@ export function TaxCalculator({
 
         <Separator />
 
-        {/* Taxable Amount */}
+        {/* Taxable Amount (Base Price) */}
         <div className="flex justify-between items-center text-sm">
-          <span className="text-muted-foreground">Taxable Amount</span>
+          <span className="text-muted-foreground">Base Price (Taxable)</span>
           <span className="font-medium">{formatCurrency(totals.taxableAmount)}</span>
         </div>
 
-        {/* Tax Rate */}
-        <div className="flex justify-between items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Label className="text-sm text-muted-foreground whitespace-nowrap">IGST</Label>
-            <div className="relative w-20">
-              <Input
-                type="number"
-                min="0"
-                max="100"
-                step="0.01"
-                value={taxRate || ""}
-                onChange={(e) => onTaxRateChange(parseFloat(e.target.value) || 0)}
-                className="pr-6 text-sm h-8"
-              />
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
-            </div>
+        {/* GST Included - Show based on customer tax type */}
+        {taxType === "igst" ? (
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-muted-foreground">IGST (included)</span>
+            <span className="font-medium">{formatCurrency(totals.taxAmount)}</span>
           </div>
-          <span className="font-medium">{formatCurrency(totals.taxAmount)}</span>
-        </div>
+        ) : taxType === "cgst" ? (
+          <>
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-muted-foreground">CGST (included)</span>
+              <span className="font-medium">{formatCurrency(totals.taxAmount / 2)}</span>
+            </div>
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-muted-foreground">SGST (included)</span>
+              <span className="font-medium">{formatCurrency(totals.taxAmount / 2)}</span>
+            </div>
+          </>
+        ) : (
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-muted-foreground">GST (included)</span>
+            <span className="font-medium">{formatCurrency(totals.taxAmount)}</span>
+          </div>
+        )}
 
         {/* Round Off */}
         <div className="flex justify-between items-center text-sm">
@@ -145,17 +180,33 @@ export function TaxCalculator({
   );
 }
 
-export function useTaxCalculation(subtotal: number, discountPercent: number, taxRate: number): CalculatedTotals {
+export function useTaxCalculation(subtotal: number, discountPercent: number, lineItems: LineItem[] = []): CalculatedTotals {
   return useMemo(() => {
-    const discountAmount = (subtotal * discountPercent) / 100;
-    const taxableAmount = subtotal - discountAmount;
-    const taxAmount = (taxableAmount * taxRate) / 100;
-    const exactTotal = taxableAmount + taxAmount;
+    const discountAmount = roundToTwo((subtotal * discountPercent) / 100);
+    
+    // Calculate extracted GST from line items (GST is already included in prices)
+    let totalGstAmount = 0;
+    let totalBasePrice = 0;
+    
+    lineItems.forEach(item => {
+      const gstPercent = item.gstPercent || 18;
+      const { basePrice, gstAmount } = calculateGstBreakup(item.rate, gstPercent);
+      totalBasePrice += basePrice * item.quantity;
+      totalGstAmount += gstAmount * item.quantity;
+    });
+    
+    // Apply discount proportionally
+    const discountRatio = discountPercent / 100;
+    const taxableAmount = roundToTwo(totalBasePrice * (1 - discountRatio));
+    const taxAmount = roundToTwo(totalGstAmount * (1 - discountRatio));
+    
+    // Grand total is subtotal minus discount (GST is already included, not added)
+    const exactTotal = subtotal - discountAmount;
     const grandTotal = Math.round(exactTotal);
-    const roundOff = grandTotal - exactTotal;
+    const roundOff = roundToTwo(grandTotal - exactTotal);
 
     return {
-      subtotal,
+      subtotal: roundToTwo(subtotal),
       discountAmount,
       taxableAmount,
       taxAmount,
@@ -163,5 +214,5 @@ export function useTaxCalculation(subtotal: number, discountPercent: number, tax
       grandTotal,
       amountInWords: numberToWords(grandTotal),
     };
-  }, [subtotal, discountPercent, taxRate]);
+  }, [subtotal, discountPercent, lineItems]);
 }

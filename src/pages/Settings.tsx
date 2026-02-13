@@ -2,17 +2,18 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Link } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useCompanySettings, useUpdateCompanySettings, uploadCompanyLogo, deleteCompanyLogo } from "@/hooks/useCompanySettings";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsAdmin } from "@/hooks/useAdmin";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Building2, Save, Upload, X, Loader2, FileText, ChevronRight } from "lucide-react";
+import { Building2, Save, Upload, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { DataExportCard } from "@/components/settings/DataExportCard";
 
@@ -34,6 +35,7 @@ type SettingsFormData = z.infer<typeof settingsSchema>;
 
 export default function SettingsPage() {
   const { user } = useAuth();
+  const { data: isAdmin, isLoading: isAdminLoading } = useIsAdmin();
   const { data: settings, isLoading } = useCompanySettings();
   const updateSettings = useUpdateCompanySettings();
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -75,6 +77,11 @@ export default function SettingsPage() {
     }
   }, [settings, form]);
 
+  // Redirect non-admins
+  if (!isAdminLoading && !isAdmin) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
@@ -91,7 +98,6 @@ export default function SettingsPage() {
 
     setIsUploadingLogo(true);
     try {
-      // Delete old logo if exists
       if (logoUrl) {
         await deleteCompanyLogo(logoUrl, user.id);
       }
@@ -144,7 +150,7 @@ export default function SettingsPage() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || isAdminLoading) {
     return (
       <AppLayout>
         <div className="space-y-6">
@@ -169,7 +175,7 @@ export default function SettingsPage() {
             <div>
               <h2 className="text-2xl font-serif font-bold">Company Settings</h2>
               <p className="text-muted-foreground">
-                Manage your business details that appear on invoices
+                Manage your business details that appear on proforma invoices
               </p>
             </div>
             <Button type="submit" disabled={updateSettings.isPending} className="gap-2">
@@ -411,27 +417,6 @@ export default function SettingsPage() {
                     </FormItem>
                   )}
                 />
-              </CardContent>
-            </Card>
-
-            {/* PDF Template Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  PDF Template
-                </CardTitle>
-                <CardDescription>
-                  Customize invoice PDF appearance, colors, and content
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button variant="outline" className="w-full justify-between" asChild>
-                  <Link to="/settings/pdf-template">
-                    Edit PDF Template
-                    <ChevronRight className="h-4 w-4" />
-                  </Link>
-                </Button>
               </CardContent>
             </Card>
 

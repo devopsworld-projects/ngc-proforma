@@ -19,7 +19,7 @@ export function AppLayout({
       {/* Footer */}
       <footer className="no-print border-t bg-background py-3 px-4">
         <div className="container max-w-7xl mx-auto text-center text-xs text-muted-foreground">
-          Global Shopee • Invoice System • Secure & Reliable    
+          Global Shopee • Proforma Invoice • Secure & Reliable    
         </div>
       </footer>
     </div>;

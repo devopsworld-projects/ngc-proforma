@@ -2,6 +2,8 @@ import { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserApprovalStatus } from "@/hooks/useAdmin";
+import { SessionTimeoutProvider, useSessionTimeoutContext } from "./SessionTimeoutProvider";
+import { SessionTimeoutWarning } from "./SessionTimeoutWarning";
 import { Loader2, MailWarning, Clock } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,10 +12,11 @@ interface ProtectedRouteProps {
   children: ReactNode;
 }
 
-export function ProtectedRoute({ children }: ProtectedRouteProps) {
+function ProtectedRouteContent({ children }: ProtectedRouteProps) {
   const { user, isLoading, signOut } = useAuth();
   const location = useLocation();
   const { data: approvalStatus, isLoading: approvalLoading } = useUserApprovalStatus();
+  const { showWarning, remainingSeconds, resetTimer } = useSessionTimeoutContext();
 
   if (isLoading || approvalLoading) {
     return (
@@ -83,5 +86,22 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      <SessionTimeoutWarning
+        open={showWarning}
+        remainingSeconds={remainingSeconds}
+        onContinue={resetTimer}
+      />
+      {children}
+    </>
+  );
+}
+
+export function ProtectedRoute({ children }: ProtectedRouteProps) {
+  return (
+    <SessionTimeoutProvider timeoutMinutes={30} warningMinutes={2}>
+      <ProtectedRouteContent>{children}</ProtectedRouteContent>
+    </SessionTimeoutProvider>
+  );
 }

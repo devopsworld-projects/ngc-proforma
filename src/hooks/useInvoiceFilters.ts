@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { InvoiceFiltersState } from "@/components/invoices/InvoiceFilters";
+import { SortConfig, SortDirection } from "@/components/ui/sortable-table-head";
 
 const initialFilters: InvoiceFiltersState = {
   search: "",
@@ -9,6 +10,8 @@ const initialFilters: InvoiceFiltersState = {
   amountMin: "",
   amountMax: "",
 };
+
+export type InvoiceSortKey = "date" | "invoice_no" | "grand_total" | "status";
 
 interface InvoiceWithCustomer {
   id: string;
@@ -21,11 +24,30 @@ interface InvoiceWithCustomer {
 
 export function useInvoiceFilters<T extends InvoiceWithCustomer>(invoices: T[] | undefined) {
   const [filters, setFilters] = useState<InvoiceFiltersState>(initialFilters);
+  const [sortConfig, setSortConfig] = useState<SortConfig<InvoiceSortKey>>({
+    key: "date",
+    direction: "desc",
+  });
+
+  const handleSort = (key: InvoiceSortKey) => {
+    setSortConfig((prev) => {
+      if (prev.key !== key) {
+        return { key, direction: "asc" };
+      }
+      if (prev.direction === "asc") {
+        return { key, direction: "desc" };
+      }
+      if (prev.direction === "desc") {
+        return { key: null, direction: null };
+      }
+      return { key, direction: "asc" };
+    });
+  };
 
   const filteredInvoices = useMemo(() => {
     if (!invoices) return [];
 
-    return invoices.filter((invoice) => {
+    let result = invoices.filter((invoice) => {
       // Search filter (invoice number or customer name)
       if (filters.search) {
         const searchLower = filters.search.toLowerCase();
@@ -64,7 +86,35 @@ export function useInvoiceFilters<T extends InvoiceWithCustomer>(invoices: T[] |
 
       return true;
     });
-  }, [invoices, filters]);
+
+    // Apply sorting
+    if (sortConfig.key && sortConfig.direction) {
+      result = [...result].sort((a, b) => {
+        const key = sortConfig.key!;
+        let aVal: any = a[key as keyof typeof a];
+        let bVal: any = b[key as keyof typeof b];
+        
+        if (aVal == null && bVal == null) return 0;
+        if (aVal == null) return 1;
+        if (bVal == null) return -1;
+        
+        let comparison = 0;
+        
+        // Handle date comparison
+        if (key === "date") {
+          comparison = new Date(aVal).getTime() - new Date(bVal).getTime();
+        } else if (typeof aVal === "number" && typeof bVal === "number") {
+          comparison = aVal - bVal;
+        } else {
+          comparison = String(aVal).localeCompare(String(bVal));
+        }
+        
+        return sortConfig.direction === "desc" ? -comparison : comparison;
+      });
+    }
+
+    return result;
+  }, [invoices, filters, sortConfig]);
 
   const clearFilters = () => setFilters(initialFilters);
 
@@ -79,5 +129,7 @@ export function useInvoiceFilters<T extends InvoiceWithCustomer>(invoices: T[] |
       filters.dateTo !== undefined ||
       filters.amountMin !== "" ||
       filters.amountMax !== "",
+    sortConfig,
+    handleSort,
   };
 }

@@ -24,13 +24,15 @@ export interface CompanySettings {
 export function useCompanySettings() {
   const { user } = useAuth();
   return useQuery({
-    queryKey: ["companySettings", user?.id],
+    queryKey: ["companySettings"],
     queryFn: async () => {
       if (!user) return null;
+      // Fetch the most recently updated global company settings record
       const { data, error } = await supabase
         .from("company_settings")
         .select("*")
-        .eq("user_id", user.id)
+        .order("updated_at", { ascending: false })
+        .limit(1)
         .maybeSingle();
       if (error) throw error;
       return data as CompanySettings | null;
@@ -46,7 +48,7 @@ export function useUpdateCompanySettings() {
     mutationFn: async (settings: Partial<CompanySettings> & { id?: string; name: string }) => {
       if (!user) throw new Error("Not authenticated");
       if (settings.id) {
-        // Update existing
+        // Update existing global settings
         const { id, ...updateData } = settings;
         const { data, error } = await supabase
           .from("company_settings")
@@ -57,7 +59,7 @@ export function useUpdateCompanySettings() {
         if (error) throw error;
         return data;
       } else {
-        // Insert new
+        // Insert new global settings (user_id stored for audit trail)
         const { id, ...insertData } = settings;
         const { data, error } = await supabase
           .from("company_settings")
@@ -76,8 +78,8 @@ export function useUpdateCompanySettings() {
 
 export async function uploadCompanyLogo(file: File, userId: string): Promise<string> {
   const fileExt = file.name.split(".").pop();
-  // Use path-based ownership: {user_id}/logo-{timestamp}.{ext}
-  const fileName = `${userId}/logo-${Date.now()}.${fileExt}`;
+  // Use shared path for global logos
+  const fileName = `shared/logo-${Date.now()}.${fileExt}`;
   
   const { error: uploadError } = await supabase.storage
     .from("company-logos")
@@ -92,13 +94,11 @@ export async function uploadCompanyLogo(file: File, userId: string): Promise<str
   return data.publicUrl;
 }
 
-export async function deleteCompanyLogo(url: string, userId: string): Promise<void> {
-  // Extract the filename from the URL (format: {user_id}/logo-{timestamp}.{ext})
-  const urlParts = url.split("/");
-  const fileName = urlParts.pop();
-  if (!fileName) return;
+export async function deleteCompanyLogo(url: string, _userId: string): Promise<void> {
+  // Extract the path from the URL
+  const urlParts = url.split("/company-logos/");
+  if (urlParts.length < 2) return;
   
-  // Reconstruct the path with user_id prefix for proper ownership validation
-  const filePath = `${userId}/${fileName}`;
+  const filePath = urlParts[1];
   await supabase.storage.from("company-logos").remove([filePath]);
 }

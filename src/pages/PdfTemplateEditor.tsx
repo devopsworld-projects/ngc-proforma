@@ -1,338 +1,374 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Save, LayoutGrid, FileText, Building2, RotateCcw } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { usePdfTemplateSettings, useUpdatePdfTemplateSettings, defaultPdfTemplateSettings, PdfTemplateSettings } from "@/hooks/usePdfTemplateSettings";
-import { PdfPreviewMini } from "@/components/pdf/PdfPreviewMini";
+import { 
+  ArrowLeft, 
+  Save, 
+  Loader2, 
+  LayoutTemplate, 
+  Palette, 
+  Eye, 
+  FileText, 
+  Type,
+  RotateCcw,
+  Rows3,
+  SlidersHorizontal,
+  PenTool,
+} from "lucide-react";
+import { useIsAdmin } from "@/hooks/useAdmin";
+import { usePdfTemplateSettings, useUpdatePdfTemplateSettings } from "@/hooks/usePdfTemplateSettings";
+import { useCompanySettings } from "@/hooks/useCompanySettings";
+import { TemplateLibrary, TemplatePreset } from "@/components/pdf-editor/TemplateLibrary";
+import { ColorSettingsPanel } from "@/components/pdf-editor/ColorSettingsPanel";
+import { VisibilitySettingsPanel } from "@/components/pdf-editor/VisibilitySettingsPanel";
+import { ContentSettingsPanel } from "@/components/pdf-editor/ContentSettingsPanel";
+import { FontSettingsPanel } from "@/components/pdf-editor/FontSettingsPanel";
+import { LayoutSettingsPanel } from "@/components/pdf-editor/LayoutSettingsPanel";
+import { SpacingSettingsPanel } from "@/components/pdf-editor/SpacingSettingsPanel";
+import { InvoicePreviewPane } from "@/components/pdf-editor/InvoicePreviewPane";
+import { InvoiceCanvasEditor } from "@/components/canvas-editor/InvoiceCanvasEditor";
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from "@/components/ui/resizable";
+
+// Default settings matching the database schema
+const defaultSettings = {
+  primary_color: "#000000",
+  secondary_color: "#333333",
+  accent_color: "#666666",
+  header_text_color: "#ffffff",
+  table_header_bg: "#f5f5f5",
+  table_header_text: "#000000",
+  table_text_color: "#1a1a1a",
+  grand_total_bg: "#000000",
+  grand_total_text: "#ffffff",
+  template_style: "bold_corporate",
+  invoice_title: "PROFORMA INVOICE",
+  bill_to_label: "Bill To",
+  invoice_details_label: "Invoice Details",
+  header_layout: "centered",
+  font_heading: "Montserrat",
+  font_body: "Inter",
+  font_mono: "Roboto Mono",
+  font_size_scale: "normal",
+  show_logo: true,
+  show_gstin_header: true,
+  show_contact_header: true,
+  show_company_state: true,
+  show_shipping_address: false,
+  show_customer_email: true,
+  show_customer_phone: true,
+  show_image_column: true,
+  show_brand_column: true,
+  show_unit_column: true,
+  show_serial_numbers: true,
+  show_discount_column: true,
+  show_terms: true,
+  show_signature: true,
+  show_amount_words: true,
+  show_gst: true,
+  terms_line1: "Goods once sold will not be taken back.",
+  terms_line2: "Subject to local jurisdiction only.",
+  terms_line3: "E&OE - Errors and Omissions Excepted.",
+  terms_line4: null as string | null,
+  custom_footer_text: null as string | null,
+  bank_name: null as string | null,
+  bank_account_no: null as string | null,
+  bank_ifsc: null as string | null,
+  bank_branch: null as string | null,
+  section_order: ["header", "customer_details", "items_table", "totals", "bank_details", "terms", "signature"] as string[],
+  // New spacing/sizing settings
+  header_padding: "normal",
+  header_layout_style: "centered",
+  logo_size: "medium",
+  section_spacing: "normal",
+  table_row_padding: "normal",
+  footer_padding: "normal",
+  show_invoice_title: true,
+  compact_header: false,
+  border_style: "subtle",
+  table_border_color: "#e5e7eb",
+  custom_canvas_data: null as any | null,
+};
+
+type SettingsType = typeof defaultSettings & { id?: string };
 
 export default function PdfTemplateEditor() {
-  const { data: savedSettings, isLoading } = usePdfTemplateSettings();
+  const navigate = useNavigate();
+  const { data: isAdmin, isLoading: adminLoading } = useIsAdmin();
+  const { data: existingSettings, isLoading: settingsLoading } = usePdfTemplateSettings();
+  const { data: companySettings } = useCompanySettings();
   const updateSettings = useUpdatePdfTemplateSettings();
-  
-  const [settings, setSettings] = useState<Partial<PdfTemplateSettings>>({
-    ...defaultPdfTemplateSettings,
-  });
 
+  const [settings, setSettings] = useState<SettingsType>(defaultSettings);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [activeTab, setActiveTab] = useState("templates");
+
+  // Load existing settings
   useEffect(() => {
-    if (savedSettings) {
-      setSettings(savedSettings);
+    if (existingSettings) {
+      setSettings({
+        ...defaultSettings,
+        ...existingSettings,
+      });
     }
-  }, [savedSettings]);
+  }, [existingSettings]);
+
+  // Redirect non-admins
+  useEffect(() => {
+    if (!adminLoading && !isAdmin) {
+      toast.error("Access denied: Admin only");
+      navigate("/dashboard");
+    }
+  }, [isAdmin, adminLoading, navigate]);
+
+  const handleSettingChange = (key: string, value: string | boolean | string[] | null) => {
+    setSettings((prev) => ({ ...prev, [key]: value }));
+    setHasChanges(true);
+  };
+
+  const handleTemplateSelect = (template: TemplatePreset) => {
+    setSettings((prev) => ({
+      ...prev,
+      ...template.settings,
+    }));
+    setHasChanges(true);
+    toast.success(`Applied "${template.name}" template`);
+  };
 
   const handleSave = async () => {
     try {
       await updateSettings.mutateAsync({
         ...settings,
-        id: savedSettings?.id,
+        id: existingSettings?.id,
       });
+      setHasChanges(false);
       toast.success("Template settings saved successfully");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to save settings");
+    } catch (error) {
+      console.error("Failed to save settings:", error);
+      toast.error("Failed to save template settings");
     }
   };
 
   const handleReset = () => {
-    setSettings({ ...defaultPdfTemplateSettings, id: savedSettings?.id });
-    toast.info("Settings reset to defaults (not saved yet)");
+    setSettings(defaultSettings);
+    setHasChanges(true);
+    toast.info("Settings reset to defaults");
   };
 
-  const updateField = <K extends keyof PdfTemplateSettings>(
-    field: K,
-    value: PdfTemplateSettings[K]
-  ) => {
-    setSettings((prev) => ({ ...prev, [field]: value }));
-  };
+  const handleCanvasSave = useCallback(async (canvasData: string) => {
+    try {
+      await updateSettings.mutateAsync({
+        ...settings,
+        id: existingSettings?.id,
+        custom_canvas_data: JSON.parse(canvasData),
+      });
+    } catch (error) {
+      throw error;
+    }
+  }, [settings, existingSettings, updateSettings]);
 
-  if (isLoading) {
+  if (adminLoading || settingsLoading) {
     return (
       <AppLayout>
-        <div className="space-y-6">
-          <Skeleton className="h-10 w-64" />
-          <div className="grid lg:grid-cols-2 gap-6">
-            <Skeleton className="h-[600px]" />
-            <Skeleton className="h-[600px]" />
-          </div>
+        <div className="flex items-center justify-center h-[60vh]">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
         </div>
       </AppLayout>
     );
   }
 
+  if (!isAdmin) {
+    return null;
+  }
+
   return (
     <AppLayout>
-      <div className="space-y-6">
+      <div className="h-[calc(100vh-4rem)] flex flex-col">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">PDF Template Editor</h1>
-            <p className="text-muted-foreground">
-              Customize the appearance and content of your invoice PDFs
-            </p>
+        <div className="flex items-center justify-between px-4 py-3 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/admin")}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-serif font-bold">PDF Template Editor</h1>
+                <Badge variant="secondary">Admin Only</Badge>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Customize invoice appearance for all users
+              </p>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={handleReset}>
+          <div className="flex items-center gap-2">
+            {hasChanges && (
+              <Badge variant="outline" className="text-orange-600 border-orange-300">
+                Unsaved changes
+              </Badge>
+            )}
+            <Button variant="outline" size="sm" onClick={handleReset}>
               <RotateCcw className="h-4 w-4 mr-2" />
               Reset
             </Button>
-            <Button onClick={handleSave} disabled={updateSettings.isPending}>
-              <Save className="h-4 w-4 mr-2" />
-              {updateSettings.isPending ? "Saving..." : "Save Changes"}
+            <Button 
+              onClick={handleSave} 
+              disabled={updateSettings.isPending || !hasChanges}
+              size="sm"
+            >
+              {updateSettings.isPending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4 mr-2" />
+              )}
+              Save Changes
             </Button>
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-6">
-          {/* Settings Panel */}
-          <div className="space-y-4">
-            <Tabs defaultValue="sections" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="sections" className="text-xs sm:text-sm">
-                  <LayoutGrid className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Sections</span>
+        {/* Main Content */}
+        <div className="flex-1 overflow-hidden">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+            <div className="border-b px-4 overflow-x-auto">
+              <TabsList className="h-12 flex-wrap">
+                <TabsTrigger value="canvas" className="gap-1.5 text-xs">
+                  <PenTool className="h-3.5 w-3.5" />
+                  Canvas Editor
                 </TabsTrigger>
-                <TabsTrigger value="terms" className="text-xs sm:text-sm">
-                  <FileText className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Terms</span>
+                <TabsTrigger value="templates" className="gap-1.5 text-xs">
+                  <LayoutTemplate className="h-3.5 w-3.5" />
+                  Templates
                 </TabsTrigger>
-                <TabsTrigger value="bank" className="text-xs sm:text-sm">
-                  <Building2 className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Bank</span>
+                <TabsTrigger value="layout" className="gap-1.5 text-xs">
+                  <Rows3 className="h-3.5 w-3.5" />
+                  Order
+                </TabsTrigger>
+                <TabsTrigger value="spacing" className="gap-1.5 text-xs">
+                  <SlidersHorizontal className="h-3.5 w-3.5" />
+                  Spacing
+                </TabsTrigger>
+                <TabsTrigger value="colors" className="gap-1.5 text-xs">
+                  <Palette className="h-3.5 w-3.5" />
+                  Colors
+                </TabsTrigger>
+                <TabsTrigger value="visibility" className="gap-1.5 text-xs">
+                  <Eye className="h-3.5 w-3.5" />
+                  Visibility
+                </TabsTrigger>
+                <TabsTrigger value="content" className="gap-1.5 text-xs">
+                  <FileText className="h-3.5 w-3.5" />
+                  Content
+                </TabsTrigger>
+                <TabsTrigger value="typography" className="gap-1.5 text-xs">
+                  <Type className="h-3.5 w-3.5" />
+                  Fonts
                 </TabsTrigger>
               </TabsList>
+            </div>
 
-              <TabsContent value="sections" className="mt-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Section Visibility</CardTitle>
-                    <CardDescription>
-                      Toggle which sections appear in your PDF
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid gap-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label>Company Logo</Label>
-                          <p className="text-sm text-muted-foreground">Show logo in header</p>
-                        </div>
-                        <Switch
-                          checked={settings.show_logo ?? true}
-                          onCheckedChange={(v) => updateField("show_logo", v)}
+            {/* Canvas Editor - Full Width */}
+            <TabsContent value="canvas" className="flex-1 m-0 overflow-hidden">
+              <InvoiceCanvasEditor
+                initialData={existingSettings?.custom_canvas_data ? JSON.stringify(existingSettings.custom_canvas_data) : null}
+                templateSettings={settings}
+                companyName={companySettings?.name}
+                companyLogo={companySettings?.logo_url}
+                onSave={handleCanvasSave}
+                isSaving={updateSettings.isPending}
+              />
+            </TabsContent>
+
+            {/* Settings tabs - with preview panel */}
+            {activeTab !== "canvas" && (
+              <div className="flex-1 overflow-hidden">
+                <ResizablePanelGroup direction="horizontal">
+                  {/* Settings Panel */}
+                  <ResizablePanel defaultSize={55} minSize={40}>
+                    <ScrollArea className="h-full p-4">
+                      <TabsContent value="templates" className="m-0">
+                        <TemplateLibrary
+                          selectedTemplate={settings.template_style}
+                          onSelectTemplate={handleTemplateSelect}
                         />
-                      </div>
+                      </TabsContent>
 
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label>GSTIN in Header</Label>
-                          <p className="text-sm text-muted-foreground">Display company GSTIN</p>
-                        </div>
-                        <Switch
-                          checked={settings.show_gstin_header ?? true}
-                          onCheckedChange={(v) => updateField("show_gstin_header", v)}
+                      <TabsContent value="layout" className="m-0">
+                        <LayoutSettingsPanel
+                          sectionOrder={settings.section_order}
+                          onChange={handleSettingChange}
                         />
-                      </div>
+                      </TabsContent>
 
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label>Contact Details</Label>
-                          <p className="text-sm text-muted-foreground">Phone, email, website</p>
-                        </div>
-                        <Switch
-                          checked={settings.show_contact_header ?? true}
-                          onCheckedChange={(v) => updateField("show_contact_header", v)}
+                      <TabsContent value="spacing" className="m-0">
+                        <SpacingSettingsPanel
+                          settings={{
+                            header_padding: settings.header_padding,
+                            header_layout_style: settings.header_layout_style,
+                            logo_size: settings.logo_size,
+                            section_spacing: settings.section_spacing,
+                            table_row_padding: settings.table_row_padding,
+                            footer_padding: settings.footer_padding,
+                            show_invoice_title: settings.show_invoice_title,
+                            compact_header: settings.compact_header,
+                            border_style: settings.border_style,
+                          }}
+                          onChange={handleSettingChange}
                         />
-                      </div>
+                      </TabsContent>
 
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label>Shipping Address</Label>
-                          <p className="text-sm text-muted-foreground">Show if different from billing</p>
-                        </div>
-                        <Switch
-                          checked={settings.show_shipping_address ?? false}
-                          onCheckedChange={(v) => updateField("show_shipping_address", v)}
+                      <TabsContent value="colors" className="m-0">
+                        <ColorSettingsPanel
+                          settings={settings}
+                          onChange={handleSettingChange}
                         />
-                      </div>
+                      </TabsContent>
 
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label>Serial Numbers</Label>
-                          <p className="text-sm text-muted-foreground">Show in item descriptions</p>
-                        </div>
-                        <Switch
-                          checked={settings.show_serial_numbers ?? true}
-                          onCheckedChange={(v) => updateField("show_serial_numbers", v)}
+                      <TabsContent value="visibility" className="m-0">
+                        <VisibilitySettingsPanel
+                          settings={settings}
+                          onChange={handleSettingChange}
                         />
-                      </div>
+                      </TabsContent>
 
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label>Discount Column</Label>
-                          <p className="text-sm text-muted-foreground">Show discount in table</p>
-                        </div>
-                        <Switch
-                          checked={settings.show_discount_column ?? true}
-                          onCheckedChange={(v) => updateField("show_discount_column", v)}
+                      <TabsContent value="content" className="m-0">
+                        <ContentSettingsPanel
+                          settings={settings}
+                          onChange={handleSettingChange}
                         />
-                      </div>
+                      </TabsContent>
 
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label>Terms & Conditions</Label>
-                          <p className="text-sm text-muted-foreground">Show at bottom</p>
-                        </div>
-                        <Switch
-                          checked={settings.show_terms ?? true}
-                          onCheckedChange={(v) => updateField("show_terms", v)}
+                      <TabsContent value="typography" className="m-0">
+                        <FontSettingsPanel
+                          settings={settings}
+                          onChange={handleSettingChange}
                         />
-                      </div>
+                      </TabsContent>
+                    </ScrollArea>
+                  </ResizablePanel>
 
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label>Signature Section</Label>
-                          <p className="text-sm text-muted-foreground">Authorized signatory line</p>
-                        </div>
-                        <Switch
-                          checked={settings.show_signature ?? true}
-                          onCheckedChange={(v) => updateField("show_signature", v)}
-                        />
-                      </div>
+                  <ResizableHandle withHandle />
 
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label>Amount in Words</Label>
-                          <p className="text-sm text-muted-foreground">Show total in words</p>
-                        </div>
-                        <Switch
-                          checked={settings.show_amount_words ?? true}
-                          onCheckedChange={(v) => updateField("show_amount_words", v)}
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="terms" className="mt-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Terms & Conditions</CardTitle>
-                    <CardDescription>
-                      Customize the terms shown at the bottom of invoices
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <Label>Term 1</Label>
-                      <Input
-                        value={settings.terms_line1 || ""}
-                        onChange={(e) => updateField("terms_line1", e.target.value)}
-                        placeholder="Goods once sold will not be taken back."
-                        className="mt-1"
+                  {/* Preview Panel */}
+                  <ResizablePanel defaultSize={45} minSize={30}>
+                    <ScrollArea className="h-full p-4 bg-muted/30">
+                      <InvoicePreviewPane
+                        settings={settings}
+                        companyName={companySettings?.name}
+                        companyLogo={companySettings?.logo_url || undefined}
                       />
-                    </div>
-                    <div>
-                      <Label>Term 2</Label>
-                      <Input
-                        value={settings.terms_line2 || ""}
-                        onChange={(e) => updateField("terms_line2", e.target.value)}
-                        placeholder="Subject to local jurisdiction only."
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label>Term 3</Label>
-                      <Input
-                        value={settings.terms_line3 || ""}
-                        onChange={(e) => updateField("terms_line3", e.target.value)}
-                        placeholder="E&OE - Errors and Omissions Excepted."
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label>Custom Footer Text</Label>
-                      <Input
-                        value={settings.custom_footer_text || ""}
-                        onChange={(e) => updateField("custom_footer_text", e.target.value || null)}
-                        placeholder="e.g., Thank you for your business!"
-                        className="mt-1"
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="bank" className="mt-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Bank Details</CardTitle>
-                    <CardDescription>
-                      Add payment information to your invoices
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <Label>Bank Name</Label>
-                      <Input
-                        value={settings.bank_name || ""}
-                        onChange={(e) => updateField("bank_name", e.target.value || null)}
-                        placeholder="e.g., State Bank of India"
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label>Account Number</Label>
-                      <Input
-                        value={settings.bank_account_no || ""}
-                        onChange={(e) => updateField("bank_account_no", e.target.value || null)}
-                        placeholder="e.g., 1234567890"
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label>IFSC Code</Label>
-                      <Input
-                        value={settings.bank_ifsc || ""}
-                        onChange={(e) => updateField("bank_ifsc", e.target.value || null)}
-                        placeholder="e.g., SBIN0001234"
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label>Branch</Label>
-                      <Input
-                        value={settings.bank_branch || ""}
-                        onChange={(e) => updateField("bank_branch", e.target.value || null)}
-                        placeholder="e.g., Main Branch, Mumbai"
-                        className="mt-1"
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
-          </div>
-
-          {/* Preview Panel */}
-          <div className="lg:sticky lg:top-20">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Live Preview</CardTitle>
-                <CardDescription>
-                  See how your invoice will look
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <PdfPreviewMini settings={settings as PdfTemplateSettings} />
-              </CardContent>
-            </Card>
-          </div>
+                    </ScrollArea>
+                  </ResizablePanel>
+                </ResizablePanelGroup>
+              </div>
+            )}
+          </Tabs>
         </div>
       </div>
     </AppLayout>

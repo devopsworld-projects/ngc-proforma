@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700&family=Roboto+Mono:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -123,22 +123,48 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Ubuntu', sans-serif;
+    font-family: 'Inter', Arial, sans-serif;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Montserrat', 'Inter', sans-serif;
+  }
+
+  /* Monospaced fonts for invoice amounts and numbers */
+  .font-mono, .invoice-amount {
+    font-family: 'Roboto Mono', monospace;
   }
 }
 
 @layer components {
   .invoice-container {
-    @apply bg-card shadow-xl rounded-lg overflow-hidden;
-    box-shadow: 0 25px 50px -12px hsl(var(--invoice-shadow) / 0.15);
+    @apply overflow-hidden mx-auto relative;
+    /* Solid white background - no transparency */
+    background: #ffffff;
+    background-color: #ffffff;
+    /* NO box-shadow here - it causes grey overlay in PDF capture */
+    /* Shadow is applied via JavaScript in InvoicePreview for screen only */
+    width: 210mm;
+    min-height: 297mm;
+    max-width: 100%;
+  }
+
+  .invoice-page-indicator {
+    @apply absolute left-0 right-0 pointer-events-none;
+    top: 297mm;
+  }
+
+  .invoice-page-indicator::before {
+    content: '— Page 2 starts here —';
+    @apply absolute left-1/2 -translate-x-1/2 px-3 py-0.5 text-xs font-medium rounded-full;
+    background: rgba(212, 160, 44, 0.15);
+    color: #d4a02c;
+    top: -0.625rem;
+    white-space: nowrap;
   }
 
   .invoice-header {
-    @apply bg-[hsl(var(--invoice-header-bg))] text-[hsl(var(--invoice-header-fg))] p-8;
+    @apply bg-[hsl(var(--invoice-header-bg))] text-[hsl(var(--invoice-header-fg))] px-4 py-3;
   }
 
   .invoice-accent-bar {
@@ -162,19 +188,22 @@
   }
 
   .invoice-badge-success {
-    @apply bg-[hsl(var(--invoice-success)/0.1)] text-[hsl(var(--invoice-success))];
+    background: rgba(22, 163, 74, 0.1);
+    color: #16a34a;
   }
 
   .invoice-badge-pending {
-    @apply bg-[hsl(var(--invoice-accent)/0.1)] text-[hsl(var(--invoice-accent))];
+    background: rgba(212, 160, 44, 0.1);
+    color: #d4a02c;
   }
 
   .invoice-gold-text {
-    @apply text-[hsl(var(--invoice-accent))];
+    color: #d4a02c;
   }
 
   .invoice-divider {
-    @apply border-t-2 border-dashed border-[hsl(var(--invoice-border))];
+    @apply border-t-2 border-dashed;
+    border-color: #e5e7eb;
   }
 }
 
@@ -194,8 +223,15 @@
 
 /* Print styles for invoice */
 @media print {
+  @page {
+    margin: 10mm;
+    size: A4;
+  }
+
   body {
     @apply bg-white;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   .invoice-container {
@@ -205,4 +241,9 @@
   .no-print {
     display: none !important;
   }
+}
+
+/* Hide browser default headers/footers when printing */
+@page {
+  margin: 10mm;
 }

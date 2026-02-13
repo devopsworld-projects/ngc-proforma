@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { format } from "date-fns";
-import { CalendarIcon, Search, X, Filter } from "lucide-react";
+import { CalendarIcon, Search, X, Filter, ArrowUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { SortConfig } from "@/components/ui/sortable-table-head";
+import { InvoiceSortKey } from "@/hooks/useInvoiceFilters";
 
 export interface InvoiceFiltersState {
   search: string;
@@ -32,6 +34,8 @@ interface InvoiceFiltersProps {
   filters: InvoiceFiltersState;
   onFiltersChange: (filters: InvoiceFiltersState) => void;
   onClearFilters: () => void;
+  sortConfig?: SortConfig<InvoiceSortKey>;
+  onSort?: (key: InvoiceSortKey) => void;
 }
 
 const statusOptions = [
@@ -42,10 +46,19 @@ const statusOptions = [
   { value: "cancelled", label: "Cancelled" },
 ];
 
+const sortOptions: { value: InvoiceSortKey; label: string }[] = [
+  { value: "date", label: "Date" },
+  { value: "invoice_no", label: "Invoice #" },
+  { value: "grand_total", label: "Amount" },
+  { value: "status", label: "Status" },
+];
+
 export function InvoiceFilters({
   filters,
   onFiltersChange,
   onClearFilters,
+  sortConfig,
+  onSort,
 }: InvoiceFiltersProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
@@ -95,6 +108,34 @@ export function InvoiceFilters({
             ))}
           </SelectContent>
         </Select>
+
+        {/* Sort By */}
+        {sortConfig && onSort && (
+          <Select
+            value={sortConfig.key ? `${sortConfig.key}-${sortConfig.direction}` : "date-desc"}
+            onValueChange={(value) => {
+              const [key] = value.split("-") as [InvoiceSortKey];
+              onSort(key);
+            }}
+          >
+            <SelectTrigger className="w-full sm:w-[160px]">
+              <ArrowUpDown className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent className="bg-popover">
+              {sortOptions.map((option) => (
+                <SelectItem key={`${option.value}-asc`} value={`${option.value}-asc`}>
+                  {option.label} ↑
+                </SelectItem>
+              ))}
+              {sortOptions.map((option) => (
+                <SelectItem key={`${option.value}-desc`} value={`${option.value}-desc`}>
+                  {option.label} ↓
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
 
         {/* Advanced Filters Toggle */}
         <Button

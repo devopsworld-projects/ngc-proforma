@@ -140,6 +140,7 @@ export type Database = {
           phone: string | null
           state: string | null
           state_code: string | null
+          tax_type: string
           updated_at: string
           user_id: string | null
         }
@@ -155,6 +156,7 @@ export type Database = {
           phone?: string | null
           state?: string | null
           state_code?: string | null
+          tax_type?: string
           updated_at?: string
           user_id?: string | null
         }
@@ -170,6 +172,7 @@ export type Database = {
           phone?: string | null
           state?: string | null
           state_code?: string | null
+          tax_type?: string
           updated_at?: string
           user_id?: string | null
         }
@@ -178,40 +181,55 @@ export type Database = {
       invoice_items: {
         Row: {
           amount: number
+          brand: string | null
           created_at: string
           description: string
           discount_percent: number | null
+          gst_amount: number | null
+          gst_percent: number | null
           id: string
           invoice_id: string
+          product_image: string | null
           quantity: number
           rate: number
           serial_numbers: string[] | null
+          size_label: string | null
           sl_no: number
           unit: string
         }
         Insert: {
           amount: number
+          brand?: string | null
           created_at?: string
           description: string
           discount_percent?: number | null
+          gst_amount?: number | null
+          gst_percent?: number | null
           id?: string
           invoice_id: string
+          product_image?: string | null
           quantity: number
           rate: number
           serial_numbers?: string[] | null
+          size_label?: string | null
           sl_no: number
           unit?: string
         }
         Update: {
           amount?: number
+          brand?: string | null
           created_at?: string
           description?: string
           discount_percent?: number | null
+          gst_amount?: number | null
+          gst_percent?: number | null
           id?: string
           invoice_id?: string
+          product_image?: string | null
           quantity?: number
           rate?: number
           serial_numbers?: string[] | null
+          size_label?: string | null
           sl_no?: number
           unit?: string
         }
@@ -234,6 +252,7 @@ export type Database = {
           customer_id: string | null
           customer_snapshot: Json | null
           date: string
+          deleted_at: string | null
           discount_amount: number | null
           discount_percent: number | null
           e_way_bill_no: string | null
@@ -264,6 +283,7 @@ export type Database = {
           customer_id?: string | null
           customer_snapshot?: Json | null
           date?: string
+          deleted_at?: string | null
           discount_amount?: number | null
           discount_percent?: number | null
           e_way_bill_no?: string | null
@@ -294,6 +314,7 @@ export type Database = {
           customer_id?: string | null
           customer_snapshot?: Json | null
           date?: string
+          deleted_at?: string | null
           discount_amount?: number | null
           discount_percent?: number | null
           e_way_bill_no?: string | null
@@ -342,83 +363,185 @@ export type Database = {
       }
       pdf_template_settings: {
         Row: {
+          accent_color: string
           bank_account_no: string | null
           bank_branch: string | null
           bank_ifsc: string | null
           bank_name: string | null
+          bill_to_label: string
+          border_style: string
+          compact_header: boolean
           created_at: string
+          custom_canvas_data: Json | null
           custom_footer_text: string | null
+          font_body: string
+          font_heading: string
+          font_mono: string
+          font_size_scale: string
+          footer_padding: string
+          grand_total_bg: string
+          grand_total_text: string
+          header_layout: string
+          header_layout_style: string
+          header_padding: string
           header_text_color: string
           id: string
+          invoice_details_label: string
+          invoice_title: string
+          logo_size: string
           primary_color: string
           secondary_color: string
+          section_order: string[]
+          section_spacing: string
           show_amount_words: boolean
+          show_brand_column: boolean
+          show_company_state: boolean
           show_contact_header: boolean
+          show_customer_email: boolean
+          show_customer_phone: boolean
           show_discount_column: boolean
+          show_gst: boolean
           show_gstin_header: boolean
+          show_image_column: boolean
+          show_invoice_title: boolean
           show_logo: boolean
           show_serial_numbers: boolean
           show_shipping_address: boolean
           show_signature: boolean
           show_terms: boolean
+          show_unit_column: boolean
+          table_border_color: string
+          table_header_bg: string
+          table_header_text: string
+          table_row_padding: string
           table_text_color: string
+          template_style: string
           terms_line1: string | null
           terms_line2: string | null
           terms_line3: string | null
+          terms_line4: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          accent_color?: string
           bank_account_no?: string | null
           bank_branch?: string | null
           bank_ifsc?: string | null
           bank_name?: string | null
+          bill_to_label?: string
+          border_style?: string
+          compact_header?: boolean
           created_at?: string
+          custom_canvas_data?: Json | null
           custom_footer_text?: string | null
+          font_body?: string
+          font_heading?: string
+          font_mono?: string
+          font_size_scale?: string
+          footer_padding?: string
+          grand_total_bg?: string
+          grand_total_text?: string
+          header_layout?: string
+          header_layout_style?: string
+          header_padding?: string
           header_text_color?: string
           id?: string
+          invoice_details_label?: string
+          invoice_title?: string
+          logo_size?: string
           primary_color?: string
           secondary_color?: string
+          section_order?: string[]
+          section_spacing?: string
           show_amount_words?: boolean
+          show_brand_column?: boolean
+          show_company_state?: boolean
           show_contact_header?: boolean
+          show_customer_email?: boolean
+          show_customer_phone?: boolean
           show_discount_column?: boolean
+          show_gst?: boolean
           show_gstin_header?: boolean
+          show_image_column?: boolean
+          show_invoice_title?: boolean
           show_logo?: boolean
           show_serial_numbers?: boolean
           show_shipping_address?: boolean
           show_signature?: boolean
           show_terms?: boolean
+          show_unit_column?: boolean
+          table_border_color?: string
+          table_header_bg?: string
+          table_header_text?: string
+          table_row_padding?: string
           table_text_color?: string
+          template_style?: string
           terms_line1?: string | null
           terms_line2?: string | null
           terms_line3?: string | null
+          terms_line4?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          accent_color?: string
           bank_account_no?: string | null
           bank_branch?: string | null
           bank_ifsc?: string | null
           bank_name?: string | null
+          bill_to_label?: string
+          border_style?: string
+          compact_header?: boolean
           created_at?: string
+          custom_canvas_data?: Json | null
           custom_footer_text?: string | null
+          font_body?: string
+          font_heading?: string
+          font_mono?: string
+          font_size_scale?: string
+          footer_padding?: string
+          grand_total_bg?: string
+          grand_total_text?: string
+          header_layout?: string
+          header_layout_style?: string
+          header_padding?: string
           header_text_color?: string
           id?: string
+          invoice_details_label?: string
+          invoice_title?: string
+          logo_size?: string
           primary_color?: string
           secondary_color?: string
+          section_order?: string[]
+          section_spacing?: string
           show_amount_words?: boolean
+          show_brand_column?: boolean
+          show_company_state?: boolean
           show_contact_header?: boolean
+          show_customer_email?: boolean
+          show_customer_phone?: boolean
           show_discount_column?: boolean
+          show_gst?: boolean
           show_gstin_header?: boolean
+          show_image_column?: boolean
+          show_invoice_title?: boolean
           show_logo?: boolean
           show_serial_numbers?: boolean
           show_shipping_address?: boolean
           show_signature?: boolean
           show_terms?: boolean
+          show_unit_column?: boolean
+          table_border_color?: string
+          table_header_bg?: string
+          table_header_text?: string
+          table_row_padding?: string
           table_text_color?: string
+          template_style?: string
           terms_line1?: string | null
           terms_line2?: string | null
           terms_line3?: string | null
+          terms_line4?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -465,6 +588,7 @@ export type Database = {
           name: string
           purchase_price: number | null
           rate: number
+          size_label: string | null
           sku: string | null
           stock_quantity: number | null
           supplier_contact: string | null
@@ -487,6 +611,7 @@ export type Database = {
           name: string
           purchase_price?: number | null
           rate?: number
+          size_label?: string | null
           sku?: string | null
           stock_quantity?: number | null
           supplier_contact?: string | null
@@ -509,6 +634,7 @@ export type Database = {
           name?: string
           purchase_price?: number | null
           rate?: number
+          size_label?: string | null
           sku?: string | null
           stock_quantity?: number | null
           supplier_contact?: string | null

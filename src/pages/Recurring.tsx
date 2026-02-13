@@ -32,15 +32,15 @@ export default function RecurringPage() {
           <div>
             <h2 className="text-2xl font-serif font-bold flex items-center gap-2">
               <RefreshCcw className="h-6 w-6" />
-              Recurring Invoices
+              Recurring Proformas
             </h2>
             <p className="text-muted-foreground">
-              Manage automatically recurring invoices for repeat customers
+              Manage automatically recurring proforma invoices for repeat customers
             </p>
           </div>
           <Button className="gap-2">
             <Plus className="h-4 w-4" />
-            New Recurring Invoice
+            New Recurring Proforma
           </Button>
         </div>
 
@@ -48,13 +48,13 @@ export default function RecurringPage() {
           <Card className="border-dashed">
             <CardContent className="py-12 text-center">
               <RefreshCcw className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">No recurring invoices</h3>
+              <h3 className="text-lg font-medium mb-2">No recurring proformas</h3>
               <p className="text-muted-foreground mb-4">
-                Set up recurring invoices for customers with regular billing cycles
+                Set up recurring proforma invoices for customers with regular billing cycles
               </p>
               <Button className="gap-2">
                 <Plus className="h-4 w-4" />
-                Create Recurring Invoice
+                Create Recurring Proforma
               </Button>
             </CardContent>
           </Card>
@@ -69,7 +69,7 @@ export default function RecurringPage() {
                         <RefreshCcw className="w-5 h-5 text-invoice-accent" />
                       </div>
                       <div>
-                        <CardTitle className="text-lg">Invoice #{invoice.invoice_no}</CardTitle>
+                        <CardTitle className="text-lg">Proforma #{invoice.invoice_no}</CardTitle>
                         {(invoice as any).customers?.name && (
                           <p className="text-sm text-muted-foreground">
                             {(invoice as any).customers.name}
@@ -96,7 +96,7 @@ export default function RecurringPage() {
                   </div>
                   {invoice.next_invoice_date && (
                     <div className="text-sm text-muted-foreground">
-                      Next invoice: {new Date(invoice.next_invoice_date).toLocaleDateString("en-IN")}
+                      Next proforma: {new Date(invoice.next_invoice_date).toLocaleDateString("en-IN")}
                     </div>
                   )}
                   <div className="flex gap-2 pt-2">
@@ -120,7 +120,7 @@ export default function RecurringPage() {
             <CardContent className="py-4">
               <h4 className="font-medium mb-1">Weekly</h4>
               <p className="text-sm text-muted-foreground">
-                Invoice generated every week on the same day
+                Proforma generated every week on the same day
               </p>
             </CardContent>
           </Card>
@@ -128,7 +128,7 @@ export default function RecurringPage() {
             <CardContent className="py-4">
               <h4 className="font-medium mb-1">Monthly</h4>
               <p className="text-sm text-muted-foreground">
-                Invoice generated on the same date each month
+                Proforma generated on the same date each month
               </p>
             </CardContent>
           </Card>
@@ -136,7 +136,7 @@ export default function RecurringPage() {
             <CardContent className="py-4">
               <h4 className="font-medium mb-1">Quarterly / Yearly</h4>
               <p className="text-sm text-muted-foreground">
-                Invoice generated every 3 or 12 months
+                Proforma generated every 3 or 12 months
               </p>
             </CardContent>
           </Card>

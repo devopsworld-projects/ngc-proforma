@@ -13,12 +13,12 @@ if (Deno.env.get("DENO_ENV") !== "production") {
 
 function getCorsHeaders(origin: string | null): Record<string, string> {
   const allowedOrigin = origin && allowedOrigins.some(allowed => 
-    origin === allowed || origin.endsWith('.lovable.app')
+    origin === allowed || origin.endsWith('.lovable.app') || origin.endsWith('.lovableproject.com')
   ) ? origin : allowedOrigins[0];
   
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
     "Access-Control-Allow-Credentials": "true",
   };
 }
@@ -50,14 +50,19 @@ Deno.serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    // Verify user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
+    // Verify user using getClaims (recommended approach)
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    
+    if (claimsError || !claimsData?.claims?.sub) {
+      console.error("Auth error:", claimsError);
       return new Response(
         JSON.stringify({ success: false, error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    const userId = claimsData.claims.sub;
 
     // Get request body with device info
     const { userAgent, browser, os, deviceType } = await req.json();
@@ -72,7 +77,7 @@ Deno.serve(async (req) => {
     const { error: insertError } = await supabase
       .from("user_sessions")
       .insert({
-        user_id: user.id,
+        user_id: userId,
         ip_address: clientIP,
         user_agent: userAgent || null,
         browser: browser || null,

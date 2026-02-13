@@ -1,17 +1,66 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { formatCurrency, numberToWords } from "./invoice-utils";
-import { PdfTemplateSettings, defaultPdfTemplateSettings } from "@/hooks/usePdfTemplateSettings";
+import { formatCurrency, numberToWords, calculateGstBreakup, roundToTwo } from "./invoice-utils";
+import { PdfTemplateSettings } from "@/hooks/usePdfTemplateSettings";
+
+// Default PDF template settings
+const defaultPdfTemplateSettings = {
+  primary_color: "#294172",
+  secondary_color: "#3b82f6",
+  accent_color: "#d4a02c",
+  header_text_color: "#ffffff",
+  table_header_bg: "#f3f4f6",
+  table_header_text: "#374151",
+  table_text_color: "#1f2937",
+  grand_total_bg: "#1e2a4a",
+  grand_total_text: "#ffffff",
+  template_style: "bold_corporate",
+  invoice_title: "PROFORMA INVOICE",
+  bill_to_label: "Bill To",
+  invoice_details_label: "Invoice Details",
+  header_layout: "centered",
+  font_heading: "Montserrat",
+  font_body: "Inter",
+  font_mono: "Roboto Mono",
+  font_size_scale: "normal",
+  show_logo: true,
+  show_gstin_header: true,
+  show_contact_header: true,
+  show_company_state: true,
+  show_shipping_address: false,
+  show_customer_email: true,
+  show_customer_phone: true,
+  show_image_column: true,
+  show_brand_column: true,
+  show_unit_column: true,
+  show_serial_numbers: true,
+  show_discount_column: true,
+  show_terms: true,
+  show_signature: true,
+  show_amount_words: true,
+  terms_line1: "Goods once sold will not be taken back.",
+  terms_line2: "Subject to local jurisdiction only.",
+  terms_line3: "E&OE - Errors and Omissions Excepted.",
+  custom_footer_text: null as string | null,
+  bank_name: null as string | null,
+  bank_account_no: null as string | null,
+  bank_ifsc: null as string | null,
+  bank_branch: null as string | null,
+};
 
 interface InvoiceItem {
   sl_no: number;
+  brand?: string | null;
   description: string;
   serial_numbers?: string[] | null;
   quantity: number;
   unit: string;
-  rate: number;
+  rate: number; // GST-inclusive rate
   discount_percent: number;
-  amount: number;
+  amount: number; // GST-inclusive amount
+  product_image?: string | null;
+  gst_percent?: number | null;
+  gst_amount?: number | null;
 }
 
 interface CompanyInfo {
@@ -34,6 +83,8 @@ interface CustomerInfo {
   gstin?: string | null;
   state?: string | null;
   state_code?: string | null;
+  email?: string | null;
+  phone?: string | null;
 }
 
 interface AddressInfo {
@@ -104,12 +155,15 @@ export async function generateInvoicePDF(
   // Merge template settings with defaults
   const template = { ...defaultPdfTemplateSettings, ...options.templateSettings };
 
-  // Colors - simple palette
-  const primaryColor = hexToRgb(template.primary_color);
-  const tableTextColor = hexToRgb(template.table_text_color);
+  // Colors - matching the web preview's design system
+  // Primary: Deep Navy (HSL 222 47% 15% = #1e2a4a)
+  const headerBgColor: [number, number, number] = [30, 42, 74]; // Deep navy for header
+  const headerTextColor: [number, number, number] = [255, 255, 255]; // White text on header
+  const accentGold: [number, number, number] = [212, 160, 44]; // Gold accent (HSL 43 74% 49%)
   const darkText: [number, number, number] = [0, 0, 0]; // Pure black
   const mutedText: [number, number, number] = [80, 80, 80]; // Dark gray for secondary text
   const borderColor: [number, number, number] = [200, 200, 200];
+  const tableTextColor = hexToRgb(template.table_text_color);
 
   // Helper to add text
   const addText = (
@@ -138,90 +192,239 @@ export async function generateInvoicePDF(
     return fontSize * 0.4;
   };
 
-  // ===== HEADER - SIMPLE WHITE LAYOUT =====
+  // ===== GOLD ACCENT BAR AT TOP =====
+  doc.setFillColor(...accentGold);
+  doc.rect(0, 0, pageWidth, 3, "F");
+  yPos = 8;
+
+  // ===== HEADER - ORGANIZATION DETAILS (CENTERED) - Dark Navy Background =====
+  const headerStartY = yPos;
   
-  // Logo on left
-  let logoEndX = margin;
+  // We'll draw the header background after calculating height
+  let headerContentHeight = 0;
+  
+  // Logo centered at top
+  const logoSize = 24;
+  let hasLogo = false;
+  const logoY = yPos + 6;
+  
   if (template.show_logo && company.logo_url) {
     const logoBase64 = await loadImageAsBase64(company.logo_url);
     if (logoBase64) {
       try {
-        const logoSize = 22;
-        doc.addImage(logoBase64, "PNG", margin, yPos, logoSize, logoSize);
-        logoEndX = margin + logoSize + 8;
+        const logoX = (pageWidth - logoSize) / 2;
+        hasLogo = true;
+        headerContentHeight += logoSize + 4;
       } catch (e) {
         console.warn("Failed to add logo:", e);
       }
     }
   }
 
+  // Calculate header content positions
+  let contentY = logoY + (hasLogo ? logoSize + 4 : 0);
+  
   // Company name
-  addText(company.name.toUpperCase(), logoEndX, yPos + 8, {
+  const nameY = contentY;
+  contentY += 7;
+  
+  // Address lines
+  const addressParts = [company.address_line1, company.address_line2].filter(Boolean);
+  const addressY = contentY;
+  if (addressParts.length > 0) contentY += 5;
+  
+  const cityLine = [company.city, company.state, company.postal_code].filter(Boolean).join(", ");
+  const cityY = contentY;
+  if (cityLine) contentY += 5;
+
+  // Contact info
+  const contactY = contentY;
+  if (template.show_contact_header) contentY += 5;
+
+  // GSTIN
+  const gstinY = contentY;
+  if (template.show_gstin_header && company.gstin) contentY += 5;
+
+  // State info
+  const stateY = contentY;
+  contentY += 8;
+
+  // PROFORMA INVOICE title
+  const titleY = contentY;
+  contentY += 12;
+
+  const headerEndY = contentY;
+  headerContentHeight = headerEndY - headerStartY;
+
+  // Draw header background
+  doc.setFillColor(...headerBgColor);
+  doc.rect(0, headerStartY - 3, pageWidth, headerContentHeight + 6, "F");
+
+  // Now draw all the content on top
+  if (hasLogo && template.show_logo && company.logo_url) {
+    const logoBase64 = await loadImageAsBase64(company.logo_url);
+    if (logoBase64) {
+      try {
+        const logoX = (pageWidth - logoSize) / 2;
+        doc.addImage(logoBase64, "PNG", logoX, logoY, logoSize, logoSize);
+      } catch (e) {
+        console.warn("Failed to add logo:", e);
+      }
+    }
+  }
+
+  // Company name - centered, white text
+  addText(company.name.toUpperCase(), pageWidth / 2, nameY, {
     fontSize: 16,
     fontStyle: "bold",
-    color: primaryColor,
+    color: headerTextColor,
+    align: "center",
   });
 
-  // Company details under name
-  let companyY = yPos + 14;
-  if (template.show_gstin_header && company.gstin) {
-    addText(`GSTIN: ${company.gstin}`, logoEndX, companyY, {
+  // Company address - centered
+  if (addressParts.length > 0) {
+    addText(addressParts.join(", "), pageWidth / 2, addressY, {
       fontSize: 9,
-      color: mutedText,
+      color: [220, 220, 220],
+      align: "center",
     });
-    companyY += 5;
+  }
+  
+  if (cityLine) {
+    addText(cityLine, pageWidth / 2, cityY, {
+      fontSize: 9,
+      color: [220, 220, 220],
+      align: "center",
+    });
   }
 
-  // Contact info on right
+  // Contact info - centered
   if (template.show_contact_header) {
-    const rightX = pageWidth - margin;
-    let contactY = yPos + 5;
-    
+    const contactParts = [];
     if (company.phone && company.phone.length > 0) {
-      addText(`Phone: ${company.phone[0]}`, rightX, contactY, {
-        fontSize: 9,
-        color: darkText,
-        align: "right",
-      });
-      contactY += 5;
+      contactParts.push(`Phone: ${company.phone.join(", ")}`);
     }
     if (company.email) {
-      addText(company.email, rightX, contactY, {
-        fontSize: 9,
-        color: darkText,
-        align: "right",
-      });
-      contactY += 5;
+      contactParts.push(`Email: ${company.email}`);
     }
-    
-    const addressParts = [company.city, company.state, company.postal_code].filter(Boolean);
-    if (addressParts.length > 0) {
-      addText(addressParts.join(", "), rightX, contactY, {
-        fontSize: 9,
-        color: mutedText,
-        align: "right",
+    if (company.website) {
+      contactParts.push(company.website);
+    }
+    if (contactParts.length > 0) {
+      addText(contactParts.join("  |  "), pageWidth / 2, contactY, {
+        fontSize: 8,
+        color: [200, 200, 200],
+        align: "center",
       });
     }
   }
 
-  yPos += 30;
+  // GSTIN - centered with semi-transparent background effect
+  if (template.show_gstin_header && company.gstin) {
+    addText(`GSTIN: ${company.gstin}`, pageWidth / 2, gstinY, {
+      fontSize: 9,
+      fontStyle: "bold",
+      color: headerTextColor,
+      align: "center",
+    });
+  }
 
-  // Separator line
-  doc.setDrawColor(...borderColor);
-  doc.setLineWidth(0.5);
-  doc.line(margin, yPos, pageWidth - margin, yPos);
-  
-  yPos += 8;
+  // State info
+  if (company.state) {
+    addText(`State: ${company.state}, Code: ${company.state_code || ""}`, pageWidth / 2, stateY, {
+      fontSize: 8,
+      color: [200, 200, 200],
+      align: "center",
+    });
+  }
 
-  // No TAX INVOICE title - clean layout
+  // ===== PROFORMA INVOICE TITLE - Gold text =====
+  addText("PROFORMA INVOICE", pageWidth / 2, titleY, {
+    fontSize: 14,
+    fontStyle: "bold",
+    color: accentGold,
+    align: "center",
+  });
 
-  // ===== INVOICE DETAILS & BILL TO - TWO COLUMNS =====
+  yPos = headerEndY + 5;
+
+  // ===== CUSTOMER DETAILS (LEFT) & INVOICE INFO (RIGHT) =====
   const colWidth = (pageWidth - margin * 2 - 20) / 2;
   const leftColX = margin;
   const rightColX = margin + colWidth + 20;
 
-  // Invoice Details (Left)
-  addText("Invoice Details", leftColX, yPos, {
+  // Bill To (Left)
+  addText("Bill To:", leftColX, yPos, {
+    fontSize: 10,
+    fontStyle: "bold",
+    color: darkText,
+  });
+
+  let billY = yPos + 7;
+  if (invoice.customer) {
+    addText(invoice.customer.name, leftColX, billY, {
+      fontSize: 10,
+      fontStyle: "bold",
+      color: darkText,
+      maxWidth: colWidth,
+    });
+    billY += 6;
+
+    if (invoice.billing_address) {
+      const addr = invoice.billing_address;
+      if (addr.address_line1) {
+        addText(addr.address_line1, leftColX, billY, { fontSize: 9, color: mutedText, maxWidth: colWidth });
+        billY += 5;
+      }
+      if (addr.address_line2) {
+        addText(addr.address_line2, leftColX, billY, { fontSize: 9, color: mutedText, maxWidth: colWidth });
+        billY += 5;
+      }
+      const addrCityLine = [addr.city, addr.state, addr.postal_code].filter(Boolean).join(", ");
+      if (addrCityLine) {
+        addText(addrCityLine, leftColX, billY, { fontSize: 9, color: mutedText, maxWidth: colWidth });
+        billY += 5;
+      }
+    }
+
+    if (invoice.customer.phone) {
+      addText(`Phone: ${invoice.customer.phone}`, leftColX, billY, {
+        fontSize: 9,
+        color: mutedText,
+      });
+      billY += 5;
+    }
+
+    if (invoice.customer.email) {
+      addText(`Email: ${invoice.customer.email}`, leftColX, billY, {
+        fontSize: 9,
+        color: mutedText,
+      });
+      billY += 5;
+    }
+
+    if (invoice.customer.gstin) {
+      addText(`GSTIN: ${invoice.customer.gstin}`, leftColX, billY, {
+        fontSize: 9,
+        color: darkText,
+      });
+      billY += 5;
+    }
+
+    if (invoice.customer.state) {
+      const stateInfo = invoice.customer.state_code 
+        ? `${invoice.customer.state} (${invoice.customer.state_code})`
+        : invoice.customer.state;
+      addText(`State: ${stateInfo}`, leftColX, billY, {
+        fontSize: 9,
+        color: mutedText,
+      });
+      billY += 5;
+    }
+  }
+
+  // Invoice Details (Right)
+  addText("Invoice Details:", rightColX, yPos, {
     fontSize: 10,
     fontStyle: "bold",
     color: darkText,
@@ -235,116 +438,55 @@ export async function generateInvoicePDF(
   });
 
   const addDetailLine = (label: string, value: string) => {
-    addText(label, leftColX, detailY, { fontSize: 9, color: mutedText });
-    addText(value, leftColX + 35, detailY, { fontSize: 9, fontStyle: "bold", color: darkText });
+    addText(label, rightColX, detailY, { fontSize: 9, color: mutedText });
+    addText(value, rightColX + 35, detailY, { fontSize: 9, fontStyle: "bold", color: darkText });
     detailY += 5;
   };
 
-  addDetailLine("Invoice No:", invoice.invoice_no);
+  addDetailLine("Proforma No:", invoice.invoice_no);
   addDetailLine("Date:", invoiceDate);
   if (invoice.e_way_bill_no) addDetailLine("e-Way Bill:", invoice.e_way_bill_no);
   if (invoice.supplier_invoice_no) addDetailLine("Supplier Inv:", invoice.supplier_invoice_no);
   if (invoice.other_references) addDetailLine("Reference:", invoice.other_references.substring(0, 30));
 
-  // Bill To (Right)
-  addText("Bill To", rightColX, yPos, {
-    fontSize: 10,
-    fontStyle: "bold",
-    color: darkText,
-  });
-
-  let billY = yPos + 7;
-  if (invoice.customer) {
-    addText(invoice.customer.name, rightColX, billY, {
-      fontSize: 10,
-      fontStyle: "bold",
-      color: darkText,
-      maxWidth: colWidth,
-    });
-    billY += 6;
-
-    if (invoice.billing_address) {
-      const addr = invoice.billing_address;
-      if (addr.address_line1) {
-        addText(addr.address_line1, rightColX, billY, { fontSize: 9, color: mutedText, maxWidth: colWidth });
-        billY += 5;
-      }
-      if (addr.address_line2) {
-        addText(addr.address_line2, rightColX, billY, { fontSize: 9, color: mutedText, maxWidth: colWidth });
-        billY += 5;
-      }
-      const cityLine = [addr.city, addr.state, addr.postal_code].filter(Boolean).join(", ");
-      if (cityLine) {
-        addText(cityLine, rightColX, billY, { fontSize: 9, color: mutedText, maxWidth: colWidth });
-        billY += 5;
-      }
-    }
-
-    if (invoice.customer.gstin) {
-      addText(`GSTIN: ${invoice.customer.gstin}`, rightColX, billY, {
-        fontSize: 9,
-        color: darkText,
-      });
-      billY += 5;
-    }
-
-    if (invoice.customer.state) {
-      const stateInfo = invoice.customer.state_code 
-        ? `${invoice.customer.state} (${invoice.customer.state_code})`
-        : invoice.customer.state;
-      addText(`State: ${stateInfo}`, rightColX, billY, {
-        fontSize: 9,
-        color: mutedText,
-      });
-    }
-  }
-
   yPos = Math.max(detailY, billY) + 10;
 
-  // ===== ITEMS TABLE =====
-  const showDiscount = template.show_discount_column;
-  const showSerial = template.show_serial_numbers;
-
+  // ===== ITEMS TABLE with GST breakup =====
   const tableData = invoice.items.map((item, idx) => {
-    let desc = item.description;
-    if (showSerial && item.serial_numbers?.length) {
-      desc += `\nS/N: ${item.serial_numbers.slice(0, 2).join(", ")}${item.serial_numbers.length > 2 ? "..." : ""}`;
-    }
+    const gstPercent = item.gst_percent || 18;
+    const inclusiveRate = item.rate;
+    const { basePrice: baseUnitPrice, gstAmount: gstPerUnit } = calculateGstBreakup(inclusiveRate, gstPercent);
     
+    const totalBasePrice = roundToTwo(baseUnitPrice * item.quantity);
+    const totalGstAmount = roundToTwo(gstPerUnit * item.quantity);
+    const totalInclusive = roundToTwo(item.quantity * inclusiveRate);
+
     const row: string[] = [
       (idx + 1).toString(),
-      desc,
-      item.quantity.toString(),
-      item.unit,
-      formatCurrency(item.rate),
+      item.brand || "-",
+      item.description,
+      `${item.quantity} ${item.unit}`,
+      formatCurrency(totalBasePrice),
+      `${gstPercent}%`,
+      formatCurrency(totalGstAmount),
+      formatCurrency(totalInclusive),
     ];
-    
-    if (showDiscount) {
-      row.push(item.discount_percent > 0 ? `${item.discount_percent}%` : "-");
-    }
-    row.push(formatCurrency(item.amount));
     
     return row;
   });
 
-  const tableHead = showDiscount 
-    ? [["#", "Description", "Qty", "Unit", "Rate", "Disc", "Amount"]]
-    : [["#", "Description", "Qty", "Unit", "Rate", "Amount"]];
+  const tableHead = [["#", "Brand", "Description", "Qty", "Base Price", "GST %", "GST Amt", "Total"]];
 
   const columnStyles: any = {
-    0: { cellWidth: 10, halign: "center" },
-    1: { cellWidth: "auto", halign: "left" },
-    2: { cellWidth: 16, halign: "center" },
-    3: { cellWidth: 16, halign: "center" },
-    4: { cellWidth: 28, halign: "right" },
+    0: { cellWidth: 8, halign: "center" },
+    1: { cellWidth: 25, halign: "left" },
+    2: { cellWidth: "auto", halign: "left" },
+    3: { cellWidth: 18, halign: "center" },
+    4: { cellWidth: 22, halign: "right" },
+    5: { cellWidth: 14, halign: "center" },
+    6: { cellWidth: 22, halign: "right" },
+    7: { cellWidth: 24, halign: "right" },
   };
-
-  if (showDiscount) {
-    columnStyles[5] = { cellWidth: 16, halign: "center" };
-    columnStyles[6] = { cellWidth: 32, halign: "right", fontStyle: "bold" };
-  } else {
-    columnStyles[5] = { cellWidth: 32, halign: "right", fontStyle: "bold" };
-  }
 
   autoTable(doc, {
     startY: yPos,
@@ -409,11 +551,20 @@ export async function generateInvoicePDF(
     addText(value, totalsValueX, totalsY, {
       fontSize: isBold ? 11 : 9,
       fontStyle: isBold ? "bold" : "normal",
-      color: isBold ? primaryColor : darkText,
+      color: isBold ? headerBgColor : darkText,
       align: "right",
     });
     totalsY += 6;
   };
+
+  // Calculate total GST from per-item reverse calculation
+  let totalGstFromItems = 0;
+  invoice.items.forEach(item => {
+    const gstPercent = item.gst_percent || 18;
+    const { gstAmount: gstPerUnit } = calculateGstBreakup(item.rate, gstPercent);
+    totalGstFromItems += gstPerUnit * item.quantity;
+  });
+  totalGstFromItems = roundToTwo(totalGstFromItems);
 
   addTotalLine("Subtotal:", formatCurrency(invoice.subtotal));
   
@@ -421,17 +572,32 @@ export async function generateInvoicePDF(
     addTotalLine(`Discount (${invoice.discount_percent}%):`, `-${formatCurrency(invoice.discount_amount)}`);
   }
   
-  addTotalLine(`GST (${invoice.tax_rate}%):`, formatCurrency(invoice.tax_amount));
+  addTotalLine("Total GST (included):", formatCurrency(totalGstFromItems));
 
   if (Math.abs(invoice.round_off) > 0.001) {
     addTotalLine("Round Off:", formatCurrency(invoice.round_off));
   }
 
-  // Grand total with line
-  totalsY += 2;
-  doc.setDrawColor(...borderColor);
-  doc.line(totalsX - 10, totalsY - 3, pageWidth - margin, totalsY - 3);
-  addTotalLine("GRAND TOTAL:", formatCurrency(invoice.grand_total), true);
+  // Grand total with dark navy background (matching web preview)
+  totalsY += 4;
+  const grandTotalBoxY = totalsY - 4;
+  const grandTotalBoxHeight = 14;
+  
+  doc.setFillColor(...headerBgColor);
+  doc.roundedRect(totalsX - 12, grandTotalBoxY, pageWidth - margin - totalsX + 14, grandTotalBoxHeight, 2, 2, "F");
+  
+  addText("Grand Total", totalsX - 8, totalsY + 2, {
+    fontSize: 10,
+    fontStyle: "bold",
+    color: headerTextColor,
+  });
+  addText(formatCurrency(invoice.grand_total), totalsValueX - 2, totalsY + 2, {
+    fontSize: 12,
+    fontStyle: "bold",
+    color: headerTextColor,
+    align: "right",
+  });
+  totalsY += grandTotalBoxHeight;
 
   // Amount in words (left side, same row as totals start)
   if (template.show_amount_words) {
@@ -451,85 +617,109 @@ export async function generateInvoicePDF(
 
   yPos = totalsY + 10;
 
-  // ===== BANK DETAILS =====
-  if (template.bank_name) {
-    doc.setDrawColor(...borderColor);
-    doc.line(margin, yPos - 3, pageWidth - margin, yPos - 3);
-    
-    addText("Bank Details:", margin, yPos + 3, {
-      fontSize: 9,
-      fontStyle: "bold",
-      color: darkText,
-    });
-
-    const bankInfo = [
-      template.bank_name,
-      template.bank_account_no ? `A/C: ${template.bank_account_no}` : null,
-      template.bank_ifsc ? `IFSC: ${template.bank_ifsc}` : null,
-      template.bank_branch ? `Branch: ${template.bank_branch}` : null,
-    ].filter(Boolean).join("  |  ");
-
-    addText(bankInfo, margin, yPos + 10, {
-      fontSize: 9,
-      color: mutedText,
-      maxWidth: pageWidth - margin * 2,
-    });
-
-    yPos += 20;
+  // Check if we need a new page for footer content
+  if (yPos > pageHeight - 80) {
+    doc.addPage();
+    yPos = margin;
   }
 
-  // ===== FOOTER SECTION =====
-  const footerY = pageHeight - 35;
+  // ===== FOOTER SECTION WITH DARK BACKGROUND (matching web preview) =====
+  const footerStartY = yPos;
+  const footerEndY = pageHeight - 15; // Leave space for page number
+  
+  // Draw footer background
+  doc.setFillColor(...headerBgColor);
+  doc.rect(0, footerStartY - 5, pageWidth, footerEndY - footerStartY + 20, "F");
 
-  // Separator line
-  doc.setDrawColor(...borderColor);
-  doc.setLineWidth(0.3);
-  doc.line(margin, footerY - 8, pageWidth - margin, footerY - 8);
-
-  // Terms & Conditions
+  // ===== TERMS & CONDITIONS =====
   if (template.show_terms) {
-    addText("Terms & Conditions:", margin, footerY - 2, {
-      fontSize: 8,
+    addText("Terms & Conditions", margin, yPos, {
+      fontSize: 9,
       fontStyle: "bold",
-      color: darkText,
+      color: [180, 180, 180],
     });
     
-    let termY = footerY + 4;
-    const terms = [template.terms_line1, template.terms_line2, template.terms_line3].filter(Boolean);
+    let termY = yPos + 6;
+    // Use hardcoded terms to match the view proforma
+    const defaultTerms = [
+      "Customer Should register the product with respective company.",
+      "In case of Warranty the customer should bare the courier charges.",
+      "Validity of this quotation is for 7 days.",
+      "Payment should be made in 100% Advance, No warranty for Burning."
+    ];
+    const terms = template.terms_line1 ? [template.terms_line1, template.terms_line2, template.terms_line3].filter(Boolean) : defaultTerms;
     terms.forEach((term, idx) => {
-      addText(`${idx + 1}. ${term}`, margin, termY, { fontSize: 7, color: mutedText });
+      addText(`${idx + 1}. ${term}`, margin + 4, termY, { fontSize: 8, color: [220, 220, 220] });
       termY += 4;
     });
+    yPos = termY + 6;
   }
 
-  // Signature section (right side)
+  // ===== BANK DETAILS =====
+  // Use hardcoded bank details to match the view proforma
+  const bankName = template.bank_name || "TAMILNAD MERCANTILE BANK LTD";
+  const bankAccountNo = template.bank_account_no || "171700150950039";
+  const bankIfsc = template.bank_ifsc || "TMBL0000171";
+  const bankBranch = template.bank_branch || "NEW GLOBAL COMPUTERS";
+
+  addText("Bank Details", margin, yPos, {
+    fontSize: 9,
+    fontStyle: "bold",
+    color: [180, 180, 180],
+  });
+
+  let bankY = yPos + 6;
+  addText(`Name: ${bankBranch}`, margin + 4, bankY, { fontSize: 8, color: [220, 220, 220] });
+  bankY += 4;
+  addText(`Bank: ${bankName}`, margin + 4, bankY, { fontSize: 8, color: [220, 220, 220] });
+  bankY += 4;
+  addText(`A/C No: ${bankAccountNo}`, margin + 4, bankY, { fontSize: 8, color: [220, 220, 220] });
+  bankY += 4;
+  addText(`IFSC: ${bankIfsc}`, margin + 4, bankY, { fontSize: 8, color: [220, 220, 220] });
+  bankY += 4;
+
+  // ===== SIGNATURE SECTION =====
   if (template.show_signature) {
-    const sigX = pageWidth - margin - 40;
+    const sigX = pageWidth - margin - 50;
+    const sigY = Math.max(yPos + 5, footerEndY - 15);
     
-    addText(`For ${company.name}`, sigX + 20, footerY - 4, {
+    addText(`for ${company.name}`, sigX + 25, sigY - 10, {
       fontSize: 8,
       fontStyle: "bold",
-      color: darkText,
+      color: headerTextColor,
       align: "center",
     });
 
-    doc.setDrawColor(...darkText);
+    doc.setDrawColor(255, 255, 255);
     doc.setLineWidth(0.3);
-    doc.line(sigX, footerY + 10, pageWidth - margin, footerY + 10);
+    doc.line(sigX, sigY, pageWidth - margin, sigY);
     
-    addText("Authorized Signatory", sigX + 20, footerY + 15, {
+    addText("Authorised Signatory", sigX + 25, sigY + 5, {
       fontSize: 7,
-      color: mutedText,
+      color: [180, 180, 180],
       align: "center",
     });
+  }
+
+  // ===== GOLD ACCENT BAR AT BOTTOM =====
+  doc.setFillColor(...accentGold);
+  doc.rect(0, pageHeight - 3, pageWidth, 3, "F");
+
+  // Page number - on top of footer
+  const totalPages = doc.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(180, 180, 180);
+    doc.text(`Page ${i} of ${totalPages}`, pageWidth / 2, pageHeight - 6, { align: "center" });
   }
 
   // Custom footer text
   if (template.custom_footer_text) {
-    addText(template.custom_footer_text, pageWidth / 2, pageHeight - 12, {
+    addText(template.custom_footer_text, pageWidth / 2, pageHeight - 10, {
       fontSize: 8,
       fontStyle: "italic",
-      color: mutedText,
+      color: [150, 150, 150],
       align: "center",
     });
   }

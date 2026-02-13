@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
+export type TaxType = "cgst" | "igst";
+
 export interface Customer {
   id: string;
   name: string;
@@ -16,6 +18,7 @@ export interface Customer {
   created_at: string;
   updated_at: string;
   customer_type: string;
+  tax_type: string; // "cgst" or "igst" - stored as string in DB
 }
 
 export interface Address {
@@ -38,19 +41,49 @@ export interface CustomerWithAddresses extends Customer {
   addresses: Address[];
 }
 
+export interface CustomerWithCreator extends Customer {
+  creator_name?: string | null;
+}
+
 export function useCustomers() {
   const { user } = useAuth();
   return useQuery({
-    queryKey: ["customers", user?.id],
+    queryKey: ["customers"],
     queryFn: async () => {
       if (!user) return [];
-      const { data, error } = await supabase
+      
+      // Fetch customers
+      const { data: customers, error: customersError } = await supabase
         .from("customers")
         .select("*")
-        .eq("user_id", user.id)
         .order("name");
-      if (error) throw error;
-      return data as Customer[];
+      if (customersError) throw customersError;
+      if (!customers || customers.length === 0) return [];
+
+      // Get unique user_ids to fetch profiles
+      const userIds = [...new Set(customers.map(c => c.user_id).filter(Boolean))] as string[];
+      
+      // Fetch profiles for creator names
+      let profilesMap: Record<string, string> = {};
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", userIds);
+        
+        if (profiles) {
+          profilesMap = profiles.reduce((acc, p) => {
+            acc[p.id] = p.full_name || "Unknown";
+            return acc;
+          }, {} as Record<string, string>);
+        }
+      }
+
+      // Map customers with creator names
+      return customers.map((c) => ({
+        ...c,
+        creator_name: c.user_id ? profilesMap[c.user_id] || null : null,
+      })) as CustomerWithCreator[];
     },
     enabled: !!user,
   });

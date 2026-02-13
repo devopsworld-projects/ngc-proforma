@@ -34,6 +34,7 @@ interface ParsedProduct {
   model_spec: string | null;
   gst_percent: number | null;
   image_url: string | null;
+  size_label: string | null;
 }
 
 interface ExcelUploadDialogProps {
@@ -109,6 +110,7 @@ export function ExcelUploadDialog({ trigger }: ExcelUploadDialogProps) {
           model_spec: String(row.model_spec || row.model || row.Model || row["Model/Spec"] || "").trim().slice(0, 500) || null,
           gst_percent: isNaN(gstPercent) ? 18 : gstPercent,
           image_url: null,
+          size_label: String(row.size_label || row.size || row.Size || row["Size/Length"] || "").trim().slice(0, 50) || null,
         });
       });
 

@@ -30,7 +30,7 @@ import { toast } from "sonner";
 import type { Json } from "@/integrations/supabase/types";
 
 const invoiceFormSchema = z.object({
-  invoiceNo: z.string().min(1, "Invoice number is required"),
+  invoiceNo: z.string().min(1, "Proforma number is required"),
   date: z.date(),
   eWayBillNo: z.string().optional(),
   supplierInvoiceNo: z.string().optional(),
@@ -211,17 +211,26 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
       
       if (invoice.items && invoice.items.length > 0) {
         setLineItems(
-          invoice.items.map((item) => ({
-            id: item.id,
-            slNo: item.sl_no,
-            description: item.description,
-            serialNumbers: item.serial_numbers?.join(", ") || "",
-            quantity: item.quantity,
-            unit: item.unit,
-            rate: item.rate,
-            discountPercent: item.discount_percent,
-            amount: item.amount,
-          }))
+          invoice.items.map((item) => {
+            const gstPercent = item.gst_percent || 18;
+            const gstAmount = item.gst_amount || (item.amount * gstPercent) / 100;
+            return {
+              id: item.id,
+              slNo: item.sl_no,
+              brand: item.brand || "",
+              description: item.description,
+              serialNumbers: item.serial_numbers?.join(", ") || "",
+              quantity: item.quantity,
+              unit: item.unit,
+              sizeLabel: item.size_label || "",
+              rate: item.rate,
+              discountPercent: item.discount_percent,
+              gstPercent: gstPercent,
+              gstAmount: gstAmount,
+              amount: item.amount,
+              productImage: item.product_image || "",
+            };
+          })
         );
       }
     }
@@ -238,7 +247,7 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
     return lineItems.reduce((sum, item) => sum + item.amount, 0);
   }, [lineItems]);
 
-  const totals = useTaxCalculation(subtotal, discountPercent, taxRate);
+  const totals = useTaxCalculation(subtotal, discountPercent, lineItems);
 
   const handleCustomerSelect = (
     customer: Customer | null,
@@ -356,19 +365,24 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
         const itemsPayload = lineItems.map((item) => ({
           invoice_id: invoice.id,
           sl_no: item.slNo,
+          brand: item.brand || null,
           description: item.description,
           serial_numbers: item.serialNumbers ? item.serialNumbers.split(",").map((s) => s.trim()).filter(Boolean) : null,
           quantity: item.quantity,
           unit: item.unit,
+          size_label: item.sizeLabel || null,
           rate: item.rate,
           discount_percent: item.discountPercent,
+          gst_percent: item.gstPercent || 18,
+          gst_amount: item.gstAmount || 0,
           amount: item.amount,
+          product_image: item.productImage || null,
         }));
 
         const { error: itemsError } = await supabase.from("invoice_items").insert(itemsPayload);
         if (itemsError) throw itemsError;
 
-        toast.success("Invoice updated successfully!");
+        toast.success("Proforma invoice updated successfully!");
       } else {
         // Create new invoice
         const { data: newInvoice, error: invoiceError } = await supabase
@@ -382,17 +396,57 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
         const itemsPayload = lineItems.map((item) => ({
           invoice_id: newInvoice.id,
           sl_no: item.slNo,
+          brand: item.brand || null,
           description: item.description,
           serial_numbers: item.serialNumbers ? item.serialNumbers.split(",").map((s) => s.trim()).filter(Boolean) : null,
           quantity: item.quantity,
           unit: item.unit,
+          size_label: item.sizeLabel || null,
           rate: item.rate,
           discount_percent: item.discountPercent,
+          gst_percent: item.gstPercent || 18,
+          gst_amount: item.gstAmount || 0,
           amount: item.amount,
+          product_image: item.productImage || null,
         }));
 
         const { error: itemsError } = await supabase.from("invoice_items").insert(itemsPayload);
         if (itemsError) throw itemsError;
+
+        // Auto-save manually entered products to products list
+        const manualProducts = lineItems.filter(item => !item.productId && item.brand?.trim());
+        if (manualProducts.length > 0) {
+          const newProducts = manualProducts.map(item => ({
+            name: item.brand.trim(),
+            description: item.description?.trim() || null,
+            unit: item.unit || "NOS",
+            rate: item.rate,
+            gst_percent: item.gstPercent || 18,
+            stock_quantity: 0, // Start with 0 stock for new products
+            is_active: true,
+            user_id: user.id,
+          }));
+          
+          // Insert products (ignore duplicates by name for same user)
+          for (const product of newProducts) {
+            // Check if product with same name exists for this user
+            const { data: existingProduct } = await supabase
+              .from("products")
+              .select("id")
+              .eq("user_id", user.id)
+              .eq("name", product.name)
+              .eq("is_active", true)
+              .maybeSingle();
+            
+            if (!existingProduct) {
+              await supabase.from("products").insert(product);
+            }
+          }
+          
+          if (manualProducts.length > 0) {
+            toast.info(`${manualProducts.length} new product(s) added to inventory`);
+          }
+        }
 
         // Auto-deduct stock for items with productId
         const stockDeductions = lineItems
@@ -418,14 +472,14 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
           }
         }
 
-        toast.success("Invoice created successfully!");
+        toast.success("Proforma invoice created successfully!");
       }
 
       onSuccess?.();
       navigate("/invoices");
     } catch (error: any) {
-      console.error("Error saving invoice:", error);
-      toast.error(error.message || "Failed to save invoice");
+      console.error("Error saving proforma invoice:", error);
+      toast.error(error.message || "Failed to save proforma invoice");
     } finally {
       setIsSubmitting(false);
     }
@@ -440,10 +494,10 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-serif font-bold">
-              {isEditing ? `Edit Invoice #${invoice?.invoice_no}` : "Create Invoice"}
+              {isEditing ? `Edit Proforma #${invoice?.invoice_no}` : "Create Proforma Invoice"}
             </h2>
             <p className="text-muted-foreground">
-              {isEditing ? "Update the invoice details" : "Fill in the details to create a new invoice"}
+              {isEditing ? "Update the proforma invoice details" : "Fill in the details to create a new proforma invoice"}
             </p>
           </div>
           <div className="flex gap-2">
@@ -453,7 +507,7 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
             </Button>
             <Button type="submit" disabled={isSubmitting || !quoteFor} className="gap-2">
               <Save className="h-4 w-4" />
-              {isSubmitting ? "Saving..." : isEditing ? "Update Invoice" : "Save Invoice"}
+              {isSubmitting ? "Saving..." : isEditing ? "Update Proforma" : "Save Proforma"}
             </Button>
           </div>
         </div>
@@ -531,10 +585,10 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Invoice Details */}
+            {/* Proforma Invoice Details */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Invoice Details</CardTitle>
+                <CardTitle className="text-base">Proforma Details</CardTitle>
               </CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
@@ -542,9 +596,9 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
                   name="invoiceNo"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Invoice Number *</FormLabel>
+                      <FormLabel>Proforma Number *</FormLabel>
                       <FormControl>
-                        <Input placeholder="INV-001" {...field} />
+                        <Input placeholder="PI-001" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -556,7 +610,7 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
                   name="date"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Invoice Date *</FormLabel>
+                      <FormLabel>Proforma Date *</FormLabel>
                       <Popover>
                         <PopoverTrigger asChild>
                           <FormControl>
@@ -762,9 +816,10 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
             <TaxCalculator
               subtotal={subtotal}
               discountPercent={discountPercent}
-              taxRate={taxRate}
               onDiscountChange={setDiscountPercent}
-              onTaxRateChange={setTaxRate}
+              lineItems={lineItems}
+              taxType={selectedCustomer?.tax_type as "cgst" | "igst" | undefined}
+              customerName={selectedCustomer?.name}
             />
 
             {/* Recurring Settings */}

@@ -6,8 +6,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useCreateCustomer, useUpdateCustomer, Customer } from "@/hooks/useCustomers";
 import { toast } from "sonner";
 import { Plus, Pencil } from "lucide-react";
@@ -21,6 +23,7 @@ const customerSchema = z.object({
   state_code: z.string().max(5).optional().or(z.literal("")),
   notes: z.string().max(500).optional().or(z.literal("")),
   customer_type: z.enum(["customer", "dealer"]),
+  tax_type: z.enum(["cgst", "igst"]),
 });
 
 type CustomerFormData = z.infer<typeof customerSchema>;
@@ -48,6 +51,7 @@ export function CustomerFormDialog({ customer, trigger, onSuccess }: CustomerFor
       state_code: customer?.state_code || "",
       notes: customer?.notes || "",
       customer_type: (customer?.customer_type as "customer" | "dealer") || "customer",
+      tax_type: (customer?.tax_type as "cgst" | "igst") || "cgst",
     },
   });
 
@@ -62,6 +66,7 @@ export function CustomerFormDialog({ customer, trigger, onSuccess }: CustomerFor
         state_code: data.state_code || null,
         notes: data.notes || null,
         customer_type: data.customer_type,
+        tax_type: data.tax_type,
         is_active: true,
       };
 
@@ -115,6 +120,37 @@ export function CustomerFormDialog({ customer, trigger, onSuccess }: CustomerFor
                       <SelectItem value="dealer">Dealer</SelectItem>
                     </SelectContent>
                   </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="tax_type"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <FormLabel>Tax Type *</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="flex gap-6"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="cgst" id="cgst" />
+                        <Label htmlFor="cgst" className="font-normal cursor-pointer">
+                          CGST + SGST (Intra-state)
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="igst" id="igst" />
+                        <Label htmlFor="igst" className="font-normal cursor-pointer">
+                          IGST (Inter-state)
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

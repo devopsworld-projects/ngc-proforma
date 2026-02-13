@@ -69,3 +69,31 @@ export function formatDate(date: Date | string): string {
     year: '2-digit'
   });
 }
+
+/**
+ * Reverse-calculate GST from an inclusive price.
+ * The stored product price is GST-inclusive, so we need to extract the base price and GST amount.
+ * 
+ * Formula:
+ * - base_price = inclusive_price × 100 / (100 + gst_rate)
+ * - gst_amount = inclusive_price − base_price
+ * 
+ * @param inclusivePrice - The GST-inclusive price
+ * @param gstPercent - The GST percentage (default 18%)
+ * @returns Object with basePrice and gstAmount (not rounded - apply rounding at display time)
+ */
+export function calculateGstBreakup(inclusivePrice: number, gstPercent: number = 18): {
+  basePrice: number;
+  gstAmount: number;
+} {
+  const basePrice = (inclusivePrice * 100) / (100 + gstPercent);
+  const gstAmount = inclusivePrice - basePrice;
+  return { basePrice, gstAmount };
+}
+
+/**
+ * Format a number to 2 decimal places for display
+ */
+export function roundToTwo(num: number): number {
+  return Math.round(num * 100) / 100;
+}

@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Package, Eye } from "lucide-react";
 import { Product } from "@/hooks/useProducts";
-import { formatCurrency } from "@/lib/invoice-utils";
+import { formatCurrency, calculateGstBreakup } from "@/lib/invoice-utils";
 import { ReactNode } from "react";
 
 interface ProductViewDialogProps {
@@ -83,22 +83,33 @@ export function ProductViewDialog({ product, trigger }: ProductViewDialogProps) 
           </div>
 
           {/* Pricing & Stock */}
-          <div className="rounded-lg bg-muted/50 p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Rate</span>
-              <span className="text-lg font-bold">{formatCurrency(product.rate)}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">GST</span>
-              <span className="font-medium">{product.gst_percent ?? 18}%</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Stock</span>
-              <span className={`font-medium ${product.stock_quantity <= 0 ? "text-destructive" : product.stock_quantity <= 10 ? "text-amber-600" : "text-green-600"}`}>
-                {product.stock_quantity} {product.unit}
-              </span>
-            </div>
-          </div>
+          {(() => {
+            const gstPercent = product.gst_percent ?? 18;
+            const { basePrice, gstAmount } = calculateGstBreakup(product.rate, gstPercent);
+            return (
+              <div className="rounded-lg bg-muted/50 p-4 space-y-3">
+                <p className="text-xs text-muted-foreground mb-2">Price Breakup (per unit)</p>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Base Price (Taxable)</span>
+                  <span className="font-medium">{formatCurrency(basePrice)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">GST @ {gstPercent}%</span>
+                  <span className="font-medium">{formatCurrency(gstAmount)}</span>
+                </div>
+                <div className="flex items-center justify-between border-t pt-2">
+                  <span className="text-sm text-muted-foreground">Total (Inclusive)</span>
+                  <span className="text-lg font-bold">{formatCurrency(product.rate)}</span>
+                </div>
+                <div className="flex items-center justify-between border-t pt-2">
+                  <span className="text-sm text-muted-foreground">Stock</span>
+                  <span className={`font-medium ${product.stock_quantity <= 0 ? "text-destructive" : product.stock_quantity <= 10 ? "text-amber-600" : "text-green-600"}`}>
+                    {product.stock_quantity} {product.unit}
+                  </span>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Added By */}
           {product.profiles?.full_name && (

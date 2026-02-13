@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Tooltip,
   TooltipContent,
@@ -40,22 +41,40 @@ import {
   Barcode,
   Percent,
 } from "lucide-react";
-import { formatCurrency } from "@/lib/invoice-utils";
+import { formatCurrency, calculateGstBreakup, roundToTwo } from "@/lib/invoice-utils";
 import { ExcelLineItemsUpload } from "@/components/invoice/ExcelLineItemsUpload";
 import { useSearchProducts, Product } from "@/hooks/useProducts";
 import { cn } from "@/lib/utils";
 
+const UNIT_OPTIONS = [
+  { value: "NOS", label: "NOS (Numbers)" },
+  { value: "MTR", label: "MTR (Meters)" },
+  { value: "KG", label: "KG (Kilograms)" },
+  { value: "LTR", label: "LTR (Liters)" },
+  { value: "PCS", label: "PCS (Pieces)" },
+  { value: "BOX", label: "BOX (Boxes)" },
+  { value: "SET", label: "SET (Sets)" },
+  { value: "ROLL", label: "ROLL (Rolls)" },
+  { value: "PAIR", label: "PAIR (Pairs)" },
+  { value: "SQM", label: "SQM (Square Meters)" },
+];
+
 export interface LineItem {
   id: string;
   slNo: number;
+  brand: string;
   description: string;
   serialNumbers: string;
   quantity: number;
   unit: string;
+  sizeLabel?: string; // For tracking dimensions like "500 MTR" for cables - doesn't affect price
   rate: number;
   discountPercent: number;
+  gstPercent: number;
+  gstAmount: number;
   amount: number;
   productId?: string;
+  productImage?: string;
 }
 
 interface PricingMarkup {
@@ -133,12 +152,20 @@ function SortableLineItem({
           </span>
         </div>
         
-        {/* Description */}
+        {/* Product (Name + Description) */}
         <div 
           className="col-span-4 md:col-span-4 min-w-0 cursor-pointer"
           onClick={onToggleExpand}
         >
-          <p className="font-medium truncate text-sm">{item.description || "—"}</p>
+          <p className="font-semibold truncate text-sm">{item.brand || "Unnamed Product"}</p>
+          {item.description && item.description !== item.brand && (
+            <p className="text-xs text-muted-foreground truncate">{item.description}</p>
+          )}
+          {item.sizeLabel && (
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 mt-0.5">
+              {item.sizeLabel}
+            </Badge>
+          )}
           {item.serialNumbers && (
             <div className="flex items-center gap-1 mt-0.5">
               <Barcode className="h-3 w-3 text-muted-foreground" />
@@ -156,21 +183,21 @@ function SortableLineItem({
           <span>{formatCurrency(item.rate)}</span>
         </div>
         
-        {/* Discount */}
-        <div className="col-span-2 text-center" onClick={onToggleExpand}>
-          {item.discountPercent > 0 ? (
-            <Badge variant="secondary" className="text-xs gap-1">
-              <Percent className="h-3 w-3" />
-              {item.discountPercent}%
-            </Badge>
-          ) : (
-            <span className="text-muted-foreground text-sm">—</span>
-          )}
+        {/* GST % */}
+        <div className="col-span-1 text-center" onClick={onToggleExpand}>
+          <span className="font-medium text-sm text-muted-foreground">{item.gstPercent || 18}%</span>
         </div>
         
-        {/* Amount */}
+        {/* GST Amt (reverse-calculated from inclusive price) */}
+        <div className="col-span-1 text-center" onClick={onToggleExpand}>
+          <span className="font-medium text-sm">
+            {formatCurrency(roundToTwo(calculateGstBreakup(item.rate, item.gstPercent || 18).gstAmount * item.quantity))}
+          </span>
+        </div>
+        
+        {/* Amount (incl. GST) */}
         <div className="col-span-2 text-right" onClick={onToggleExpand}>
-          <span className="font-semibold text-sm">{formatCurrency(item.amount)}</span>
+          <span className="font-semibold text-sm">{formatCurrency(roundToTwo(item.quantity * item.rate))}</span>
         </div>
         
         {/* Actions */}
@@ -204,7 +231,16 @@ function SortableLineItem({
       {isExpanded && (
         <div className="px-4 pb-4 pt-2 bg-muted/20 border-t border-dashed animate-fade-in">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="lg:col-span-2">
+            <div>
+              <Label className="text-xs font-medium mb-1.5 block">Product Name</Label>
+              <Input
+                placeholder="Enter product name"
+                value={item.brand}
+                onChange={(e) => onUpdate("brand", e.target.value)}
+              />
+            </div>
+            
+            <div className="lg:col-span-3">
               <Label className="text-xs font-medium mb-1.5 block">Description</Label>
               <Textarea
                 placeholder="Product/Service description"
@@ -227,13 +263,34 @@ function SortableLineItem({
                   onChange={(e) => onUpdate("quantity", parseFloat(e.target.value) || 0)}
                   className="flex-1"
                 />
-                <Input
-                  placeholder="Unit"
-                  value={item.unit}
-                  onChange={(e) => onUpdate("unit", e.target.value)}
-                  className="w-16"
-                />
+                <Select
+                  value={item.unit || "NOS"}
+                  onValueChange={(value) => onUpdate("unit", value)}
+                >
+                  <SelectTrigger className="w-24">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {UNIT_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
+            </div>
+            
+            <div>
+              <Label className="text-xs font-medium mb-1.5 block">
+                Size/Length
+                <span className="text-muted-foreground font-normal ml-1">(e.g., 500 MTR)</span>
+              </Label>
+              <Input
+                placeholder="e.g., 500 MTR"
+                value={item.sizeLabel || ""}
+                onChange={(e) => onUpdate("sizeLabel", e.target.value)}
+              />
             </div>
             
             <div>
@@ -275,9 +332,29 @@ function SortableLineItem({
             </div>
             
             <div>
+              <Label className="text-xs font-medium mb-1.5 block">GST %</Label>
+              <Input
+                type="number"
+                min="0"
+                max="100"
+                step="0.01"
+                placeholder="18"
+                value={item.gstPercent || ""}
+                onChange={(e) => onUpdate("gstPercent", parseFloat(e.target.value) || 0)}
+              />
+            </div>
+            
+            <div>
               <Label className="text-xs font-medium mb-1.5 block">Amount</Label>
               <div className="h-10 px-3 flex items-center bg-background border rounded-md">
                 <span className="font-semibold">{formatCurrency(item.amount)}</span>
+              </div>
+            </div>
+            
+            <div>
+              <Label className="text-xs font-medium mb-1.5 block">GST Amount</Label>
+              <div className="h-10 px-3 flex items-center bg-background border rounded-md">
+                <span className="font-semibold">{formatCurrency(item.gstAmount || 0)}</span>
               </div>
             </div>
           </div>
@@ -352,13 +429,18 @@ export function LineItemsEditor({ items, onChange, customerType, pricingSettings
     const newItem: LineItem = {
       id: crypto.randomUUID(),
       slNo: items.length + 1,
+      brand: "",
       description: "",
       serialNumbers: "",
       quantity: 1,
       unit: "NOS",
+      sizeLabel: "",
       rate: 0,
       discountPercent: 0,
+      gstPercent: 18,
+      gstAmount: 0,
       amount: 0,
+      productImage: "",
     };
     onChange([...items, newItem]);
     setExpandedItem(newItem.id);
@@ -379,17 +461,33 @@ export function LineItemsEditor({ items, onChange, customerType, pricingSettings
       }
     }
     
+    // Store the GST-inclusive rate
+    const itemRate = roundToTwo(finalRate);
+    const gstPercent = product.gst_percent || 18;
+    
+    // Reverse-calculate GST from the inclusive price
+    const { gstAmount: gstPerUnit } = calculateGstBreakup(itemRate, gstPercent);
+    const gstAmount = roundToTwo(gstPerUnit * qty);
+    
+    // The amount is the total inclusive price (rate includes GST)
+    const amount = roundToTwo(qty * itemRate);
+    
     const newItem: LineItem = {
       id: crypto.randomUUID(),
       slNo: items.length + 1,
-      description: product.name + (product.description ? ` - ${product.description}` : ""),
+      brand: product.name,
+      description: product.description || product.model_spec || "",
       serialNumbers: "",
       quantity: qty,
       unit: product.unit,
-      rate: Math.round(finalRate * 100) / 100, // Round to 2 decimal places
+      sizeLabel: product.size_label || "",
+      rate: itemRate,
       discountPercent: 0,
-      amount: qty * Math.round(finalRate * 100) / 100,
+      gstPercent: gstPercent,
+      gstAmount: gstAmount,
+      amount: amount, // This is now the GST-inclusive total
       productId: product.id,
+      productImage: product.image_url || "",
     };
     onChange([...items, newItem]);
     setSearchTerm("");
@@ -403,13 +501,23 @@ export function LineItemsEditor({ items, onChange, customerType, pricingSettings
 
       const updatedItem = { ...item, [field]: value };
 
-      if (field === "quantity" || field === "rate" || field === "discountPercent") {
+      if (field === "quantity" || field === "rate" || field === "discountPercent" || field === "gstPercent") {
         const qty = field === "quantity" ? Number(value) : updatedItem.quantity;
-        const rate = field === "rate" ? Number(value) : updatedItem.rate;
+        const rate = field === "rate" ? Number(value) : updatedItem.rate; // GST-inclusive rate
         const discount = field === "discountPercent" ? Number(value) : updatedItem.discountPercent;
+        const gstPercent = field === "gstPercent" ? Number(value) : (updatedItem.gstPercent || 18);
+        
+        // Calculate gross inclusive amount before discount
         const grossAmount = qty * rate;
         const discountAmount = (grossAmount * discount) / 100;
-        updatedItem.amount = grossAmount - discountAmount;
+        
+        // The amount is the total inclusive price after discount
+        updatedItem.amount = roundToTwo(grossAmount - discountAmount);
+        updatedItem.gstPercent = gstPercent;
+        
+        // Reverse-calculate GST from the inclusive price
+        const { gstAmount: gstPerUnit } = calculateGstBreakup(rate, gstPercent);
+        updatedItem.gstAmount = roundToTwo(gstPerUnit * qty * (1 - discount / 100));
       }
 
       return updatedItem;
@@ -626,9 +734,9 @@ export function LineItemsEditor({ items, onChange, customerType, pricingSettings
             {/* Table Header */}
             <div className="hidden md:grid md:grid-cols-12 gap-2 px-4 py-2.5 bg-muted/50 text-xs font-medium text-muted-foreground uppercase tracking-wider">
               <div className="col-span-1">#</div>
-              <div className="col-span-4">Description</div>
+              <div className="col-span-4">Product</div>
               <div className="col-span-2 text-center">Qty × Rate</div>
-              <div className="col-span-2 text-center">Discount</div>
+              <div className="col-span-2 text-center">GST Amt (18%)</div>
               <div className="col-span-2 text-right">Amount</div>
               <div className="col-span-1"></div>
             </div>

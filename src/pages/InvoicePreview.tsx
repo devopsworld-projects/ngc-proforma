@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Invoice } from "@/components/invoice/Invoice";
@@ -6,48 +7,56 @@ import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { usePdfTemplateSettings } from "@/hooks/usePdfTemplateSettings";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Edit, Download, Printer } from "lucide-react";
+import { ArrowLeft, Edit, Download, Loader2 } from "lucide-react";
 import { InvoiceData, CompanyInfo, SupplierInfo, InvoiceItem, InvoiceTotals } from "@/types/invoice";
-import { generateInvoicePDF } from "@/lib/pdf-generator";
 import { formatDate, numberToWords } from "@/lib/invoice-utils";
+import { downloadInvoiceAsPdf } from "@/lib/html-to-pdf";
 import { toast } from "sonner";
+
+// Shadow style for screen display only
+const SCREEN_SHADOW = "0 25px 50px -12px rgba(30, 42, 74, 0.15)";
 
 export default function InvoicePreview() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [isDownloading, setIsDownloading] = useState(false);
   const { data: invoice, isLoading: invoiceLoading } = useInvoice(id);
   const { data: companySettings, isLoading: settingsLoading } = useCompanySettings();
   const { data: templateSettings, isLoading: templateLoading } = usePdfTemplateSettings();
 
   const isLoading = invoiceLoading || settingsLoading || templateLoading;
 
-  const handleExportPDF = async () => {
-    if (!invoice || !companySettings) {
-      toast.error("Please configure company settings first");
-      navigate("/settings");
-      return;
-    }
 
+  // Apply shadow on mount for screen display
+  useEffect(() => {
+    const container = document.getElementById("invoice-container");
+    if (container) {
+      container.style.boxShadow = SCREEN_SHADOW;
+    }
+  }, [invoice]);
+
+  const handleDownloadPdf = async () => {
+    if (!invoice) return;
+    
+    setIsDownloading(true);
     try {
-      await generateInvoicePDF(
-        {
-          ...invoice,
-          customer: invoice.customers,
-          billing_address: invoice.billing_address,
-          shipping_address: invoice.shipping_address,
-        },
-        companySettings,
-        { templateSettings }
+      // The downloadInvoiceAsPdf function handles shadow removal internally
+      await downloadInvoiceAsPdf(
+        "invoice-container",
+        `Proforma-${invoice.invoice_no}`
       );
       toast.success("PDF downloaded successfully");
-    } catch (error: any) {
-      console.error("PDF export error:", error);
-      toast.error(error.message || "Failed to export PDF");
+    } catch (error) {
+      console.error("Failed to download PDF:", error);
+      toast.error("Failed to download PDF. Please try again.");
+    } finally {
+      // Restore shadow after capture
+      const container = document.getElementById("invoice-container");
+      if (container) {
+        container.style.boxShadow = SCREEN_SHADOW;
+      }
+      setIsDownloading(false);
     }
-  };
-
-  const handlePrint = () => {
-    window.print();
   };
 
   // Transform database data to InvoiceData format
@@ -67,6 +76,7 @@ export default function InvoicePreview() {
       stateCode: companySettings.state_code || "",
       email: companySettings.email || "",
       website: companySettings.website || "",
+      logoUrl: companySettings.logo_url || undefined,
     };
 
     const customer = invoice.customers;
@@ -86,18 +96,25 @@ export default function InvoicePreview() {
       gstin: customer?.gstin || "",
       state: customer?.state || billingAddress?.state || "",
       stateCode: customer?.state_code || billingAddress?.state_code || "",
+      email: customer?.email || "",
+      phone: customer?.phone || "",
     };
 
     const items: InvoiceItem[] = (invoice.items || []).map((item: any) => ({
       id: item.id,
       slNo: item.sl_no,
+      brand: item.brand || "",
       description: item.description,
       serialNumbers: item.serial_numbers || [],
       quantity: Number(item.quantity),
       unit: item.unit,
+      sizeLabel: item.size_label || "",
       rate: Number(item.rate),
       discountPercent: Number(item.discount_percent || 0),
       amount: Number(item.amount),
+      productImage: item.product_image || "",
+      gstPercent: item.gst_percent != null ? Number(item.gst_percent) : 18,
+      gstAmount: item.gst_amount != null ? Number(item.gst_amount) : undefined,
     }));
 
     const totals: InvoiceTotals = {
@@ -111,6 +128,9 @@ export default function InvoicePreview() {
     };
 
     const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
+
+    // Determine tax type from customer
+    const taxType = (customer?.tax_type === "igst" ? "igst" : "cgst") as "cgst" | "igst";
 
     return {
       invoiceNo: invoice.invoice_no,
@@ -127,6 +147,7 @@ export default function InvoicePreview() {
       totals,
       totalQuantity,
       amountInWords: invoice.amount_in_words || numberToWords(totals.grandTotal),
+      taxType,
     };
   };
 
@@ -150,11 +171,11 @@ export default function InvoicePreview() {
     return (
       <AppLayout>
         <div className="text-center py-12">
-          <h2 className="text-xl font-semibold mb-2">Invoice not found</h2>
+          <h2 className="text-xl font-semibold mb-2">Proforma Invoice not found</h2>
           <p className="text-muted-foreground mb-4">
-            The invoice you're looking for doesn't exist.
+            The proforma invoice you're looking for doesn't exist.
           </p>
-          <Button onClick={() => navigate("/invoices")}>Back to Invoices</Button>
+          <Button onClick={() => navigate("/invoices")}>Back to Proformas</Button>
         </div>
       </AppLayout>
     );
@@ -166,7 +187,7 @@ export default function InvoicePreview() {
         <div className="text-center py-12">
           <h2 className="text-xl font-semibold mb-2">Company settings required</h2>
           <p className="text-muted-foreground mb-4">
-            Please configure your company settings to view invoices.
+            Please configure your company settings to view proforma invoices.
           </p>
           <Button onClick={() => navigate("/settings")}>Configure Settings</Button>
         </div>
@@ -189,19 +210,23 @@ export default function InvoicePreview() {
             </Button>
             <div>
               <h2 className="text-2xl font-serif font-bold">
-                Invoice #{invoice.invoice_no}
+                Proforma #{invoice.invoice_no}
               </h2>
-              <p className="text-muted-foreground">Preview and manage invoice</p>
+              <p className="text-muted-foreground">Preview and manage proforma invoice</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={handlePrint}>
-              <Printer className="h-4 w-4 mr-2" />
-              Print
-            </Button>
-            <Button variant="outline" onClick={handleExportPDF}>
-              <Download className="h-4 w-4 mr-2" />
-              Download PDF
+            <Button 
+              variant="outline" 
+              onClick={handleDownloadPdf}
+              disabled={isDownloading}
+            >
+              {isDownloading ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4 mr-2" />
+              )}
+              {isDownloading ? "Downloading..." : "Download PDF"}
             </Button>
             <Button onClick={() => navigate(`/invoices/${id}/edit`)}>
               <Edit className="h-4 w-4 mr-2" />
@@ -212,7 +237,7 @@ export default function InvoicePreview() {
 
         {/* Invoice Preview */}
         <div className="max-w-4xl mx-auto">
-          <Invoice data={invoiceData} />
+          <Invoice data={invoiceData} containerId="invoice-container" />
         </div>
       </div>
     </AppLayout>

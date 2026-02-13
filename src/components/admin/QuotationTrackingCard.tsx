@@ -1,12 +1,14 @@
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin } from "@/hooks/useAdmin";
-import { FileText, TrendingUp } from "lucide-react";
+import { FileText, TrendingUp, Filter } from "lucide-react";
 import { format } from "date-fns";
 
 interface QuotationWithUser {
@@ -19,6 +21,7 @@ interface QuotationWithUser {
   customer_name: string | null;
   user_email: string | null;
   user_name: string | null;
+  deleted_at: string | null;
 }
 
 const statusColors: Record<string, string> = {
@@ -26,6 +29,7 @@ const statusColors: Record<string, string> = {
   sent: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
   paid: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
   cancelled: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+  deleted: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
 };
 
 function formatCurrency(amount: number): string {
@@ -36,8 +40,11 @@ function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
+type StatusFilter = "all" | "active" | "deleted";
+
 export function QuotationTrackingCard() {
   const { data: isAdmin } = useIsAdmin();
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   
   const { data: quotations, isLoading } = useQuery({
     queryKey: ["admin-quotations"],
@@ -52,6 +59,7 @@ export function QuotationTrackingCard() {
           status,
           grand_total,
           created_at,
+          deleted_at,
           user_id,
           customers (name)
         `)
@@ -73,11 +81,12 @@ export function QuotationTrackingCard() {
         id: inv.id,
         invoice_no: inv.invoice_no,
         date: inv.date,
-        status: inv.status,
+        status: inv.deleted_at ? "deleted" : inv.status,
         grand_total: inv.grand_total,
         created_at: inv.created_at,
         customer_name: inv.customers?.name || null,
         user_name: inv.user_id ? profileMap.get(inv.user_id) || null : null,
+        deleted_at: inv.deleted_at,
       })) as QuotationWithUser[];
     },
     enabled: !!isAdmin,
@@ -105,22 +114,46 @@ export function QuotationTrackingCard() {
     draft: quotations?.filter(q => q.status === "draft").length || 0,
     sent: quotations?.filter(q => q.status === "sent").length || 0,
     paid: quotations?.filter(q => q.status === "paid").length || 0,
+    deleted: quotations?.filter(q => q.status === "deleted").length || 0,
   };
+
+  // Filter quotations based on selected filter
+  const filteredQuotations = quotations?.filter(q => {
+    if (statusFilter === "all") return true;
+    if (statusFilter === "deleted") return q.status === "deleted";
+    if (statusFilter === "active") return q.status !== "deleted";
+    return true;
+  }) || [];
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <TrendingUp className="h-5 w-5" />
-          Quotation Tracking
-        </CardTitle>
-        <CardDescription>
-          Monitor all quotations across users
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Quotation Tracking
+            </CardTitle>
+            <CardDescription>
+              Monitor all quotations across users
+            </CardDescription>
+          </div>
+          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+            <SelectTrigger className="w-36">
+              <Filter className="h-4 w-4 mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All ({stats.total})</SelectItem>
+              <SelectItem value="active">Active ({stats.total - stats.deleted})</SelectItem>
+              <SelectItem value="deleted">Deleted ({stats.deleted})</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Quick Stats */}
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-5 gap-3">
           <div className="text-center p-3 bg-muted rounded-lg">
             <p className="text-2xl font-bold">{stats.total}</p>
             <p className="text-xs text-muted-foreground">Total</p>
@@ -137,14 +170,18 @@ export function QuotationTrackingCard() {
             <p className="text-2xl font-bold text-green-600">{stats.paid}</p>
             <p className="text-xs text-green-600/70">Paid</p>
           </div>
+          <div className="text-center p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+            <p className="text-2xl font-bold text-orange-600">{stats.deleted}</p>
+            <p className="text-xs text-orange-600/70">Deleted</p>
+          </div>
         </div>
 
         {/* Quotations Table */}
         <ScrollArea className="h-[300px]">
-          {!quotations || quotations.length === 0 ? (
+          {filteredQuotations.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
               <FileText className="h-10 w-10 mb-2" />
-              <p>No quotations found</p>
+              <p>No {statusFilter === "all" ? "" : statusFilter} quotations found</p>
             </div>
           ) : (
             <Table>
@@ -159,7 +196,7 @@ export function QuotationTrackingCard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {quotations.map((q) => (
+                {filteredQuotations.map((q) => (
                   <TableRow key={q.id}>
                     <TableCell className="font-mono text-sm">{q.invoice_no}</TableCell>
                     <TableCell>{q.customer_name || "—"}</TableCell>
