@@ -5,148 +5,161 @@ import jsPDF from "jspdf";
  * Preload an image with proper CORS handling
  */
 async function preloadImage(src: string): Promise<void> {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.onload = () => resolve();
     img.onerror = () => {
       console.warn(`Failed to preload image: ${src}`);
-      resolve(); // Continue even if image fails
+      resolve();
     };
     img.src = src;
   });
 }
 
 /**
- * Captures the exact rendered HTML element and converts it to a PDF.
- * Uses a wrapper approach to ensure clean white background.
+ * Section-aware PDF generator.
+ * Captures each [data-pdf-section] element individually and places them
+ * on A4 pages without splitting any section across pages.
  */
 export async function downloadInvoiceAsPdf(
   elementId: string,
   filename: string
 ): Promise<void> {
   const element = document.getElementById(elementId);
-  
   if (!element) {
     throw new Error(`Element with id "${elementId}" not found`);
   }
 
-  // Preload all images in the element with CORS headers
-  const images = element.querySelectorAll('img');
+  // Preload all images
+  const images = element.querySelectorAll("img");
   const imagePromises: Promise<void>[] = [];
-  
   images.forEach((img) => {
-    if (img.src && !img.src.startsWith('data:')) {
-      // Set crossOrigin on the actual img element too
+    if (img.src && !img.src.startsWith("data:")) {
       img.crossOrigin = "anonymous";
       imagePromises.push(preloadImage(img.src));
     }
   });
-  
-  // Wait for all images to load
   await Promise.all(imagePromises);
 
-  // Hide no-print elements temporarily
-  const noPrintElements = element.querySelectorAll('.no-print');
+  // Hide no-print elements
+  const noPrintElements = element.querySelectorAll(".no-print");
   noPrintElements.forEach((el) => {
-    (el as HTMLElement).style.display = 'none';
+    (el as HTMLElement).style.display = "none";
   });
 
-  // Store original styles to restore later
+  // Store and strip styles that cause artifacts
   const originalBoxShadow = element.style.boxShadow;
   const originalAnimation = element.style.animation;
-  
-  // Remove shadow and animation before capture
-  element.style.boxShadow = 'none';
-  element.style.animation = 'none';
+  const originalMinHeight = element.style.minHeight;
+  element.style.boxShadow = "none";
+  element.style.animation = "none";
+  // Remove min-height so container shrinks to actual content size
+  element.style.minHeight = "0";
 
   try {
-    // Capture with high quality
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-      allowTaint: false, // Prevent tainted canvas
-      backgroundColor: "#ffffff",
-      logging: false,
-      imageTimeout: 30000, // Longer timeout for images
-    });
+    const sections = Array.from(
+      element.querySelectorAll("[data-pdf-section]")
+    ) as HTMLElement[];
 
-    // A4 dimensions in mm
-    const a4Width = 210;
-    const a4Height = 297;
-    
-    // Create PDF in A4 portrait
-    const pdf = new jsPDF({
-      orientation: "portrait",
-      unit: "mm",
-      format: "a4",
-    });
-
-    // Calculate the image dimensions when scaled to A4 width
-    const imgWidth = a4Width;
-    const imgHeight = (canvas.height * a4Width) / canvas.width;
-    
-    if (imgHeight <= a4Height) {
-      // Single page - simple case
-      const imgData = canvas.toDataURL("image/jpeg", 1.0);
-      pdf.addImage(imgData, "JPEG", 0, 0, imgWidth, imgHeight);
-    } else {
-      // Multiple pages needed - slice the canvas properly
-      const totalPages = Math.ceil(imgHeight / a4Height);
-      
-      // Calculate how much of the source canvas corresponds to one A4 page
-      const sourcePageHeight = (a4Height / imgHeight) * canvas.height;
-      
-      for (let page = 0; page < totalPages; page++) {
-        if (page > 0) {
-          pdf.addPage();
-        }
-        
-        // Calculate source Y position and height for this page
-        const sourceY = page * sourcePageHeight;
-        const remainingHeight = canvas.height - sourceY;
-        const sliceHeight = Math.min(sourcePageHeight, remainingHeight);
-        
-        // Create a new canvas for this page slice
-        const pageCanvas = document.createElement('canvas');
-        pageCanvas.width = canvas.width;
-        pageCanvas.height = sliceHeight;
-        
-        const ctx = pageCanvas.getContext('2d');
-        if (ctx) {
-          // Fill with solid white background first
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
-          
-          // Draw the slice of the original canvas
-          ctx.drawImage(
-            canvas,
-            0, sourceY, canvas.width, sliceHeight,
-            0, 0, canvas.width, sliceHeight
-          );
-        }
-        
-        // Convert this page slice to image data
-        const pageImgData = pageCanvas.toDataURL("image/jpeg", 1.0);
-        
-        // Calculate the height this slice takes on the PDF page
-        const pdfSliceHeight = (sliceHeight / canvas.width) * a4Width;
-        
-        // Add to PDF
-        pdf.addImage(pageImgData, "JPEG", 0, 0, a4Width, pdfSliceHeight);
-      }
+    // If no sections found, fall back to full-element capture
+    if (sections.length === 0) {
+      await fallbackCapture(element, filename);
+      return;
     }
 
-    // Download the PDF
+    const A4_W_MM = 210;
+    const A4_H_MM = 297;
+    const SECTION_GAP_MM = 0; // No gap — sections are flush
+
+    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    let currentY = 0;
+    let isFirstPage = true;
+
+    for (const section of sections) {
+      const canvas = await html2canvas(section, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: "#ffffff",
+        logging: false,
+        imageTimeout: 30000,
+      });
+
+      const scaleFactor = A4_W_MM / (canvas.width / 2);
+      const sectionHeightMM = (canvas.height / 2) * scaleFactor;
+      const remaining = A4_H_MM - currentY;
+
+      // If section doesn't fit on current page, start a new page
+      if (sectionHeightMM > remaining && currentY > 0) {
+        pdf.addPage();
+        currentY = 0;
+        isFirstPage = false;
+      }
+
+      const imgData = canvas.toDataURL("image/jpeg", 1.0);
+      pdf.addImage(imgData, "JPEG", 0, currentY, A4_W_MM, sectionHeightMM);
+      currentY += sectionHeightMM + SECTION_GAP_MM;
+    }
+
     pdf.save(`${filename}.pdf`);
   } finally {
-    // Restore original styles
     element.style.boxShadow = originalBoxShadow;
     element.style.animation = originalAnimation;
-    
-    // Restore no-print elements
+    element.style.minHeight = originalMinHeight;
     noPrintElements.forEach((el) => {
-      (el as HTMLElement).style.display = '';
+      (el as HTMLElement).style.display = "";
     });
   }
+}
+
+/**
+ * Fallback: captures the entire element as before (fixed-interval slicing).
+ */
+async function fallbackCapture(element: HTMLElement, filename: string) {
+  const canvas = await html2canvas(element, {
+    scale: 2,
+    useCORS: true,
+    allowTaint: false,
+    backgroundColor: "#ffffff",
+    logging: false,
+    imageTimeout: 30000,
+  });
+
+  const a4Width = 210;
+  const a4Height = 297;
+  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+  const imgWidth = a4Width;
+  const imgHeight = (canvas.height * a4Width) / canvas.width;
+
+  if (imgHeight <= a4Height) {
+    const imgData = canvas.toDataURL("image/jpeg", 1.0);
+    pdf.addImage(imgData, "JPEG", 0, 0, imgWidth, imgHeight);
+  } else {
+    const totalPages = Math.ceil(imgHeight / a4Height);
+    const sourcePageHeight = (a4Height / imgHeight) * canvas.height;
+
+    for (let page = 0; page < totalPages; page++) {
+      if (page > 0) pdf.addPage();
+      const sourceY = page * sourcePageHeight;
+      const remainingHeight = canvas.height - sourceY;
+      const sliceHeight = Math.min(sourcePageHeight, remainingHeight);
+
+      const pageCanvas = document.createElement("canvas");
+      pageCanvas.width = canvas.width;
+      pageCanvas.height = sliceHeight;
+      const ctx = pageCanvas.getContext("2d");
+      if (ctx) {
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+        ctx.drawImage(canvas, 0, sourceY, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight);
+      }
+      const pageImgData = pageCanvas.toDataURL("image/jpeg", 1.0);
+      const pdfSliceHeight = (sliceHeight / canvas.width) * a4Width;
+      pdf.addImage(pageImgData, "JPEG", 0, 0, a4Width, pdfSliceHeight);
+    }
+  }
+
+  pdf.save(`${filename}.pdf`);
 }
