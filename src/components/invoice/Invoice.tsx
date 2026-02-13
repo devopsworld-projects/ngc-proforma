@@ -120,29 +120,30 @@ export function Invoice({ data, containerId = "invoice-container" }: InvoiceProp
           />
         );
       case "bank_details":
-        if (!settings.bank_name) return null;
+      case "terms": {
+        // Render terms and bank details together side-by-side on whichever comes first
+        const otherKey = sectionId === "bank_details" ? "terms" : "bank_details";
+        const allSects = settings.section_order || [];
+        const otherIndex = allSects.indexOf(otherKey);
+        const thisIndex = allSects.indexOf(sectionId);
+        // Only render combined on the first occurrence; skip the second
+        if (otherIndex >= 0 && otherIndex < thisIndex) return null;
+        
+        const showTermsHere = settings.show_terms;
+        const showBankHere = !!settings.bank_name;
+        if (!showTermsHere && !showBankHere) return null;
+        
         return (
           <InvoiceFooter
-            key="bank_details"
+            key="terms_bank"
             company={data.company}
-            termsAndConditions={[]}
-            bankDetails={bankDetails}
+            termsAndConditions={showTermsHere ? termsArray : []}
+            bankDetails={showBankHere ? bankDetails : undefined}
             showSignature={false}
             settings={settings}
           />
         );
-      case "terms":
-        if (!settings.show_terms) return null;
-        return (
-          <InvoiceFooter
-            key="terms"
-            company={data.company}
-            termsAndConditions={termsArray}
-            bankDetails={undefined}
-            showSignature={false}
-            settings={settings}
-          />
-        );
+      }
       case "signature":
         if (!settings.show_signature) return null;
         return (
