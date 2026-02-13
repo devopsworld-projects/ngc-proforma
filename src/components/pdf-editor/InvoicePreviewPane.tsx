@@ -27,9 +27,11 @@ interface InvoicePreviewPaneProps {
     show_terms: boolean;
     show_signature: boolean;
     show_amount_words: boolean;
+    show_gst?: boolean;
     terms_line1: string | null;
     terms_line2: string | null;
     terms_line3: string | null;
+    terms_line4?: string | null;
     bank_name: string | null;
     bank_account_no: string | null;
     bank_ifsc: string | null;
@@ -63,7 +65,10 @@ export function InvoicePreviewPane({ settings, companyName = "Your Company Name"
     settings.terms_line1,
     settings.terms_line2,
     settings.terms_line3,
+    settings.terms_line4,
   ].filter(Boolean) as string[];
+
+  const showGst = settings.show_gst ?? true;
 
   const sectionOrder = settings.section_order || ["header", "customer_details", "items_table", "totals", "bank_details", "terms", "signature"];
 
@@ -271,7 +276,9 @@ export function InvoicePreviewPane({ settings, companyName = "Your Company Name"
             {settings.show_image_column && <th className={`${tableRowPaddingClass} text-left font-semibold uppercase text-[10px]`}>Img</th>}
             <th className={`${tableRowPaddingClass} text-left font-semibold uppercase text-[10px]`}>Product</th>
             <th className={`${tableRowPaddingClass} text-center font-semibold uppercase text-[10px]`}>Qty</th>
-            <th className={`${tableRowPaddingClass} text-right font-semibold uppercase text-[10px]`}>Rate</th>
+            <th className={`${tableRowPaddingClass} text-right font-semibold uppercase text-[10px]`}>Base Price</th>
+            {showGst && <th className={`${tableRowPaddingClass} text-right font-semibold uppercase text-[10px]`}>GST %</th>}
+            {showGst && <th className={`${tableRowPaddingClass} text-right font-semibold uppercase text-[10px]`}>GST Amt</th>}
             <th className={`${tableRowPaddingClass} text-right font-semibold uppercase text-[10px]`}>Total</th>
           </tr>
         </thead>
@@ -291,7 +298,9 @@ export function InvoicePreviewPane({ settings, companyName = "Your Company Name"
                 <p className="text-[10px] opacity-70">{item.description}</p>
               </td>
               <td className={`${tableRowPaddingClass} text-center`}>{item.quantity}</td>
-              <td className={`${tableRowPaddingClass} text-right font-mono`}>₹{item.rate.toLocaleString()}</td>
+              <td className={`${tableRowPaddingClass} text-right font-mono`}>₹{Math.round(item.rate * 100 / 118).toLocaleString()}</td>
+              {showGst && <td className={`${tableRowPaddingClass} text-right font-mono`}>{item.gstPercent}%</td>}
+              {showGst && <td className={`${tableRowPaddingClass} text-right font-mono`}>₹{Math.round(item.total - item.total * 100 / 118).toLocaleString()}</td>}
               <td className={`${tableRowPaddingClass} text-right font-mono font-medium`}>₹{item.total.toLocaleString()}</td>
             </tr>
           ))}
@@ -315,10 +324,12 @@ export function InvoicePreviewPane({ settings, companyName = "Your Company Name"
             <span className="text-gray-600">Subtotal</span>
             <span className="font-mono">₹5,500</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600">GST (18%)</span>
-            <span className="font-mono">₹990</span>
-          </div>
+          {showGst && (
+            <div className="flex justify-between">
+              <span className="text-gray-600">GST (18%)</span>
+              <span className="font-mono">₹990</span>
+            </div>
+          )}
           <div 
             className="flex justify-between py-1.5 px-2 -mx-2 mt-2"
             style={{ backgroundColor: settings.grand_total_bg, color: settings.grand_total_text }}
