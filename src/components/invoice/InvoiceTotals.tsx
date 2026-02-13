@@ -12,6 +12,7 @@ interface InvoiceTotalsProps {
     grand_total_bg: string;
     grand_total_text: string;
     show_amount_words: boolean;
+    show_gst?: boolean;
   };
 }
 
@@ -26,6 +27,7 @@ export function InvoiceTotals({
   const grandTotalBg = settings?.grand_total_bg || "#1e2a4a";
   const grandTotalText = settings?.grand_total_text || "#ffffff";
   const showAmountWords = settings?.show_amount_words ?? true;
+  const showGst = settings?.show_gst ?? true;
 
   // Calculate totals from per-item GST reverse calculation
   const calculateTotalsFromItems = () => {
@@ -87,30 +89,32 @@ export function InvoiceTotals({
           )}
 
           {/* Tax breakdown based on taxType */}
-          {taxType === "igst" ? (
-            // IGST - Single line for inter-state
-            <div className="flex justify-between items-center text-xs">
-              <span className="text-gray-600">IGST (Integrated GST)</span>
-              <span className="font-medium text-black font-mono">
-                {formatCurrency(itemTotals ? itemTotals.gstAmount : totals.taxAmount)}
-              </span>
-            </div>
-          ) : (
-            // CGST + SGST - Two lines for intra-state (split 50/50)
-            <>
+          {showGst && (
+            taxType === "igst" ? (
+              // IGST - Single line for inter-state
               <div className="flex justify-between items-center text-xs">
-                <span className="text-gray-600">CGST (Central GST)</span>
+                <span className="text-gray-600">IGST (Integrated GST)</span>
                 <span className="font-medium text-black font-mono">
-                  {formatCurrency((itemTotals ? itemTotals.gstAmount : totals.taxAmount) / 2)}
+                  {formatCurrency(itemTotals ? itemTotals.gstAmount : totals.taxAmount)}
                 </span>
               </div>
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-gray-600">SGST (State GST)</span>
-                <span className="font-medium text-black font-mono">
-                  {formatCurrency((itemTotals ? itemTotals.gstAmount : totals.taxAmount) / 2)}
-                </span>
-              </div>
-            </>
+            ) : (
+              // CGST + SGST - Two lines for intra-state (split 50/50)
+              <>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-gray-600">CGST (Central GST)</span>
+                  <span className="font-medium text-black font-mono">
+                    {formatCurrency((itemTotals ? itemTotals.gstAmount : totals.taxAmount) / 2)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-gray-600">SGST (State GST)</span>
+                  <span className="font-medium text-black font-mono">
+                    {formatCurrency((itemTotals ? itemTotals.gstAmount : totals.taxAmount) / 2)}
+                  </span>
+                </div>
+              </>
+            )
           )}
 
           <div className="flex justify-between items-center text-xs">

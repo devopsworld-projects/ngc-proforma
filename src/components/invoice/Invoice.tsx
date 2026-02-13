@@ -21,6 +21,7 @@ export function Invoice({ data, containerId = "invoice-container" }: InvoiceProp
       settings.terms_line1,
       settings.terms_line2,
       settings.terms_line3,
+      settings.terms_line4,
     ].filter(Boolean) as string[];
   }, [settings.terms_line1, settings.terms_line2, settings.terms_line3]);
 
