@@ -26,6 +26,7 @@ interface InvoiceTableProps {
     show_unit_column: boolean;
     show_serial_numbers: boolean;
     show_discount_column: boolean;
+    show_gst?: boolean;
     table_row_padding?: string;
     border_style?: string;
     table_border_color?: string;
@@ -57,6 +58,7 @@ export function InvoiceTable({ items, settings }: InvoiceTableProps) {
   const showImageColumn = settings?.show_image_column ?? true;
   const showBrandColumn = settings?.show_brand_column ?? true;
   const showUnitColumn = settings?.show_unit_column ?? true;
+  const showGst = settings?.show_gst ?? true;
   const rowPaddingClass = getRowPaddingClass(settings?.table_row_padding);
   const borderClass = getBorderClass(settings?.border_style);
   const borderColor = settings?.table_border_color || "#e5e7eb";
@@ -101,18 +103,22 @@ export function InvoiceTable({ items, settings }: InvoiceTableProps) {
             >
               Base Price
             </TableHead>
-            <TableHead 
-              className="text-right py-2 w-20 text-xs font-semibold uppercase"
-              style={{ color: tableHeaderText }}
-            >
-              GST %
-            </TableHead>
-            <TableHead 
-              className="text-right py-2 w-28 text-xs font-semibold uppercase"
-              style={{ color: tableHeaderText }}
-            >
-              GST Amt
-            </TableHead>
+            {showGst && (
+              <TableHead 
+                className="text-right py-2 w-20 text-xs font-semibold uppercase"
+                style={{ color: tableHeaderText }}
+              >
+                GST %
+              </TableHead>
+            )}
+            {showGst && (
+              <TableHead 
+                className="text-right py-2 w-28 text-xs font-semibold uppercase"
+                style={{ color: tableHeaderText }}
+              >
+                GST Amt
+              </TableHead>
+            )}
             <TableHead 
               className="text-right py-2 w-28 text-xs font-semibold uppercase"
               style={{ color: tableHeaderText }}
@@ -196,12 +202,16 @@ export function InvoiceTable({ items, settings }: InvoiceTableProps) {
                 <TableCell className={`text-right ${rowPaddingClass} font-medium text-sm font-mono`} style={{ color: tableTextColor }}>
                   {formatCurrency(totalBasePrice)}
                 </TableCell>
-                <TableCell className={`text-right ${rowPaddingClass} font-medium text-sm font-mono opacity-70`}>
-                  {gstPercent}%
-                </TableCell>
-                <TableCell className={`text-right ${rowPaddingClass} font-medium text-sm font-mono`} style={{ color: tableTextColor }}>
-                  {formatCurrency(totalGstAmount)}
-                </TableCell>
+                {showGst && (
+                  <TableCell className={`text-right ${rowPaddingClass} font-medium text-sm font-mono opacity-70`}>
+                    {gstPercent}%
+                  </TableCell>
+                )}
+                {showGst && (
+                  <TableCell className={`text-right ${rowPaddingClass} font-medium text-sm font-mono`} style={{ color: tableTextColor }}>
+                    {formatCurrency(totalGstAmount)}
+                  </TableCell>
+                )}
                 <TableCell className={`text-right ${rowPaddingClass} font-semibold text-sm font-mono`} style={{ color: tableTextColor }}>
                   {formatCurrency(totalInclusive)}
                 </TableCell>
