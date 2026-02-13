@@ -342,33 +342,43 @@ export function InvoicePreviewPane({ settings, companyName = "Your Company Name"
     </div>
   );
 
-  // Render individual footer-type sections
-  const renderBankDetails = () => {
-    if (!settings.bank_name) return null;
-    return (
-      <div key="bank_details" className={`${footerPaddingClass}`} style={{ backgroundColor: settings.primary_color, color: settings.header_text_color }}>
-        <p className="text-[10px] font-semibold uppercase opacity-70 mb-1">Bank Details</p>
-        <p className="text-xs">{settings.bank_name}</p>
-        {settings.bank_account_no && <p className="text-[10px] opacity-80">A/C: {settings.bank_account_no}</p>}
-        {settings.bank_ifsc && <p className="text-[10px] opacity-80">IFSC: {settings.bank_ifsc}</p>}
-        {settings.bank_branch && <p className="text-[10px] opacity-80">Branch: {settings.bank_branch}</p>}
-      </div>
-    );
-  };
+  // Render terms + bank details side by side
+  const renderTermsAndBank = () => {
+    const hasTerms = settings.show_terms && termsArray.length > 0;
+    const hasBank = !!settings.bank_name;
+    if (!hasTerms && !hasBank) return null;
 
-  const renderTerms = () => {
-    if (!settings.show_terms || termsArray.length === 0) return null;
     return (
-      <div key="terms" className={`${footerPaddingClass}`} style={{ backgroundColor: settings.primary_color, color: settings.header_text_color }}>
-        <div className="flex items-center gap-1 mb-1">
-          <FileText className="w-2.5 h-2.5 opacity-70" />
-          <p className="text-[10px] font-semibold uppercase opacity-70">Terms & Conditions</p>
+      <div key="terms_bank" className={`${footerPaddingClass}`} style={{ backgroundColor: settings.primary_color, color: settings.header_text_color }}>
+        <div className={hasTerms && hasBank ? "grid grid-cols-2 gap-3" : ""}>
+          {hasTerms && (
+            <div>
+              <div className="flex items-center gap-1 mb-1">
+                <FileText className="w-2.5 h-2.5 opacity-70" />
+                <p className="text-[10px] font-semibold uppercase opacity-70">Terms & Conditions</p>
+              </div>
+              <ul className="text-[10px] opacity-80 pl-3 space-y-0">
+                {termsArray.map((term, idx) => (
+                  <li key={idx}>{idx + 1}. {term}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {hasBank && (
+            <div>
+              <div className="flex items-center gap-1 mb-1">
+                <Building2 className="w-2.5 h-2.5 opacity-70" />
+                <p className="text-[10px] font-semibold uppercase opacity-70">Bank Details</p>
+              </div>
+              <div className="text-[10px] opacity-80 pl-3">
+                <p>Bank: {settings.bank_name}</p>
+                {settings.bank_account_no && <p>A/C: {settings.bank_account_no}</p>}
+                {settings.bank_ifsc && <p>IFSC: {settings.bank_ifsc}</p>}
+                {settings.bank_branch && <p>Branch: {settings.bank_branch}</p>}
+              </div>
+            </div>
+          )}
         </div>
-        <ul className="text-[10px] opacity-80 pl-3 space-y-0">
-          {termsArray.map((term, idx) => (
-            <li key={idx}>{idx + 1}. {term}</li>
-          ))}
-        </ul>
       </div>
     );
   };
@@ -402,9 +412,14 @@ export function InvoicePreviewPane({ settings, companyName = "Your Company Name"
       case "totals":
         return renderTotals();
       case "bank_details":
-        return renderBankDetails();
-      case "terms":
-        return renderTerms();
+      case "terms": {
+        // Render combined on whichever comes first, skip the second
+        const otherKey = sectionId === "bank_details" ? "terms" : "bank_details";
+        const otherIdx = sectionOrder.indexOf(otherKey);
+        const thisIdx = sectionOrder.indexOf(sectionId);
+        if (otherIdx >= 0 && otherIdx < thisIdx) return null;
+        return renderTermsAndBank();
+      }
       case "signature":
         return renderSignature();
       default:
