@@ -400,6 +400,7 @@ export type Database = {
           show_customer_email: boolean
           show_customer_phone: boolean
           show_discount_column: boolean
+          show_gst: boolean
           show_gstin_header: boolean
           show_image_column: boolean
           show_invoice_title: boolean
@@ -418,6 +419,7 @@ export type Database = {
           terms_line1: string | null
           terms_line2: string | null
           terms_line3: string | null
+          terms_line4: string | null
           updated_at: string
           user_id: string
         }
@@ -459,6 +461,7 @@ export type Database = {
           show_customer_email?: boolean
           show_customer_phone?: boolean
           show_discount_column?: boolean
+          show_gst?: boolean
           show_gstin_header?: boolean
           show_image_column?: boolean
           show_invoice_title?: boolean
@@ -477,6 +480,7 @@ export type Database = {
           terms_line1?: string | null
           terms_line2?: string | null
           terms_line3?: string | null
+          terms_line4?: string | null
           updated_at?: string
           user_id: string
         }
@@ -518,6 +522,7 @@ export type Database = {
           show_customer_email?: boolean
           show_customer_phone?: boolean
           show_discount_column?: boolean
+          show_gst?: boolean
           show_gstin_header?: boolean
           show_image_column?: boolean
           show_invoice_title?: boolean
@@ -536,6 +541,7 @@ export type Database = {
           terms_line1?: string | null
           terms_line2?: string | null
           terms_line3?: string | null
+          terms_line4?: string | null
           updated_at?: string
           user_id?: string
         }
