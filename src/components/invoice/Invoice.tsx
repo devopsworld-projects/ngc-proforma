@@ -88,38 +88,40 @@ export function Invoice({ data, containerId = "invoice-container" }: InvoiceProp
       <div className="invoice-page-indicator no-print" aria-hidden="true" />
       
       {/* ===== TOP ACCENT BAR ===== */}
-      <div className="invoice-accent-bar" style={{ backgroundColor: settings.accent_color }} />
+      <div data-pdf-section className="invoice-accent-bar" style={{ backgroundColor: settings.accent_color }} />
 
       {/* ===== HEADER: Company info + Invoice details ===== */}
-      <InvoiceHeader
-        company={data.company}
-        invoiceNo={data.invoiceNo}
-        date={data.date}
-        eWayBillNo={data.eWayBillNo}
-        supplierInvoiceNo={data.supplierInvoiceNo}
-        supplierInvoiceDate={data.supplierInvoiceDate}
-        otherReferences={data.otherReferences}
-        customer={{
-          name: data.supplier.name,
-          address: data.supplier.address,
-          gstin: data.supplier.gstin,
-          state: data.supplier.state,
-          stateCode: data.supplier.stateCode,
-          email: settings.show_customer_email ? data.supplier.email : undefined,
-          phone: settings.show_customer_phone ? data.supplier.phone : undefined,
-        }}
-        settings={{
-          ...settings,
-          header_padding: settings.header_padding,
-          header_layout_style: settings.header_layout_style,
-          logo_size: settings.logo_size,
-          show_invoice_title: settings.show_invoice_title,
-          compact_header: settings.compact_header,
-        }}
-      />
+      <div data-pdf-section>
+        <InvoiceHeader
+          company={data.company}
+          invoiceNo={data.invoiceNo}
+          date={data.date}
+          eWayBillNo={data.eWayBillNo}
+          supplierInvoiceNo={data.supplierInvoiceNo}
+          supplierInvoiceDate={data.supplierInvoiceDate}
+          otherReferences={data.otherReferences}
+          customer={{
+            name: data.supplier.name,
+            address: data.supplier.address,
+            gstin: data.supplier.gstin,
+            state: data.supplier.state,
+            stateCode: data.supplier.stateCode,
+            email: settings.show_customer_email ? data.supplier.email : undefined,
+            phone: settings.show_customer_phone ? data.supplier.phone : undefined,
+          }}
+          settings={{
+            ...settings,
+            header_padding: settings.header_padding,
+            header_layout_style: settings.header_layout_style,
+            logo_size: settings.logo_size,
+            show_invoice_title: settings.show_invoice_title,
+            compact_header: settings.compact_header,
+          }}
+        />
+      </div>
 
       {/* ===== PRODUCTS BODY: Items table ===== */}
-      <div>
+      <div data-pdf-section>
         <InvoiceTable 
           items={data.items} 
           settings={{
@@ -134,17 +136,19 @@ export function Invoice({ data, containerId = "invoice-container" }: InvoiceProp
       </div>
 
       {/* ===== PRICE BODY: Totals + Amount in words ===== */}
-      <InvoiceTotals
-        totals={data.totals}
-        totalQuantity={data.totalQuantity}
-        amountInWords={settings.show_amount_words ? data.amountInWords : ""}
-        items={data.items}
-        taxType={data.taxType}
-        settings={settings}
-      />
+      <div data-pdf-section>
+        <InvoiceTotals
+          totals={data.totals}
+          totalQuantity={data.totalQuantity}
+          amountInWords={settings.show_amount_words ? data.amountInWords : ""}
+          items={data.items}
+          taxType={data.taxType}
+          settings={settings}
+        />
+      </div>
 
       {/* ===== FOOTER: Terms + Bank + Signature (pushed to bottom) ===== */}
-      <div style={{ marginTop: "auto" }}>
+      <div data-pdf-section style={{ marginTop: "auto" }}>
         {renderFooter()}
         {/* Bottom Gold Accent */}
         <div className="invoice-accent-bar" style={{ backgroundColor: settings.accent_color }} />
