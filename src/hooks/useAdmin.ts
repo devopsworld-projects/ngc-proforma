@@ -119,11 +119,23 @@ export function useDeleteUser() {
   
   return useMutation({
     mutationFn: async (userId: string) => {
-      const { data, error } = await (supabase.rpc as any)("delete_user", {
-        target_user_id: userId,
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+
+      const response = await supabase.functions.invoke("admin-delete-user", {
+        body: { targetUserId: userId },
       });
-      if (error) throw error;
-      return data;
+      
+      if (response.error) {
+        throw new Error(response.error.message || "Failed to delete user");
+      }
+      
+      const result = response.data;
+      if (!result.success) {
+        throw new Error(result.error || "Failed to delete user");
+      }
+      
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["adminUserStats"] });
