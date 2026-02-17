@@ -452,8 +452,6 @@ export async function generateInvoicePDF(
   yPos = Math.max(detailY, billY) + 10;
 
   // ===== ITEMS TABLE with GST breakup =====
-  const showGst = (template as any).show_gst ?? true;
-  
   const tableData = invoice.items.map((item, idx) => {
     const gstPercent = item.gst_percent || 18;
     const inclusiveRate = item.rate;
@@ -468,38 +466,27 @@ export async function generateInvoicePDF(
       item.brand || "-",
       item.description,
       `${item.quantity} ${item.unit}`,
+      formatCurrency(totalBasePrice),
+      `${gstPercent}%`,
+      formatCurrency(totalGstAmount),
+      formatCurrency(totalInclusive),
     ];
-    
-    if (showGst) {
-      row.push(formatCurrency(totalBasePrice), `${gstPercent}%`, formatCurrency(totalGstAmount));
-    }
-    row.push(formatCurrency(totalInclusive));
     
     return row;
   });
 
-  const tableHead = showGst
-    ? [["#", "Brand", "Description", "Qty", "Base Price", "GST %", "GST Amt", "Total"]]
-    : [["#", "Brand", "Description", "Qty", "Total"]];
+  const tableHead = [["#", "Brand", "Description", "Qty", "Base Price", "GST %", "GST Amt", "Total"]];
 
-  const columnStyles: any = showGst
-    ? {
-        0: { cellWidth: 8, halign: "center" },
-        1: { cellWidth: 25, halign: "left" },
-        2: { cellWidth: "auto", halign: "left" },
-        3: { cellWidth: 18, halign: "center" },
-        4: { cellWidth: 22, halign: "right" },
-        5: { cellWidth: 14, halign: "center" },
-        6: { cellWidth: 22, halign: "right" },
-        7: { cellWidth: 24, halign: "right" },
-      }
-    : {
-        0: { cellWidth: 8, halign: "center" },
-        1: { cellWidth: 30, halign: "left" },
-        2: { cellWidth: "auto", halign: "left" },
-        3: { cellWidth: 22, halign: "center" },
-        4: { cellWidth: 28, halign: "right" },
-      };
+  const columnStyles: any = {
+    0: { cellWidth: 8, halign: "center" },
+    1: { cellWidth: 25, halign: "left" },
+    2: { cellWidth: "auto", halign: "left" },
+    3: { cellWidth: 18, halign: "center" },
+    4: { cellWidth: 22, halign: "right" },
+    5: { cellWidth: 14, halign: "center" },
+    6: { cellWidth: 22, halign: "right" },
+    7: { cellWidth: 24, halign: "right" },
+  };
 
   autoTable(doc, {
     startY: yPos,
@@ -585,9 +572,7 @@ export async function generateInvoicePDF(
     addTotalLine(`Discount (${invoice.discount_percent}%):`, `-${formatCurrency(invoice.discount_amount)}`);
   }
   
-  if (showGst) {
-    addTotalLine("Total GST (included):", formatCurrency(totalGstFromItems));
-  }
+  addTotalLine("Total GST (included):", formatCurrency(totalGstFromItems));
 
   if (Math.abs(invoice.round_off) > 0.001) {
     addTotalLine("Round Off:", formatCurrency(invoice.round_off));
