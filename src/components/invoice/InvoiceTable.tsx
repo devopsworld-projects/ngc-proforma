@@ -101,7 +101,7 @@ export function InvoiceTable({ items, settings }: InvoiceTableProps) {
               className="text-right py-2 w-28 text-xs font-semibold uppercase"
               style={{ color: tableHeaderText }}
             >
-              Base Price
+              {showGst ? "Base Price" : "Unit Price"}
             </TableHead>
             {showGst && (
               <TableHead 
@@ -200,7 +200,7 @@ export function InvoiceTable({ items, settings }: InvoiceTableProps) {
                   )}
                 </TableCell>
                 <TableCell className={`text-right ${rowPaddingClass} font-medium text-sm font-mono`} style={{ color: tableTextColor }}>
-                  {formatCurrency(totalBasePrice)}
+                  {showGst ? formatCurrency(totalBasePrice) : formatCurrency(inclusiveUnitPrice)}
                 </TableCell>
                 {showGst && (
                   <TableCell className={`text-right ${rowPaddingClass} font-medium text-sm font-mono opacity-70`}>
