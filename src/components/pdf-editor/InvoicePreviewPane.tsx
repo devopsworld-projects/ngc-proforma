@@ -276,10 +276,9 @@ export function InvoicePreviewPane({ settings, companyName = "Your Company Name"
             {settings.show_image_column && <th className={`${tableRowPaddingClass} text-left font-semibold uppercase text-[10px]`}>Img</th>}
             <th className={`${tableRowPaddingClass} text-left font-semibold uppercase text-[10px]`}>Product</th>
             <th className={`${tableRowPaddingClass} text-center font-semibold uppercase text-[10px]`}>Qty</th>
-            <th className={`${tableRowPaddingClass} text-right font-semibold uppercase text-[10px]`}>Unit Price</th>
             {showGst && <th className={`${tableRowPaddingClass} text-right font-semibold uppercase text-[10px]`}>Base Price</th>}
-            {showGst && <th className={`${tableRowPaddingClass} text-right font-semibold uppercase text-[10px]`}>GST %</th>}
-            {showGst && <th className={`${tableRowPaddingClass} text-right font-semibold uppercase text-[10px]`}>GST Amt</th>}
+            {showGst && <th className={`${tableRowPaddingClass} text-right font-semibold uppercase text-[10px]`}>GST Amt (18%)</th>}
+            {!showGst && <th className={`${tableRowPaddingClass} text-right font-semibold uppercase text-[10px]`}>Unit Price</th>}
             <th className={`${tableRowPaddingClass} text-right font-semibold uppercase text-[10px]`}>Total</th>
           </tr>
         </thead>
@@ -299,10 +298,9 @@ export function InvoicePreviewPane({ settings, companyName = "Your Company Name"
                 <p className="text-[10px] opacity-70">{item.description}</p>
               </td>
               <td className={`${tableRowPaddingClass} text-center`}>{item.quantity}</td>
-              <td className={`${tableRowPaddingClass} text-right font-mono`}>₹{item.rate.toLocaleString()}</td>
               {showGst && <td className={`${tableRowPaddingClass} text-right font-mono`}>₹{Math.round(item.rate * 100 / 118).toLocaleString()}</td>}
-              {showGst && <td className={`${tableRowPaddingClass} text-right font-mono`}>{item.gstPercent}%</td>}
               {showGst && <td className={`${tableRowPaddingClass} text-right font-mono`}>₹{Math.round(item.total - item.total * 100 / 118).toLocaleString()}</td>}
+              {!showGst && <td className={`${tableRowPaddingClass} text-right font-mono`}>₹{item.rate.toLocaleString()}</td>}
               <td className={`${tableRowPaddingClass} text-right font-mono font-medium`}>₹{item.total.toLocaleString()}</td>
             </tr>
           ))}

@@ -97,12 +97,6 @@ export function InvoiceTable({ items, settings }: InvoiceTableProps) {
             >
               Qty{showUnitColumn ? "" : ""}
             </TableHead>
-            <TableHead 
-              className="text-right py-2 w-28 text-xs font-semibold uppercase"
-              style={{ color: tableHeaderText }}
-            >
-              Unit Price
-            </TableHead>
             {showGst && (
               <TableHead 
                 className="text-right py-2 w-28 text-xs font-semibold uppercase"
@@ -113,18 +107,18 @@ export function InvoiceTable({ items, settings }: InvoiceTableProps) {
             )}
             {showGst && (
               <TableHead 
-                className="text-right py-2 w-20 text-xs font-semibold uppercase"
+                className="text-right py-2 w-28 text-xs font-semibold uppercase"
                 style={{ color: tableHeaderText }}
               >
-                GST %
+                GST Amt ({items[0]?.gstPercent ?? 18}%)
               </TableHead>
             )}
-            {showGst && (
+            {!showGst && (
               <TableHead 
                 className="text-right py-2 w-28 text-xs font-semibold uppercase"
                 style={{ color: tableHeaderText }}
               >
-                GST Amt
+                Unit Price
               </TableHead>
             )}
             <TableHead 
@@ -207,22 +201,19 @@ export function InvoiceTable({ items, settings }: InvoiceTableProps) {
                     <div className="text-[10px] opacity-50 mt-0.5">({item.sizeLabel})</div>
                   )}
                 </TableCell>
-                <TableCell className={`text-right ${rowPaddingClass} font-medium text-sm font-mono`} style={{ color: tableTextColor }}>
-                  {formatCurrency(inclusiveUnitPrice)}
-                </TableCell>
                 {showGst && (
                   <TableCell className={`text-right ${rowPaddingClass} font-medium text-sm font-mono`} style={{ color: tableTextColor }}>
                     {formatCurrency(totalBasePrice)}
                   </TableCell>
                 )}
                 {showGst && (
-                  <TableCell className={`text-right ${rowPaddingClass} font-medium text-sm font-mono opacity-70`}>
-                    {gstPercent}%
-                  </TableCell>
-                )}
-                {showGst && (
                   <TableCell className={`text-right ${rowPaddingClass} font-medium text-sm font-mono`} style={{ color: tableTextColor }}>
                     {formatCurrency(totalGstAmount)}
+                  </TableCell>
+                )}
+                {!showGst && (
+                  <TableCell className={`text-right ${rowPaddingClass} font-medium text-sm font-mono`} style={{ color: tableTextColor }}>
+                    {formatCurrency(inclusiveUnitPrice)}
                   </TableCell>
                 )}
                 <TableCell className={`text-right ${rowPaddingClass} font-semibold text-sm font-mono`} style={{ color: tableTextColor }}>
