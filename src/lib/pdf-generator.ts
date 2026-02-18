@@ -463,11 +463,14 @@ export async function generateInvoicePDF(
     const totalGstAmount = roundToTwo(gstPerUnit * item.quantity);
     const totalInclusive = roundToTwo(item.quantity * inclusiveRate);
 
+    const unitPrice = formatCurrency(inclusiveRate);
+
     const row: string[] = [
       (idx + 1).toString(),
       item.brand || "-",
       item.description,
       `${item.quantity} ${item.unit}`,
+      unitPrice,
     ];
     
     if (showGst) {
@@ -482,26 +485,28 @@ export async function generateInvoicePDF(
   });
 
   const tableHead = showGst
-    ? [["#", "Brand", "Description", "Qty", "Base Price", "GST %", "GST Amt", "Total"]]
-    : [["#", "Brand", "Description", "Qty", "Total"]];
+    ? [["#", "Brand", "Description", "Qty", "Unit Price", "Base Price", "GST %", "GST Amt", "Total"]]
+    : [["#", "Brand", "Description", "Qty", "Unit Price", "Total"]];
 
   const columnStyles: any = showGst
     ? {
         0: { cellWidth: 8, halign: "center" },
-        1: { cellWidth: 25, halign: "left" },
+        1: { cellWidth: 22, halign: "left" },
         2: { cellWidth: "auto", halign: "left" },
-        3: { cellWidth: 18, halign: "center" },
-        4: { cellWidth: 22, halign: "right" },
-        5: { cellWidth: 14, halign: "center" },
-        6: { cellWidth: 22, halign: "right" },
-        7: { cellWidth: 24, halign: "right" },
+        3: { cellWidth: 16, halign: "center" },
+        4: { cellWidth: 20, halign: "right" },
+        5: { cellWidth: 20, halign: "right" },
+        6: { cellWidth: 12, halign: "center" },
+        7: { cellWidth: 20, halign: "right" },
+        8: { cellWidth: 22, halign: "right" },
       }
     : {
         0: { cellWidth: 8, halign: "center" },
-        1: { cellWidth: 30, halign: "left" },
+        1: { cellWidth: 28, halign: "left" },
         2: { cellWidth: "auto", halign: "left" },
-        3: { cellWidth: 22, halign: "center" },
-        4: { cellWidth: 28, halign: "right" },
+        3: { cellWidth: 20, halign: "center" },
+        4: { cellWidth: 24, halign: "right" },
+        5: { cellWidth: 26, halign: "right" },
       };
 
   autoTable(doc, {
