@@ -97,6 +97,12 @@ export function InvoiceTable({ items, settings }: InvoiceTableProps) {
             >
               Qty{showUnitColumn ? "" : ""}
             </TableHead>
+            <TableHead 
+              className="text-right py-2 w-28 text-xs font-semibold uppercase"
+              style={{ color: tableHeaderText }}
+            >
+              Unit Price
+            </TableHead>
             {showGst && (
               <TableHead 
                 className="text-right py-2 w-28 text-xs font-semibold uppercase"
@@ -200,6 +206,9 @@ export function InvoiceTable({ items, settings }: InvoiceTableProps) {
                   {item.sizeLabel && (
                     <div className="text-[10px] opacity-50 mt-0.5">({item.sizeLabel})</div>
                   )}
+                </TableCell>
+                <TableCell className={`text-right ${rowPaddingClass} font-medium text-sm font-mono`} style={{ color: tableTextColor }}>
+                  {formatCurrency(inclusiveUnitPrice)}
                 </TableCell>
                 {showGst && (
                   <TableCell className={`text-right ${rowPaddingClass} font-medium text-sm font-mono`} style={{ color: tableTextColor }}>
