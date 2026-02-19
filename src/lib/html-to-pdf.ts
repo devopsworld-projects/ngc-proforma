@@ -54,53 +54,43 @@ export async function downloadInvoiceAsPdf(
   const originalMinHeight = element.style.minHeight;
   element.style.boxShadow = "none";
   element.style.animation = "none";
-  // Remove min-height so container shrinks to actual content size
   element.style.minHeight = "0";
 
   try {
-    const sections = Array.from(
-      element.querySelectorAll("[data-pdf-section]")
-    ) as HTMLElement[];
-
-    // If no sections found, fall back to full-element capture
-    if (sections.length === 0) {
-      await fallbackCapture(element, filename);
-      return;
-    }
+    // Capture entire invoice as a single canvas
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: false,
+      backgroundColor: "#ffffff",
+      logging: false,
+      imageTimeout: 30000,
+    });
 
     const A4_W_MM = 210;
     const A4_H_MM = 297;
-    const SECTION_GAP_MM = 0; // No gap — sections are flush
 
     const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-    let currentY = 0;
-    let isFirstPage = true;
 
-    for (const section of sections) {
-      const canvas = await html2canvas(section, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: false,
-        backgroundColor: "#ffffff",
-        logging: false,
-        imageTimeout: 30000,
-      });
+    // Scale the entire content to fit on a single A4 page
+    const imgWidthMM = A4_W_MM;
+    const imgHeightMM = (canvas.height * A4_W_MM) / canvas.width;
 
-      const scaleFactor = A4_W_MM / (canvas.width / 2);
-      const sectionHeightMM = (canvas.height / 2) * scaleFactor;
-      const remaining = A4_H_MM - currentY;
+    // If content is taller than A4, scale it down to fit
+    let finalWidth = imgWidthMM;
+    let finalHeight = imgHeightMM;
 
-      // If section doesn't fit on current page, start a new page
-      if (sectionHeightMM > remaining && currentY > 0) {
-        pdf.addPage();
-        currentY = 0;
-        isFirstPage = false;
-      }
-
-      const imgData = canvas.toDataURL("image/jpeg", 1.0);
-      pdf.addImage(imgData, "JPEG", 0, currentY, A4_W_MM, sectionHeightMM);
-      currentY += sectionHeightMM + SECTION_GAP_MM;
+    if (imgHeightMM > A4_H_MM) {
+      const scaleFactor = A4_H_MM / imgHeightMM;
+      finalWidth = imgWidthMM * scaleFactor;
+      finalHeight = A4_H_MM;
     }
+
+    // Center horizontally if scaled down
+    const xOffset = (A4_W_MM - finalWidth) / 2;
+
+    const imgData = canvas.toDataURL("image/jpeg", 1.0);
+    pdf.addImage(imgData, "JPEG", xOffset, 0, finalWidth, finalHeight);
 
     pdf.save(`${filename}.pdf`);
   } finally {
