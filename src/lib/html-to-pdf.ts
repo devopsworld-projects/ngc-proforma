@@ -51,20 +51,9 @@ export async function downloadInvoiceAsPdf(
   const originalBoxShadow = element.style.boxShadow;
   const originalAnimation = element.style.animation;
   const originalMinHeight = element.style.minHeight;
-  const originalWidth = element.style.width;
-  const originalMaxWidth = element.style.maxWidth;
-  const originalMargin = element.style.margin;
   element.style.boxShadow = "none";
   element.style.animation = "none";
   element.style.minHeight = "0";
-
-  // Force a fixed pixel width for consistent A4-proportioned capture.
-  // This ensures the captured image always fills the full A4 width
-  // without any horizontal offset or misalignment.
-  const CAPTURE_WIDTH_PX = 794; // A4 at 96 DPI
-  element.style.width = `${CAPTURE_WIDTH_PX}px`;
-  element.style.maxWidth = `${CAPTURE_WIDTH_PX}px`;
-  element.style.margin = "0";
 
   try {
     const canvas = await html2canvas(element, {
@@ -74,7 +63,6 @@ export async function downloadInvoiceAsPdf(
       backgroundColor: "#ffffff",
       logging: false,
       imageTimeout: 30000,
-      width: CAPTURE_WIDTH_PX,
     });
 
     const A4_W_MM = 210;
@@ -82,19 +70,21 @@ export async function downloadInvoiceAsPdf(
 
     const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
-    // Always fill full A4 width; scale height proportionally
+    // Scale to fit width, then check if height exceeds A4
+    const imgWidthMM = A4_W_MM;
     const imgHeightMM = (canvas.height * A4_W_MM) / canvas.width;
+
     const imgData = canvas.toDataURL("image/jpeg", 1.0);
 
     if (imgHeightMM <= A4_H_MM) {
       // Fits on one page at full width
-      pdf.addImage(imgData, "JPEG", 0, 0, A4_W_MM, imgHeightMM);
+      pdf.addImage(imgData, "JPEG", 0, 0, imgWidthMM, imgHeightMM);
     } else {
-      // Scale down uniformly to fit on one page, always full width
+      // Scale down to fit everything on one page
       const scaleFactor = A4_H_MM / imgHeightMM;
-      const scaledWidth = A4_W_MM * scaleFactor;
+      const scaledWidth = imgWidthMM * scaleFactor;
       const scaledHeight = A4_H_MM;
-      const xOffset = (A4_W_MM - scaledWidth) / 2;
+      const xOffset = (A4_W_MM - scaledWidth) / 2; // Center horizontally
       pdf.addImage(imgData, "JPEG", xOffset, 0, scaledWidth, scaledHeight);
     }
 
@@ -103,9 +93,6 @@ export async function downloadInvoiceAsPdf(
     element.style.boxShadow = originalBoxShadow;
     element.style.animation = originalAnimation;
     element.style.minHeight = originalMinHeight;
-    element.style.width = originalWidth;
-    element.style.maxWidth = originalMaxWidth;
-    element.style.margin = originalMargin;
     noPrintElements.forEach((el) => {
       (el as HTMLElement).style.display = "";
     });
