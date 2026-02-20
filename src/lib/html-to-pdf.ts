@@ -84,15 +84,25 @@ export async function downloadInvoiceAsPdf(
 
     const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
-    // Always fill the full A4 width — never leave side margins.
-    // If content is taller than A4, compress height to fit (slight vertical
-    // squeeze is acceptable for dense invoices; side whitespace is not).
+    // Maintain true aspect ratio — never distort/stretch the image.
+    // If the invoice is taller than one A4 page, split across multiple pages.
     const finalWidth = A4_W_MM;
     const proportionalHeight = (canvas.height * A4_W_MM) / canvas.width;
-    const finalHeight = Math.min(proportionalHeight, A4_H_MM);
 
     const imgData = canvas.toDataURL("image/jpeg", 1.0);
-    pdf.addImage(imgData, "JPEG", 0, 0, finalWidth, finalHeight);
+
+    let heightLeft = proportionalHeight;
+    let position = 0;
+
+    pdf.addImage(imgData, "JPEG", 0, position, finalWidth, proportionalHeight);
+    heightLeft -= A4_H_MM;
+
+    while (heightLeft > 0) {
+      position = heightLeft - proportionalHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, "JPEG", 0, position, finalWidth, proportionalHeight);
+      heightLeft -= A4_H_MM;
+    }
 
     pdf.save(`${filename}.pdf`);
   } finally {
