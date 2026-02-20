@@ -100,7 +100,9 @@ export async function downloadInvoiceAsPdf(
     pdf.addImage(imgData, "JPEG", 0, position, finalWidth, proportionalHeight);
     heightLeft -= A4_H_MM;
 
-    while (heightLeft > 0) {
+    // Use a 1mm epsilon to prevent a near-zero heightLeft (caused by
+    // minHeight rounding) from triggering a spurious blank extra page.
+    while (heightLeft > 1) {
       position = heightLeft - proportionalHeight;
       pdf.addPage();
       pdf.addImage(imgData, "JPEG", 0, position, finalWidth, proportionalHeight);
