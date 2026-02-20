@@ -64,7 +64,10 @@ export async function downloadInvoiceAsPdf(
   element.style.maxWidth = `${A4_PX_WIDTH}px`;
 
   try {
-    // Capture entire invoice as a single canvas at fixed A4 width
+    // Let html2canvas capture the element at its natural forced width.
+    // Do NOT set width/windowWidth — those confuse the layout when a sidebar
+    // is present and cause the content to render narrower than 794px,
+    // leaving white canvas margins that appear as side whitespace in the PDF.
     const canvas = await html2canvas(element, {
       scale: 2,
       useCORS: true,
@@ -72,8 +75,8 @@ export async function downloadInvoiceAsPdf(
       backgroundColor: "#ffffff",
       logging: false,
       imageTimeout: 30000,
-      width: A4_PX_WIDTH,
-      windowWidth: A4_PX_WIDTH,
+      scrollX: 0,
+      scrollY: 0,
     });
 
     const A4_W_MM = 210;
