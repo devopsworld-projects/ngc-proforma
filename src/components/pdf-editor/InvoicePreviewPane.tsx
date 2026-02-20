@@ -32,6 +32,8 @@ interface InvoicePreviewPaneProps {
     terms_line2: string | null;
     terms_line3: string | null;
     terms_line4?: string | null;
+    terms_line5?: string | null;
+    terms_line6?: string | null;
     bank_name: string | null;
     bank_account_no: string | null;
     bank_ifsc: string | null;
@@ -66,6 +68,8 @@ export function InvoicePreviewPane({ settings, companyName = "Your Company Name"
     settings.terms_line2,
     settings.terms_line3,
     settings.terms_line4,
+    settings.terms_line5,
+    settings.terms_line6,
   ].filter(Boolean) as string[];
 
   const showGst = settings.show_gst ?? true;

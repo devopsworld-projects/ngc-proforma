@@ -420,6 +420,8 @@ export type Database = {
           terms_line2: string | null
           terms_line3: string | null
           terms_line4: string | null
+          terms_line5: string | null
+          terms_line6: string | null
           updated_at: string
           user_id: string
         }
@@ -481,6 +483,8 @@ export type Database = {
           terms_line2?: string | null
           terms_line3?: string | null
           terms_line4?: string | null
+          terms_line5?: string | null
+          terms_line6?: string | null
           updated_at?: string
           user_id: string
         }
@@ -542,6 +546,8 @@ export type Database = {
           terms_line2?: string | null
           terms_line3?: string | null
           terms_line4?: string | null
+          terms_line5?: string | null
+          terms_line6?: string | null
           updated_at?: string
           user_id?: string
         }

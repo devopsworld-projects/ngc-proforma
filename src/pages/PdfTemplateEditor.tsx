@@ -78,6 +78,8 @@ const defaultSettings = {
   terms_line2: "Subject to local jurisdiction only.",
   terms_line3: "E&OE - Errors and Omissions Excepted.",
   terms_line4: null as string | null,
+  terms_line5: null as string | null,
+  terms_line6: null as string | null,
   custom_footer_text: null as string | null,
   bank_name: null as string | null,
   bank_account_no: null as string | null,

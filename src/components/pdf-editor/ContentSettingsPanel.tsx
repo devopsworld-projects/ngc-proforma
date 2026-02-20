@@ -13,6 +13,8 @@ interface ContentSettingsPanelProps {
     terms_line2: string | null;
     terms_line3: string | null;
     terms_line4: string | null;
+    terms_line5: string | null;
+    terms_line6: string | null;
     custom_footer_text: string | null;
     bank_name: string | null;
     bank_account_no: string | null;
@@ -99,6 +101,22 @@ export function ContentSettingsPanel({ settings, onChange }: ContentSettingsPane
             <Input
               value={settings.terms_line4 || ""}
               onChange={(e) => onChange("terms_line4", e.target.value || null)}
+              placeholder="Additional term..."
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Term Line 5</Label>
+            <Input
+              value={settings.terms_line5 || ""}
+              onChange={(e) => onChange("terms_line5", e.target.value || null)}
+              placeholder="Additional term..."
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Term Line 6</Label>
+            <Input
+              value={settings.terms_line6 || ""}
+              onChange={(e) => onChange("terms_line6", e.target.value || null)}
               placeholder="Additional term..."
             />
           </div>

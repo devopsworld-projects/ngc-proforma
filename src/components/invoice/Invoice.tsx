@@ -22,8 +22,10 @@ export function Invoice({ data, containerId = "invoice-container" }: InvoiceProp
       settings.terms_line2,
       settings.terms_line3,
       settings.terms_line4,
+      settings.terms_line5,
+      settings.terms_line6,
     ].filter(Boolean) as string[];
-  }, [settings.terms_line1, settings.terms_line2, settings.terms_line3]);
+  }, [settings.terms_line1, settings.terms_line2, settings.terms_line3, settings.terms_line4, settings.terms_line5, settings.terms_line6]);
 
   // Build bank details from settings
   const bankDetails = useMemo(() => {
