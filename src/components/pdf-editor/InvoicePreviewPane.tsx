@@ -35,6 +35,7 @@ interface InvoicePreviewPaneProps {
     terms_line5?: string | null;
     terms_line6?: string | null;
     bank_name: string | null;
+    bank_account_name?: string | null;
     bank_account_no: string | null;
     bank_ifsc: string | null;
     bank_branch: string | null;
@@ -376,6 +377,7 @@ export function InvoicePreviewPane({ settings, companyName = "Your Company Name"
               </div>
               <div className="text-[10px] opacity-80 pl-3">
                 <p>Bank: {settings.bank_name}</p>
+                {settings.bank_account_name && <p>Name: {settings.bank_account_name}</p>}
                 {settings.bank_account_no && <p>A/C: {settings.bank_account_no}</p>}
                 {settings.bank_ifsc && <p>IFSC: {settings.bank_ifsc}</p>}
                 {settings.bank_branch && <p>Branch: {settings.bank_branch}</p>}

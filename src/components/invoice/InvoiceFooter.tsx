@@ -6,6 +6,7 @@ interface InvoiceFooterProps {
   termsAndConditions?: string[];
   bankDetails?: {
     bankName?: string;
+    accountName?: string;
     accountNo?: string;
     ifsc?: string;
     branch?: string;
@@ -75,6 +76,7 @@ export function InvoiceFooter({
               </div>
               <div className="text-xs opacity-90 space-y-0 pl-4">
                 {bankDetails!.bankName && <p>Bank: {bankDetails!.bankName}</p>}
+                {bankDetails!.accountName && <p>Name: {bankDetails!.accountName}</p>}
                 {bankDetails!.accountNo && <p>A/C No: {bankDetails!.accountNo}</p>}
                 {bankDetails!.ifsc && <p>IFSC: {bankDetails!.ifsc}</p>}
                 {bankDetails!.branch && <p>Branch: {bankDetails!.branch}</p>}

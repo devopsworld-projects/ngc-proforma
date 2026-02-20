@@ -32,11 +32,12 @@ export function Invoice({ data, containerId = "invoice-container" }: InvoiceProp
     if (!settings.bank_name) return undefined;
     return {
       bankName: settings.bank_name || undefined,
+      accountName: settings.bank_account_name || undefined,
       accountNo: settings.bank_account_no || undefined,
       ifsc: settings.bank_ifsc || undefined,
       branch: settings.bank_branch || undefined,
     };
-  }, [settings.bank_name, settings.bank_account_no, settings.bank_ifsc, settings.bank_branch]);
+  }, [settings.bank_name, settings.bank_account_name, settings.bank_account_no, settings.bank_ifsc, settings.bank_branch]);
 
 
   // Determine what goes in the footer

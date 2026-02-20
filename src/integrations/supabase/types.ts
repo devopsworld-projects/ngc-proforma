@@ -364,6 +364,7 @@ export type Database = {
       pdf_template_settings: {
         Row: {
           accent_color: string
+          bank_account_name: string | null
           bank_account_no: string | null
           bank_branch: string | null
           bank_ifsc: string | null
@@ -427,6 +428,7 @@ export type Database = {
         }
         Insert: {
           accent_color?: string
+          bank_account_name?: string | null
           bank_account_no?: string | null
           bank_branch?: string | null
           bank_ifsc?: string | null
@@ -490,6 +492,7 @@ export type Database = {
         }
         Update: {
           accent_color?: string
+          bank_account_name?: string | null
           bank_account_no?: string | null
           bank_branch?: string | null
           bank_ifsc?: string | null
