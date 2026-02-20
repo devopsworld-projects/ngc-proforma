@@ -1,6 +1,6 @@
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileText, Building2 } from "lucide-react";
 
@@ -15,7 +15,7 @@ interface ContentSettingsPanelProps {
     terms_line4: string | null;
     terms_line5: string | null;
     terms_line6: string | null;
-    custom_footer_text: string | null;
+    
     bank_name: string | null;
     bank_account_no: string | null;
     bank_ifsc: string | null;
@@ -118,15 +118,6 @@ export function ContentSettingsPanel({ settings, onChange }: ContentSettingsPane
               value={settings.terms_line6 || ""}
               onChange={(e) => onChange("terms_line6", e.target.value || null)}
               placeholder="Additional term..."
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Custom Footer Text</Label>
-            <Textarea
-              value={settings.custom_footer_text || ""}
-              onChange={(e) => onChange("custom_footer_text", e.target.value || null)}
-              placeholder="Additional footer message..."
-              rows={2}
             />
           </div>
         </CardContent>
