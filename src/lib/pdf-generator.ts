@@ -733,15 +733,7 @@ export async function generateInvoicePDF(
     doc.text(`Page ${i} of ${totalPages}`, pageWidth / 2, pageHeight - 6, { align: "center" });
   }
 
-  // Custom footer text
-  if (template.custom_footer_text) {
-    addText(template.custom_footer_text, pageWidth / 2, pageHeight - 10, {
-      fontSize: 8,
-      fontStyle: "italic",
-      color: [150, 150, 150],
-      align: "center",
-    });
-  }
+
 
   // Return base64 or save PDF
   if (options.returnBase64) {

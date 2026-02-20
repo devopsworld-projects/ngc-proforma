@@ -150,11 +150,6 @@ export function PdfPreviewMini({ settings }: Props) {
           )}
         </div>
         
-        {settings.custom_footer_text && (
-          <div className="text-[4px] text-black/50 italic text-center mt-1">
-            {settings.custom_footer_text}
-          </div>
-        )}
       </div>
     </div>
   );

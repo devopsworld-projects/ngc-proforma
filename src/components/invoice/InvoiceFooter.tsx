@@ -74,10 +74,10 @@ export function InvoiceFooter({
                 </h4>
               </div>
               <div className="text-xs opacity-90 space-y-0 pl-4">
-                {bankDetails!.branch && <p>Name: {bankDetails!.branch}</p>}
                 {bankDetails!.bankName && <p>Bank: {bankDetails!.bankName}</p>}
                 {bankDetails!.accountNo && <p>A/C No: {bankDetails!.accountNo}</p>}
                 {bankDetails!.ifsc && <p>IFSC: {bankDetails!.ifsc}</p>}
+                {bankDetails!.branch && <p>Branch: {bankDetails!.branch}</p>}
               </div>
             </div>
           )}
