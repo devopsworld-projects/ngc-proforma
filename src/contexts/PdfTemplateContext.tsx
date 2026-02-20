@@ -41,6 +41,8 @@ const defaultSettings: Omit<PdfTemplateSettings, "id" | "user_id" | "created_at"
   terms_line2: "Subject to local jurisdiction only.",
   terms_line3: "E&OE - Errors and Omissions Excepted.",
   terms_line4: null,
+  terms_line5: null,
+  terms_line6: null,
   custom_footer_text: null,
   bank_name: null,
   bank_account_no: null,
