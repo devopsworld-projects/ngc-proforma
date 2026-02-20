@@ -36,9 +36,9 @@ interface InvoiceTableProps {
 // Map spacing values to CSS classes
 const getRowPaddingClass = (padding?: string) => {
   switch (padding) {
-    case "compact": return "py-1";
-    case "relaxed": return "py-3";
-    default: return "py-2";
+    case "compact": return "py-0.5 px-3";
+    case "relaxed": return "py-2 px-3";
+    default: return "py-1 px-3";
   }
 };
 
@@ -72,34 +72,34 @@ export function InvoiceTable({ items, settings }: InvoiceTableProps) {
             style={{ backgroundColor: tableHeaderBg }}
           >
             <TableHead 
-              className="w-12 text-center py-2 text-xs font-semibold uppercase"
+              className="w-12 text-center py-1.5 px-3 text-xs font-semibold uppercase"
               style={{ color: tableHeaderText }}
             >
               Sl No.
             </TableHead>
             {showImageColumn && (
               <TableHead 
-                className="py-2 text-xs font-semibold uppercase"
+                className="py-1.5 px-3 text-xs font-semibold uppercase"
                 style={{ color: tableHeaderText }}
               >
                 Image
               </TableHead>
             )}
             <TableHead 
-              className="min-w-[180px] py-2 text-xs font-semibold uppercase"
+              className="min-w-[180px] py-1.5 px-3 text-xs font-semibold uppercase"
               style={{ color: tableHeaderText }}
             >
               {showBrandColumn ? "Product" : "Description"}
             </TableHead>
             <TableHead 
-              className="text-center py-2 w-16 text-xs font-semibold uppercase"
+              className="text-center py-1.5 px-3 w-16 text-xs font-semibold uppercase"
               style={{ color: tableHeaderText }}
             >
               Qty{showUnitColumn ? "" : ""}
             </TableHead>
             {showGst && (
               <TableHead 
-                className="text-right py-2 w-28 text-xs font-semibold uppercase"
+                className="text-right py-1.5 px-3 w-28 text-xs font-semibold uppercase"
                 style={{ color: tableHeaderText }}
               >
                 Base Price
@@ -107,7 +107,7 @@ export function InvoiceTable({ items, settings }: InvoiceTableProps) {
             )}
             {showGst && (
               <TableHead 
-                className="text-right py-2 w-28 text-xs font-semibold uppercase"
+                className="text-right py-1.5 px-3 w-28 text-xs font-semibold uppercase"
                 style={{ color: tableHeaderText }}
               >
                 GST Amt ({items[0]?.gstPercent ?? 18}%)
@@ -115,14 +115,14 @@ export function InvoiceTable({ items, settings }: InvoiceTableProps) {
             )}
             {!showGst && (
               <TableHead 
-                className="text-right py-2 w-28 text-xs font-semibold uppercase"
+                className="text-right py-1.5 px-3 w-28 text-xs font-semibold uppercase"
                 style={{ color: tableHeaderText }}
               >
                 Unit Price
               </TableHead>
             )}
             <TableHead 
-              className="text-right py-2 w-28 text-xs font-semibold uppercase"
+              className="text-right py-1.5 px-3 w-28 text-xs font-semibold uppercase"
               style={{ color: tableHeaderText }}
             >
               Total
