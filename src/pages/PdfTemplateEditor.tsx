@@ -82,6 +82,7 @@ const defaultSettings = {
   terms_line6: null as string | null,
   custom_footer_text: null as string | null,
   bank_name: null as string | null,
+  bank_account_name: null as string | null,
   bank_account_no: null as string | null,
   bank_ifsc: null as string | null,
   bank_branch: null as string | null,

@@ -59,6 +59,7 @@ export interface PdfTemplateSettings {
   terms_line6: string | null;
   custom_footer_text: string | null;
   bank_name: string | null;
+  bank_account_name: string | null;
   bank_account_no: string | null;
   bank_ifsc: string | null;
   bank_branch: string | null;

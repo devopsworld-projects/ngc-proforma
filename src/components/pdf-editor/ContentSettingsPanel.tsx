@@ -15,8 +15,8 @@ interface ContentSettingsPanelProps {
     terms_line4: string | null;
     terms_line5: string | null;
     terms_line6: string | null;
-    
     bank_name: string | null;
+    bank_account_name: string | null;
     bank_account_no: string | null;
     bank_ifsc: string | null;
     bank_branch: string | null;
@@ -138,6 +138,14 @@ export function ContentSettingsPanel({ settings, onChange }: ContentSettingsPane
                 value={settings.bank_name || ""}
                 onChange={(e) => onChange("bank_name", e.target.value || null)}
                 placeholder="Bank name"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Account Holder Name</Label>
+              <Input
+                value={settings.bank_account_name || ""}
+                onChange={(e) => onChange("bank_account_name", e.target.value || null)}
+                placeholder="Account holder name"
               />
             </div>
             <div className="space-y-1.5">

@@ -45,6 +45,7 @@ const defaultSettings: Omit<PdfTemplateSettings, "id" | "user_id" | "created_at"
   terms_line6: null,
   custom_footer_text: null,
   bank_name: null,
+  bank_account_name: null,
   bank_account_no: null,
   bank_ifsc: null,
   bank_branch: null,
