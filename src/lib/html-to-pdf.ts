@@ -52,12 +52,19 @@ export async function downloadInvoiceAsPdf(
   const originalBoxShadow = element.style.boxShadow;
   const originalAnimation = element.style.animation;
   const originalMinHeight = element.style.minHeight;
+  const originalWidth = element.style.width;
+  const originalMaxWidth = element.style.maxWidth;
   element.style.boxShadow = "none";
   element.style.animation = "none";
   element.style.minHeight = "0";
 
+  // A4 at 96 DPI = 794px. Force exact width so nothing gets clipped.
+  const A4_PX_WIDTH = 794;
+  element.style.width = `${A4_PX_WIDTH}px`;
+  element.style.maxWidth = `${A4_PX_WIDTH}px`;
+
   try {
-    // Capture entire invoice as a single canvas
+    // Capture entire invoice as a single canvas at fixed A4 width
     const canvas = await html2canvas(element, {
       scale: 2,
       useCORS: true,
@@ -65,6 +72,8 @@ export async function downloadInvoiceAsPdf(
       backgroundColor: "#ffffff",
       logging: false,
       imageTimeout: 30000,
+      width: A4_PX_WIDTH,
+      windowWidth: A4_PX_WIDTH,
     });
 
     const A4_W_MM = 210;
@@ -97,6 +106,8 @@ export async function downloadInvoiceAsPdf(
     element.style.boxShadow = originalBoxShadow;
     element.style.animation = originalAnimation;
     element.style.minHeight = originalMinHeight;
+    element.style.width = originalWidth;
+    element.style.maxWidth = originalMaxWidth;
     noPrintElements.forEach((el) => {
       (el as HTMLElement).style.display = "";
     });
