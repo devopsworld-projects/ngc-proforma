@@ -56,7 +56,10 @@ export async function downloadInvoiceAsPdf(
   const originalMaxWidth = element.style.maxWidth;
   element.style.boxShadow = "none";
   element.style.animation = "none";
-  element.style.minHeight = "0";
+  // A4 at 96 DPI ≈ 1123px tall. Setting minHeight ensures the footer
+  // (which uses marginTop:auto in a flex column) is pushed to the true
+  // bottom of the page even when there are very few invoice items.
+  element.style.minHeight = "1123px";
 
   // A4 at 96 DPI = 794px. Force exact width so nothing gets clipped.
   const A4_PX_WIDTH = 794;
