@@ -226,6 +226,7 @@ export type Database = {
           id: string
           invoice_id: string
           product_image: string | null
+          product_url: string | null
           quantity: number
           rate: number
           serial_numbers: string[] | null
@@ -244,6 +245,7 @@ export type Database = {
           id?: string
           invoice_id: string
           product_image?: string | null
+          product_url?: string | null
           quantity: number
           rate: number
           serial_numbers?: string[] | null
@@ -262,6 +264,7 @@ export type Database = {
           id?: string
           invoice_id?: string
           product_image?: string | null
+          product_url?: string | null
           quantity?: number
           rate?: number
           serial_numbers?: string[] | null

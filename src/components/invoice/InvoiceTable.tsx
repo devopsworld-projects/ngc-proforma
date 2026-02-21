@@ -187,7 +187,18 @@ export function InvoiceTable({ items, settings }: InvoiceTableProps) {
                 <TableCell className={rowPaddingClass}>
                   <div className="space-y-0.5">
                     {showBrandColumn && (
-                      <p className="font-semibold text-sm" style={{ color: tableTextColor }}>{item.brand || "Unnamed Product"}</p>
+                      item.productUrl ? (
+                        <a 
+                          href={item.productUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="font-semibold text-sm text-blue-600 underline hover:text-blue-800"
+                        >
+                          {item.brand || "Unnamed Product"}
+                        </a>
+                      ) : (
+                        <p className="font-semibold text-sm" style={{ color: tableTextColor }}>{item.brand || "Unnamed Product"}</p>
+                      )
                     )}
                     {item.description && (!showBrandColumn || item.description !== item.brand) && (
                       <p className="text-xs opacity-70">{item.description}</p>

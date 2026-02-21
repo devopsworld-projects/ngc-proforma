@@ -40,6 +40,7 @@ import {
   ChevronUp,
   Barcode,
   Percent,
+  Link,
 } from "lucide-react";
 import { formatCurrency, calculateGstBreakup, roundToTwo } from "@/lib/invoice-utils";
 import { ExcelLineItemsUpload } from "@/components/invoice/ExcelLineItemsUpload";
@@ -75,6 +76,7 @@ export interface LineItem {
   amount: number;
   productId?: string;
   productImage?: string;
+  productUrl?: string;
 }
 
 interface PricingMarkup {
@@ -315,6 +317,23 @@ function SortableLineItem({
                 value={item.serialNumbers}
                 onChange={(e) => onUpdate("serialNumbers", e.target.value)}
                 className="font-mono text-xs"
+              />
+            </div>
+            
+            <div className="lg:col-span-2">
+              <Label className="text-xs font-medium mb-1.5 block">
+                <span className="flex items-center gap-1">
+                  <Link className="h-3 w-3" />
+                  Product URL
+                  <span className="text-muted-foreground font-normal ml-1">(clickable in PDF)</span>
+                </span>
+              </Label>
+              <Input
+                type="url"
+                placeholder="https://example.com/product-page"
+                value={item.productUrl || ""}
+                onChange={(e) => onUpdate("productUrl", e.target.value)}
+                className="text-xs"
               />
             </div>
             

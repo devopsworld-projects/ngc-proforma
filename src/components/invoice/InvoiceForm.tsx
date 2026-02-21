@@ -229,6 +229,7 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
               gstAmount: gstAmount,
               amount: item.amount,
               productImage: item.product_image || "",
+              productUrl: item.product_url || "",
             };
           })
         );
@@ -377,6 +378,7 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
           gst_amount: item.gstAmount || 0,
           amount: item.amount,
           product_image: item.productImage || null,
+          product_url: item.productUrl || null,
         }));
 
         const { error: itemsError } = await supabase.from("invoice_items").insert(itemsPayload);
@@ -408,6 +410,7 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
           gst_amount: item.gstAmount || 0,
           amount: item.amount,
           product_image: item.productImage || null,
+          product_url: item.productUrl || null,
         }));
 
         const { error: itemsError } = await supabase.from("invoice_items").insert(itemsPayload);
