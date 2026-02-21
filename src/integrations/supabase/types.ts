@@ -297,6 +297,7 @@ export type Database = {
           invoice_no: string
           is_recurring: boolean
           next_invoice_date: string | null
+          notes: string | null
           other_references: string | null
           quote_for: string | null
           recurring_frequency: string | null
@@ -328,6 +329,7 @@ export type Database = {
           invoice_no: string
           is_recurring?: boolean
           next_invoice_date?: string | null
+          notes?: string | null
           other_references?: string | null
           quote_for?: string | null
           recurring_frequency?: string | null
@@ -359,6 +361,7 @@ export type Database = {
           invoice_no?: string
           is_recurring?: boolean
           next_invoice_date?: string | null
+          notes?: string | null
           other_references?: string | null
           quote_for?: string | null
           recurring_frequency?: string | null

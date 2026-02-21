@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useInvoices, useUpdateInvoiceStatus, useDeleteInvoice, useRestoreInvoice, Invoice } from "@/hooks/useInvoices";
 import { useIsAdmin } from "@/hooks/useAdmin";
@@ -38,11 +38,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { FileText, Plus, Edit, RefreshCcw, MoreVertical, Send, CheckCircle, XCircle, Clock, Eye, SearchX, Loader2, Trash2, User, RotateCcw } from "lucide-react";
+import { FileText, Plus, Edit, RefreshCcw, MoreVertical, Send, CheckCircle, XCircle, Clock, Eye, SearchX, Loader2, Trash2, User, RotateCcw, StickyNote, Save, X } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 const statusColors: Record<string, string> = {
   draft: "bg-muted text-muted-foreground",
@@ -71,6 +73,7 @@ interface StatusChangeConfirmation {
 
 export default function InvoicesPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { data: invoices, isLoading } = useInvoices();
   const { data: isAdmin } = useIsAdmin();
   const { data: companySettings } = useCompanySettings();
@@ -78,8 +81,14 @@ export default function InvoicesPage() {
   const deleteInvoice = useDeleteInvoice();
   const restoreInvoice = useRestoreInvoice();
   const sendNotification = useSendStatusNotification();
+  const queryClient = useQueryClient();
   
   const [activeTab, setActiveTab] = useState("active");
+
+  // Notes editing state
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [noteText, setNoteText] = useState("");
+  const [isSavingNote, setIsSavingNote] = useState(false);
   
   // Fetch deleted invoices for admin
   const { data: deletedInvoices, isLoading: isLoadingDeleted } = useQuery({
@@ -131,6 +140,36 @@ export default function InvoicesPage() {
       currency: "INR",
       minimumFractionDigits: 2,
     }).format(amount);
+  };
+
+  const startEditingNote = (invoiceId: string, currentNote: string | null) => {
+    setEditingNoteId(invoiceId);
+    setNoteText(currentNote || "");
+  };
+
+  const cancelEditingNote = () => {
+    setEditingNoteId(null);
+    setNoteText("");
+  };
+
+  const saveNote = async (invoiceId: string) => {
+    setIsSavingNote(true);
+    try {
+      const { error } = await supabase
+        .from("invoices")
+        .update({ notes: noteText.trim() || null })
+        .eq("id", invoiceId);
+      if (error) throw error;
+      toast.success("Note saved");
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["deleted-invoices"] });
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save note");
+    } finally {
+      setIsSavingNote(false);
+      setEditingNoteId(null);
+      setNoteText("");
+    }
   };
 
   const initiateStatusChange = async (invoiceId: string, status: Invoice["status"]) => {
@@ -330,6 +369,45 @@ export default function InvoicesPage() {
             </DropdownMenu>
           )}
         </div>
+
+        {/* Notes section - visible to admin and invoice creator */}
+        {(isAdmin || invoice.user_id === user?.id) && (
+          <div className="mt-3 pt-3 border-t border-border">
+            {editingNoteId === invoice.id ? (
+              <div className="space-y-2">
+                <Textarea
+                  placeholder="Add a note..."
+                  value={noteText}
+                  onChange={(e) => setNoteText(e.target.value)}
+                  className="min-h-[60px] text-sm resize-none"
+                  autoFocus
+                />
+                <div className="flex gap-2 justify-end">
+                  <Button size="sm" variant="ghost" onClick={cancelEditingNote} disabled={isSavingNote}>
+                    <X className="h-3 w-3 mr-1" />
+                    Cancel
+                  </Button>
+                  <Button size="sm" onClick={() => saveNote(invoice.id)} disabled={isSavingNote}>
+                    {isSavingNote ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Save className="h-3 w-3 mr-1" />}
+                    Save
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => startEditingNote(invoice.id, invoice.notes)}
+                className="w-full text-left flex items-start gap-2 group cursor-pointer hover:bg-muted/50 rounded p-1 -m-1 transition-colors"
+              >
+                <StickyNote className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
+                {invoice.notes ? (
+                  <span className="text-sm text-muted-foreground whitespace-pre-wrap">{invoice.notes}</span>
+                ) : (
+                  <span className="text-sm text-muted-foreground/50 italic group-hover:text-muted-foreground transition-colors">Add a note...</span>
+                )}
+              </button>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
