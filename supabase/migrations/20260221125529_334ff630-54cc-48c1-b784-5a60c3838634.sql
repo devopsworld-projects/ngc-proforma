@@ -1,0 +1,1 @@
+ALTER TABLE public.invoice_items ADD COLUMN product_url text NULL;

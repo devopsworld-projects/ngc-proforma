@@ -51,6 +51,7 @@ export interface InvoiceItem {
   gst_amount: number | null;
   amount: number;
   product_image: string | null;
+  product_url: string | null;
   created_at: string;
 }
 
