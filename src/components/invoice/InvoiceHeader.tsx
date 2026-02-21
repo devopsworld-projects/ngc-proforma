@@ -330,12 +330,9 @@ export function InvoiceHeader({
 
         {/* Invoice Details - Right */}
         <div className="space-y-0.5 text-right">
-          <h3 className="text-xs font-semibold uppercase tracking-wider opacity-60">
-            {invoiceDetailsLabel}
-          </h3>
           <div className="space-y-0.5 text-xs">
             <div className="flex justify-end gap-2">
-              <span className="opacity-60">Proforma No:</span>
+              <span className="opacity-60">Number:</span>
               <span className={`font-semibold ${compactHeader ? 'text-xs' : 'text-sm'}`}>{invoiceNo}</span>
             </div>
             <div className="flex justify-end gap-2">
