@@ -2,6 +2,46 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
 /**
+ * Find all <a> tags with href in the element and add invisible clickable
+ * link annotations to the PDF at matching positions.
+ */
+function addLinkAnnotations(
+  element: HTMLElement,
+  pdf: jsPDF,
+  canvasWidth: number,
+  pdfWidthMm: number,
+  pageHeightMm: number,
+  totalHeightMm: number
+) {
+  const links = element.querySelectorAll("a[href]");
+  if (!links.length) return;
+
+  const elementRect = element.getBoundingClientRect();
+  const scaleMm = pdfWidthMm / elementRect.width;
+
+  links.forEach((link) => {
+    const anchor = link as HTMLAnchorElement;
+    const href = anchor.href;
+    if (!href || href.startsWith("javascript:")) return;
+
+    const rect = anchor.getBoundingClientRect();
+    const x = (rect.left - elementRect.left) * scaleMm;
+    const yAbsolute = (rect.top - elementRect.top) * scaleMm;
+    const w = rect.width * scaleMm;
+    const h = rect.height * scaleMm;
+
+    const pageIndex = Math.floor(yAbsolute / pageHeightMm);
+    const yOnPage = yAbsolute - pageIndex * pageHeightMm;
+
+    if (pageIndex >= 0 && pageIndex < pdf.getNumberOfPages()) {
+      pdf.setPage(pageIndex + 1);
+      pdf.link(x, yOnPage, w, h, { url: href });
+    }
+  });
+
+  pdf.setPage(1);
+}
+/**
  * Preload an image with proper CORS handling
  */
 async function preloadImage(src: string): Promise<void> {
@@ -108,6 +148,9 @@ export async function downloadInvoiceAsPdf(
       pdf.addImage(imgData, "JPEG", 0, position, finalWidth, proportionalHeight);
       heightLeft -= A4_H_MM;
     }
+
+    // Overlay clickable link annotations on top of the rendered image
+    addLinkAnnotations(element, pdf, canvas.width, A4_W_MM, A4_H_MM, proportionalHeight);
 
     pdf.save(`${filename}.pdf`);
   } finally {
