@@ -138,8 +138,8 @@ export function Invoice({ data, containerId = "invoice-container" }: InvoiceProp
         <div className="border-t border-dashed border-gray-300" />
       </div>
 
-      {/* ===== PRICE BODY: Totals + Amount in words ===== */}
-      <div data-pdf-section>
+      {/* ===== PRICE BODY + FOOTER: Pushed to bottom together ===== */}
+      <div data-pdf-section style={{ marginTop: "auto" }}>
         <InvoiceTotals
           totals={data.totals}
           totalQuantity={data.totalQuantity}
@@ -148,10 +148,6 @@ export function Invoice({ data, containerId = "invoice-container" }: InvoiceProp
           taxType={data.taxType}
           settings={settings}
         />
-      </div>
-
-      {/* ===== FOOTER: Terms + Bank + Signature (pushed to bottom) ===== */}
-      <div data-pdf-section style={{ marginTop: "auto" }}>
         {renderFooter()}
         {/* Bottom Gold Accent */}
         <div className="invoice-accent-bar" style={{ backgroundColor: settings.accent_color }} />
