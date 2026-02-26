@@ -139,11 +139,23 @@ export function useAuthProvider(): AuthContextType {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { error: error as Error | null };
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      return { error: error as Error | null };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Sign in failed";
+      const isNetworkError = /failed to fetch|networkerror|load failed/i.test(message);
+      return {
+        error: new Error(
+          isNetworkError
+            ? "Unable to reach the server. Please check internet/VPN or try another network."
+            : message
+        ),
+      };
+    }
   };
 
   const signOut = async () => {
