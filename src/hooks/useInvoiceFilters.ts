@@ -9,6 +9,7 @@ const initialFilters: InvoiceFiltersState = {
   dateTo: undefined,
   amountMin: "",
   amountMax: "",
+  userId: "all",
 };
 
 export type InvoiceSortKey = "date" | "invoice_no" | "grand_total" | "status";
@@ -19,6 +20,7 @@ interface InvoiceWithCustomer {
   date: string;
   grand_total: number;
   status: string;
+  user_id?: string | null;
   customers?: { name: string } | null;
 }
 
@@ -59,6 +61,11 @@ export function useInvoiceFilters<T extends InvoiceWithCustomer>(invoices: T[] |
 
       // Status filter
       if (filters.status !== "all" && invoice.status !== filters.status) {
+        return false;
+      }
+
+      // User filter
+      if (filters.userId !== "all" && invoice.user_id !== filters.userId) {
         return false;
       }
 
@@ -128,7 +135,8 @@ export function useInvoiceFilters<T extends InvoiceWithCustomer>(invoices: T[] |
       filters.dateFrom !== undefined || 
       filters.dateTo !== undefined ||
       filters.amountMin !== "" ||
-      filters.amountMax !== "",
+      filters.amountMax !== "" ||
+      filters.userId !== "all",
     sortConfig,
     handleSort,
   };

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { format } from "date-fns";
-import { CalendarIcon, Search, X, Filter, ArrowUpDown } from "lucide-react";
+import { CalendarIcon, Search, X, Filter, ArrowUpDown, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +28,12 @@ export interface InvoiceFiltersState {
   dateTo: Date | undefined;
   amountMin: string;
   amountMax: string;
+  userId: string;
+}
+
+export interface UserOption {
+  id: string;
+  name: string;
 }
 
 interface InvoiceFiltersProps {
@@ -36,6 +42,7 @@ interface InvoiceFiltersProps {
   onClearFilters: () => void;
   sortConfig?: SortConfig<InvoiceSortKey>;
   onSort?: (key: InvoiceSortKey) => void;
+  userOptions?: UserOption[];
 }
 
 const statusOptions = [
@@ -59,6 +66,7 @@ export function InvoiceFilters({
   onClearFilters,
   sortConfig,
   onSort,
+  userOptions,
 }: InvoiceFiltersProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
@@ -68,6 +76,7 @@ export function InvoiceFilters({
     filters.dateTo,
     filters.amountMin,
     filters.amountMax,
+    filters.userId !== "all",
   ].filter(Boolean).length;
 
   const updateFilter = <K extends keyof InvoiceFiltersState>(
@@ -108,6 +117,27 @@ export function InvoiceFilters({
             ))}
           </SelectContent>
         </Select>
+
+        {/* User Filter (admin only) */}
+        {userOptions && userOptions.length > 0 && (
+          <Select
+            value={filters.userId}
+            onValueChange={(value) => updateFilter("userId", value)}
+          >
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <User className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="All Users" />
+            </SelectTrigger>
+            <SelectContent className="bg-popover">
+              <SelectItem value="all">All Users</SelectItem>
+              {userOptions.map((user) => (
+                <SelectItem key={user.id} value={user.id}>
+                  {user.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
 
         {/* Sort By */}
         {sortConfig && onSort && (
