@@ -44,6 +44,8 @@ export default function LoginPage() {
       } else {
         navigate(from, { replace: true });
       }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Unable to sign in. Please try again.");
     } finally {
       setIsLoading(false);
     }
