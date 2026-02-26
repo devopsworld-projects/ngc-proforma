@@ -19,8 +19,8 @@ interface QuickAction {
 
 const quickActions: QuickAction[] = [
   {
-    title: "Create Invoice",
-    description: "Generate a new proforma invoice",
+    title: "New Quotation",
+    description: "Generate a new proforma quotation",
     icon: PlusCircle,
     href: "/invoices/new",
     gradient: "from-emerald-500 to-teal-600",
