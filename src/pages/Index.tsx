@@ -18,7 +18,7 @@ const Index = () => {
               <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-4">
                 <Plus className="w-8 h-8 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Create Invoice</h3>
+              <h3 className="text-lg font-semibold mb-2">Create Quotation</h3>
               <p className="text-muted-foreground text-sm mb-4">
                 Generate a new invoice with customer details, line items, and automatic tax calculations
               </p>
