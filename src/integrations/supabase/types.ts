@@ -805,14 +805,6 @@ export type Database = {
     }
     Functions: {
       admin_archive_all_invoices: { Args: never; Returns: Json }
-      admin_create_user: {
-        Args: {
-          user_email: string
-          user_full_name?: string
-          user_password: string
-        }
-        Returns: Json
-      }
       admin_delete_all_invoices: { Args: never; Returns: Json }
       admin_set_revenue_baseline: { Args: { baseline: string }; Returns: Json }
       approve_user: {
