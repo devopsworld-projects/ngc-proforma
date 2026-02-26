@@ -45,6 +45,8 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
+import type { UserOption } from "@/components/invoices/InvoiceFilters";
 
 const statusColors: Record<string, string> = {
   draft: "bg-muted text-muted-foreground",
@@ -119,6 +121,20 @@ export default function InvoicesPage() {
   });
   
   const { filters, setFilters, filteredInvoices, clearFilters, hasActiveFilters, sortConfig, handleSort } = useInvoiceFilters(invoices);
+
+  // Derive unique user options from invoices for admin filter
+  const userOptions: UserOption[] = useMemo(() => {
+    if (!isAdmin || !invoices) return [];
+    const userMap = new Map<string, string>();
+    invoices.forEach((inv: any) => {
+      if (inv.user_id && inv.owner_name) {
+        userMap.set(inv.user_id, inv.owner_name);
+      }
+    });
+    return Array.from(userMap.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [isAdmin, invoices]);
 
   
   // Status change with notification
@@ -448,6 +464,7 @@ export default function InvoicesPage() {
                 onClearFilters={clearFilters}
                 sortConfig={sortConfig}
                 onSort={handleSort}
+                userOptions={isAdmin ? userOptions : undefined}
               />
 
               {/* Results Summary */}
