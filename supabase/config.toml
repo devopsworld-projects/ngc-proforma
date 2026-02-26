@@ -8,3 +8,9 @@ verify_jwt = false
 
 [functions.external-api]
 verify_jwt = false
+
+[functions.track-session]
+verify_jwt = false
+
+[functions.invoice-status-notification]
+verify_jwt = false
