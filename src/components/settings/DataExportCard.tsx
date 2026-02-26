@@ -38,7 +38,7 @@ export function DataExportCard() {
       switch (type) {
         case "invoices":
           if (!invoices || invoices.length === 0) {
-            toast.error("No invoices to export");
+            toast.error("No quotations to export");
             return;
           }
           const invoiceData = invoices.map((inv: any) => ({
@@ -56,7 +56,7 @@ export function DataExportCard() {
           } else {
             exportInvoicesToCSV(invoiceData);
           }
-          toast.success(`Exported ${invoices.length} invoices to ${format.toUpperCase()}`);
+          toast.success(`Exported ${invoices.length} quotations to ${format.toUpperCase()}`);
           break;
 
         case "customers":
@@ -146,7 +146,7 @@ export function DataExportCard() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
-        <ExportButton type="invoices" label="Invoices" count={invoices?.length || 0} />
+        <ExportButton type="invoices" label="Quotations" count={invoices?.length || 0} />
         <ExportButton type="customers" label="Customers" count={customers?.length || 0} />
         <ExportButton type="products" label="Products" count={products?.length || 0} />
       </CardContent>

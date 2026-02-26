@@ -59,7 +59,7 @@ export default function LoginPage() {
             <FileText className="h-6 w-6" />
           </div>
           <CardTitle className="text-2xl">Welcome back</CardTitle>
-          <CardDescription>Sign in to your invoice management account</CardDescription>
+          <CardDescription>Sign in to your quotation management account</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">

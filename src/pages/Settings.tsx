@@ -175,7 +175,7 @@ export default function SettingsPage() {
             <div>
               <h2 className="text-2xl font-serif font-bold">Company Settings</h2>
               <p className="text-muted-foreground">
-                Manage your business details that appear on proforma invoices
+                Manage your business details that appear on quotations
               </p>
             </div>
             <Button type="submit" disabled={updateSettings.isPending} className="gap-2">
@@ -249,7 +249,7 @@ export default function SettingsPage() {
               <CardHeader>
                 <CardTitle className="text-base">Business Information</CardTitle>
                 <CardDescription>
-                  Your company details for invoices and documents
+                  Your company details for quotations and documents
                 </CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4 md:grid-cols-2">

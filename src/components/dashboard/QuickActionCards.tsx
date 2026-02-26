@@ -43,8 +43,8 @@ const quickActions: QuickAction[] = [
     iconColor: "text-purple-600 dark:text-purple-400",
   },
   {
-    title: "View Invoices",
-    description: "Browse and manage invoices",
+    title: "View Quotations",
+    description: "Browse and manage quotations",
     icon: FileText,
     href: "/invoices",
     gradient: "from-orange-500 to-red-600",
