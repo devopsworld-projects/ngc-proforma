@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useCustomers, useCustomer, Address, useDeleteAddress, useDeleteCustomer } from "@/hooks/useCustomers";
+import { useIsAdmin } from "@/hooks/useAdmin";
 import { CustomerFormDialog } from "./CustomerFormDialog";
 import { AddressFormDialog } from "./AddressFormDialog";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Search, Users, ArrowLeft, MapPin, Pencil, Trash2, Star, MoreHorizontal, Filter, Eye } from "lucide-react";
+import { Search, Users, ArrowLeft, MapPin, Pencil, Trash2, Star, MoreHorizontal, Filter, Eye, User } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {
@@ -42,6 +43,7 @@ export function CustomerList() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [taxTypeFilter, setTaxTypeFilter] = useState<string>("all");
+  const [userFilter, setUserFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [sortConfig, setSortConfig] = useState<SortConfig<CustomerSortKey>>({
@@ -52,7 +54,7 @@ export function CustomerList() {
   const { data: selectedCustomer } = useCustomer(selectedCustomerId || undefined);
   const deleteAddress = useDeleteAddress();
   const deleteCustomer = useDeleteCustomer();
-
+  const { data: isAdmin } = useIsAdmin();
   const handleSort = (key: CustomerSortKey) => {
     setSortConfig((prev) => {
       if (prev.key !== key) {
@@ -77,6 +79,20 @@ export function CustomerList() {
     }
   };
 
+  // Derive unique user options for admin filter
+  const userOptions = useMemo(() => {
+    if (!isAdmin || !customers) return [];
+    const userMap = new Map<string, string>();
+    customers.forEach((c: any) => {
+      if (c.user_id && c.creator_name) {
+        userMap.set(c.user_id, c.creator_name);
+      }
+    });
+    return Array.from(userMap.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [isAdmin, customers]);
+
   const filteredAndSortedCustomers = useMemo(() => {
     let result = customers?.filter((c) => {
       const matchesSearch =
@@ -92,7 +108,11 @@ export function CustomerList() {
         taxTypeFilter === "all" ||
         c.tax_type === taxTypeFilter;
 
-      return matchesSearch && matchesType && matchesTaxType;
+      const matchesUser =
+        userFilter === "all" ||
+        c.user_id === userFilter;
+
+      return matchesSearch && matchesType && matchesTaxType && matchesUser;
     }) || [];
 
     // Apply sorting
@@ -120,12 +140,12 @@ export function CustomerList() {
     }
 
     return result;
-  }, [customers, search, typeFilter, taxTypeFilter, sortConfig]);
+  }, [customers, search, typeFilter, taxTypeFilter, userFilter, sortConfig]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, typeFilter, taxTypeFilter, sortConfig]);
+  }, [search, typeFilter, taxTypeFilter, userFilter, sortConfig]);
 
   const totalPages = Math.ceil(filteredAndSortedCustomers.length / ITEMS_PER_PAGE);
   const paginatedCustomers = filteredAndSortedCustomers.slice(
@@ -321,6 +341,22 @@ export function CustomerList() {
                   <SelectItem value="igst">IGST</SelectItem>
                 </SelectContent>
               </Select>
+              {isAdmin && userOptions.length > 0 && (
+                <Select value={userFilter} onValueChange={setUserFilter}>
+                  <SelectTrigger className="w-full sm:w-[180px]">
+                    <User className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="All Users" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover z-50">
+                    <SelectItem value="all">All Users</SelectItem>
+                    {userOptions.map((u) => (
+                      <SelectItem key={u.id} value={u.id}>
+                        {u.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <CustomerFormDialog />
           </div>
