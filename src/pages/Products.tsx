@@ -7,8 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Package, Search, MoreHorizontal, Trash2, Filter, Pencil, Eye } from "lucide-react";
+import { Package, Search, MoreHorizontal, Trash2, Filter, Pencil, Eye, User } from "lucide-react";
 import { useProducts, useDeleteProduct } from "@/hooks/useProducts";
+import { useIsAdmin } from "@/hooks/useAdmin";
 import { ExcelUploadDialog } from "@/components/products/ExcelUploadDialog";
 import { ProductFormDialog } from "@/components/products/ProductFormDialog";
 import { ProductViewDialog } from "@/components/products/ProductViewDialog";
@@ -31,6 +32,7 @@ type ProductSortKey = "name" | "model_spec" | "sku" | "stock_quantity" | "rate" 
 export default function ProductsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [userFilter, setUserFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [sortConfig, setSortConfig] = useState<SortConfig<ProductSortKey>>({
     key: null,
@@ -38,7 +40,7 @@ export default function ProductsPage() {
   });
   const { data: products = [], isLoading } = useProducts();
   const deleteProduct = useDeleteProduct();
-
+  const { data: isAdmin } = useIsAdmin();
   const handleSort = (key: ProductSortKey) => {
     setSortConfig((prev) => {
       if (prev.key !== key) {
@@ -64,6 +66,20 @@ export default function ProductsPage() {
     return Array.from(uniqueCategories).sort();
   }, [products]);
 
+  // Derive unique user options for admin filter
+  const userOptions = useMemo(() => {
+    if (!isAdmin || !products) return [];
+    const userMap = new Map<string, string>();
+    products.forEach((p) => {
+      if (p.user_id && p.profiles?.full_name) {
+        userMap.set(p.user_id, p.profiles.full_name);
+      }
+    });
+    return Array.from(userMap.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [isAdmin, products]);
+
   const filteredAndSortedProducts = useMemo(() => {
     let result = products.filter((product) => {
       const term = searchTerm.toLowerCase();
@@ -77,7 +93,11 @@ export default function ProductsPage() {
         (categoryFilter === "uncategorized" && !product.category) ||
         product.category === categoryFilter;
 
-      return matchesSearch && matchesCategory;
+      const matchesUser =
+        userFilter === "all" ||
+        product.user_id === userFilter;
+
+      return matchesSearch && matchesCategory && matchesUser;
     });
 
     // Apply sorting
@@ -102,12 +122,12 @@ export default function ProductsPage() {
     }
 
     return result;
-  }, [products, searchTerm, categoryFilter, sortConfig]);
+  }, [products, searchTerm, categoryFilter, userFilter, sortConfig]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, categoryFilter, sortConfig]);
+  }, [searchTerm, categoryFilter, userFilter, sortConfig]);
 
   const totalPages = Math.ceil(filteredAndSortedProducts.length / ITEMS_PER_PAGE);
   const paginatedProducts = filteredAndSortedProducts.slice(
@@ -189,6 +209,22 @@ export default function ProductsPage() {
                   ))}
                 </SelectContent>
               </Select>
+              {isAdmin && userOptions.length > 0 && (
+                <Select value={userFilter} onValueChange={setUserFilter}>
+                  <SelectTrigger className="w-full sm:w-[180px]">
+                    <User className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="All Users" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover z-50">
+                    <SelectItem value="all">All Users</SelectItem>
+                    {userOptions.map((u) => (
+                      <SelectItem key={u.id} value={u.id}>
+                        {u.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             {isLoading ? (
