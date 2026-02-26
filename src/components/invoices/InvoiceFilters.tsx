@@ -55,7 +55,7 @@ const statusOptions = [
 
 const sortOptions: { value: InvoiceSortKey; label: string }[] = [
   { value: "date", label: "Date" },
-  { value: "invoice_no", label: "Invoice #" },
+  { value: "invoice_no", label: "Proforma #" },
   { value: "grand_total", label: "Amount" },
   { value: "status", label: "Status" },
 ];
@@ -94,7 +94,7 @@ export function InvoiceFilters({
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by invoice number or customer..."
+            placeholder="Search by proforma number or customer..."
             value={filters.search}
             onChange={(e) => updateFilter("search", e.target.value)}
             className="pl-9"

@@ -187,7 +187,7 @@ export function QuotationTrackingCard() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Invoice #</TableHead>
+                  <TableHead>Proforma #</TableHead>
                   <TableHead>Customer</TableHead>
                   <TableHead>Created By</TableHead>
                   <TableHead>Date</TableHead>

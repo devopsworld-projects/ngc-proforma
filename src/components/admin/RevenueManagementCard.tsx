@@ -147,7 +147,7 @@ export function RevenueManagementCard() {
                 Revenue Baseline Active
               </p>
               <p className="text-xs text-blue-600 dark:text-blue-400">
-                Only counting invoices from {format(currentBaseline, "MMMM d, yyyy")} onwards
+                Only counting quotations from {format(currentBaseline, "MMMM d, yyyy")} onwards
               </p>
             </div>
             <Button 
@@ -216,28 +216,28 @@ export function RevenueManagementCard() {
         <div className="space-y-3 pt-3 border-t">
           <div>
             <h4 className="font-medium text-sm flex items-center gap-2">
-              Archive All Invoices
+              Archive All Quotations
               <Badge variant="secondary">Reversible</Badge>
             </h4>
             <p className="text-xs text-muted-foreground">
-              Mark all invoices as cancelled - they won't count toward revenue
+              Mark all quotations as cancelled - they won't count toward revenue
             </p>
           </div>
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="outline" className="text-amber-600 border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/20">
                 <Archive className="h-4 w-4 mr-2" />
-                Archive All Invoices
+                Archive All Quotations
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Archive All Invoices?</AlertDialogTitle>
+                <AlertDialogTitle>Archive All Quotations?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This will mark all invoices across all users as "cancelled". 
+                  This will mark all quotations across all users as "cancelled". 
                   They will no longer count toward revenue statistics.
                   <br /><br />
-                  This action can be manually reversed by changing invoice statuses individually.
+                  This action can be manually reversed by changing quotation statuses individually.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -261,27 +261,27 @@ export function RevenueManagementCard() {
         <div className="space-y-3 pt-3 border-t">
           <div>
             <h4 className="font-medium text-sm flex items-center gap-2 text-destructive">
-              Delete All Invoices
+              Delete All Quotations
               <Badge variant="destructive">Permanent</Badge>
             </h4>
             <p className="text-xs text-muted-foreground">
-              Permanently delete all invoices and their line items - this cannot be undone
+              Permanently delete all quotations and their line items - this cannot be undone
             </p>
           </div>
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="destructive">
                 <Trash2 className="h-4 w-4 mr-2" />
-                Delete All Invoices
+                Delete All Quotations
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle className="text-destructive">
-                  ⚠️ Delete All Invoices Permanently?
+                  ⚠️ Delete All Quotations Permanently?
                 </AlertDialogTitle>
                 <AlertDialogDescription className="space-y-2">
-                  <p>This will <strong>permanently delete</strong> all invoices and invoice items across ALL users.</p>
+                  <p>This will <strong>permanently delete</strong> all quotations and their line items across ALL users.</p>
                   <p className="font-semibold text-destructive">This action CANNOT be undone.</p>
                   <p>Consider using "Archive" or "Set Baseline" options instead if you want to preserve the data.</p>
                 </AlertDialogDescription>

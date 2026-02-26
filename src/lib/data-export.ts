@@ -36,7 +36,7 @@ export interface ExportableProduct {
 
 export async function exportInvoicesToExcel(invoices: ExportableInvoice[]): Promise<void> {
   const data = invoices.map(inv => ({
-    "Invoice No": inv.invoice_no,
+    "Proforma No": inv.invoice_no,
     "Date": inv.date,
     "Customer": inv.customer_name,
     "Subtotal": inv.subtotal,
@@ -46,7 +46,7 @@ export async function exportInvoicesToExcel(invoices: ExportableInvoice[]): Prom
     "Created At": new Date(inv.created_at).toLocaleString(),
   }));
   
-  await downloadExcelTemplate(data, "invoices-export.xlsx", "Invoices", [15, 12, 30, 15, 15, 15, 12, 20]);
+  await downloadExcelTemplate(data, "quotations-export.xlsx", "Quotations", [15, 12, 30, 15, 15, 15, 12, 20]);
 }
 
 export async function exportCustomersToExcel(customers: ExportableCustomer[]): Promise<void> {
@@ -116,7 +116,7 @@ function downloadCSV(csv: string, filename: string): void {
 
 export function exportInvoicesToCSV(invoices: ExportableInvoice[]): void {
   const data = invoices.map(inv => ({
-    "Invoice No": inv.invoice_no,
+    "Proforma No": inv.invoice_no,
     "Date": inv.date,
     "Customer": inv.customer_name,
     "Subtotal": inv.subtotal,
@@ -126,7 +126,7 @@ export function exportInvoicesToCSV(invoices: ExportableInvoice[]): void {
     "Created At": new Date(inv.created_at).toLocaleString(),
   }));
   
-  downloadCSV(convertToCSV(data), "invoices-export.csv");
+  downloadCSV(convertToCSV(data), "quotations-export.csv");
 }
 
 export function exportCustomersToCSV(customers: ExportableCustomer[]): void {

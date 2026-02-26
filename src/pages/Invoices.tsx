@@ -544,8 +544,8 @@ export default function InvoicesPage() {
                 <Card className="border-dashed">
                   <CardContent className="py-12 text-center">
                     <Trash2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-medium mb-2">No deleted invoices</h3>
-                    <p className="text-muted-foreground">Deleted invoices will appear here</p>
+                    <h3 className="text-lg font-medium mb-2">No deleted quotations</h3>
+                    <p className="text-muted-foreground">Deleted quotations will appear here</p>
                   </CardContent>
                 </Card>
               ) : (
@@ -711,7 +711,7 @@ export default function InvoicesPage() {
             <AlertDialogDescription>
               Are you sure you want to restore Proforma #{restoreConfirmation?.invoiceNo}? 
               <br /><br />
-              This will move the invoice back to the active list with its original status.
+              This will move the quotation back to the active list with its original status.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
