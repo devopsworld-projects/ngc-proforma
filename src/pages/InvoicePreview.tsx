@@ -7,7 +7,7 @@ import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { usePdfTemplateSettings } from "@/hooks/usePdfTemplateSettings";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Edit, Download, Loader2 } from "lucide-react";
+import { ArrowLeft, Edit, Download, Loader2, Share2 } from "lucide-react";
 import { InvoiceData, CompanyInfo, SupplierInfo, InvoiceItem, InvoiceTotals } from "@/types/invoice";
 import { formatDate, numberToWords } from "@/lib/invoice-utils";
 import { downloadInvoiceAsPdf } from "@/lib/html-to-pdf";
@@ -34,6 +34,19 @@ export default function InvoicePreview() {
       container.style.boxShadow = SCREEN_SHADOW;
     }
   }, [invoice]);
+
+  const handleShareWhatsApp = () => {
+    if (!invoice) return;
+    const customer = invoice.customers;
+    const message = encodeURIComponent(
+      `Hi${customer?.name ? ` ${customer.name}` : ''},\n\nPlease find Proforma Invoice #${invoice.invoice_no} for ₹${Number(invoice.grand_total).toLocaleString('en-IN', { minimumFractionDigits: 2 })}.\n\nYou can view it here: ${window.location.href}\n\nThank you!`
+    );
+    const phone = customer?.phone?.replace(/[^0-9]/g, '') || '';
+    const url = phone
+      ? `https://wa.me/${phone.startsWith('91') ? phone : '91' + phone}?text=${message}`
+      : `https://wa.me/?text=${message}`;
+    window.open(url, '_blank');
+  };
 
   const handleDownloadPdf = async () => {
     if (!invoice) return;
@@ -228,6 +241,14 @@ export default function InvoicePreview() {
                 <Download className="h-4 w-4 mr-2" />
               )}
               {isDownloading ? "Downloading..." : "Download PDF"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleShareWhatsApp}
+              className="gap-2"
+            >
+              <Share2 className="h-4 w-4" />
+              WhatsApp
             </Button>
             <Button onClick={() => navigate(`/invoices/${id}/edit`)}>
               <Edit className="h-4 w-4 mr-2" />
