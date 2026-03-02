@@ -1,10 +1,13 @@
 import { AppNavigation } from "@/components/layout/AppNavigation";
+import { useAdminInvoiceNotification } from "@/hooks/useAdminInvoiceNotification";
+
 interface AppLayoutProps {
   children: React.ReactNode;
 }
 export function AppLayout({
   children
 }: AppLayoutProps) {
+  useAdminInvoiceNotification();
   return <div className="min-h-screen flex flex-col bg-background">
       {/* Horizontal Navigation */}
       <AppNavigation />
