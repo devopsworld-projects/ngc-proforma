@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Package, Search, MoreHorizontal, Trash2, Filter, Pencil, Eye, User } from "lucide-react";
+import { Package, Search, MoreHorizontal, Trash2, Filter, Pencil, Eye, User, Plus } from "lucide-react";
 import { useProducts, useDeleteProduct } from "@/hooks/useProducts";
 import { useIsAdmin } from "@/hooks/useAdmin";
 import { ExcelUploadDialog } from "@/components/products/ExcelUploadDialog";
@@ -38,6 +39,7 @@ export default function ProductsPage() {
     key: null,
     direction: null,
   });
+  const navigate = useNavigate();
   const { data: products = [], isLoading } = useProducts();
   const deleteProduct = useDeleteProduct();
   const { data: isAdmin } = useIsAdmin();
@@ -171,7 +173,10 @@ export default function ProductsPage() {
             <p className="text-muted-foreground">Manage your product inventory</p>
           </div>
           <div className="flex items-center gap-2">
-            <ProductFormDialog />
+            <Button onClick={() => navigate("/products/new")}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Product
+            </Button>
             <ExcelUploadDialog />
           </div>
         </div>
