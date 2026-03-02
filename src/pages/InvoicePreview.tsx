@@ -42,7 +42,6 @@ export default function InvoicePreview() {
     const message = `Hi${customer?.name ? ` ${customer.name}` : ''},\n\nPlease find Proforma Invoice #${invoice.invoice_no} for ₹${Number(invoice.grand_total).toLocaleString('en-IN', { minimumFractionDigits: 2 })}.\n\nThank you!`;
     const phone = customer?.phone?.replace(/[^0-9]/g, '') || '';
 
-    // Try Web Share API with PDF attachment (works on mobile)
     setIsSharing(true);
     try {
       const pdfFile = await generateInvoicePdfFile(
@@ -54,6 +53,7 @@ export default function InvoicePreview() {
       const container = document.getElementById("invoice-container");
       if (container) container.style.boxShadow = SCREEN_SHADOW;
 
+      // Try Web Share API with PDF attachment (works on mobile)
       if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
         await navigator.share({
           title: `Proforma Invoice #${invoice.invoice_no}`,
@@ -64,24 +64,33 @@ export default function InvoicePreview() {
         setIsSharing(false);
         return;
       }
+
+      // Fallback (desktop): download PDF, then open WhatsApp with text only
+      const blobUrl = URL.createObjectURL(pdfFile);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = pdfFile.name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+
+      const encoded = encodeURIComponent(message);
+      const waUrl = phone
+        ? `https://wa.me/${phone.startsWith('91') ? phone : '91' + phone}?text=${encoded}`
+        : `https://wa.me/?text=${encoded}`;
+      window.open(waUrl, '_blank');
+      toast.info("PDF downloaded — attach it manually in WhatsApp");
     } catch (error: any) {
-      // User cancelled or share failed — fall back to WhatsApp link
       if (error?.name === 'AbortError') {
         setIsSharing(false);
         return;
       }
-      console.warn("Web Share API unavailable, falling back to WhatsApp link", error);
+      console.error("Share failed:", error);
+      toast.error("Failed to share. Please try again.");
+    } finally {
+      setIsSharing(false);
     }
-
-    // Fallback: open WhatsApp with text link
-    const encoded = encodeURIComponent(
-      `${message}\n\nYou can view it here: ${window.location.href}`
-    );
-    const url = phone
-      ? `https://wa.me/${phone.startsWith('91') ? phone : '91' + phone}?text=${encoded}`
-      : `https://wa.me/?text=${encoded}`;
-    window.open(url, '_blank');
-    setIsSharing(false);
   };
 
   const handleDownloadPdf = async () => {
