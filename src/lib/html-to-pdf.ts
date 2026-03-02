@@ -62,10 +62,10 @@ async function preloadImage(src: string): Promise<void> {
  * Captures each [data-pdf-section] element individually and places them
  * on A4 pages without splitting any section across pages.
  */
-export async function downloadInvoiceAsPdf(
+async function generateInvoicePdf(
   elementId: string,
   filename: string
-): Promise<void> {
+): Promise<{ pdf: jsPDF; filename: string }> {
   const element = document.getElementById(elementId);
   if (!element) {
     throw new Error(`Element with id "${elementId}" not found`);
@@ -152,7 +152,7 @@ export async function downloadInvoiceAsPdf(
     // Overlay clickable link annotations on top of the rendered image
     addLinkAnnotations(element, pdf, canvas.width, A4_W_MM, A4_H_MM, proportionalHeight);
 
-    pdf.save(`${filename}.pdf`);
+    return { pdf, filename };
   } finally {
     element.style.boxShadow = originalBoxShadow;
     element.style.animation = originalAnimation;
@@ -163,6 +163,29 @@ export async function downloadInvoiceAsPdf(
       (el as HTMLElement).style.display = "";
     });
   }
+}
+
+/**
+ * Download the invoice as a PDF file.
+ */
+export async function downloadInvoiceAsPdf(
+  elementId: string,
+  filename: string
+): Promise<void> {
+  const { pdf, filename: fn } = await generateInvoicePdf(elementId, filename);
+  pdf.save(`${fn}.pdf`);
+}
+
+/**
+ * Generate the invoice PDF and return it as a File object (for Web Share API).
+ */
+export async function generateInvoicePdfFile(
+  elementId: string,
+  filename: string
+): Promise<File> {
+  const { pdf, filename: fn } = await generateInvoicePdf(elementId, filename);
+  const blob = pdf.output("blob");
+  return new File([blob], `${fn}.pdf`, { type: "application/pdf" });
 }
 
 /**
