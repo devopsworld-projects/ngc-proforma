@@ -70,6 +70,65 @@ export type Database = {
           },
         ]
       }
+      admin_notification_reads: {
+        Row: {
+          id: string
+          last_read_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          last_read_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          last_read_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      admin_notifications: {
+        Row: {
+          actor_user_id: string | null
+          created_at: string
+          customer_name: string | null
+          event_type: string
+          grand_total: number | null
+          id: string
+          invoice_id: string | null
+          invoice_no: string
+        }
+        Insert: {
+          actor_user_id?: string | null
+          created_at?: string
+          customer_name?: string | null
+          event_type: string
+          grand_total?: number | null
+          id?: string
+          invoice_id?: string | null
+          invoice_no: string
+        }
+        Update: {
+          actor_user_id?: string | null
+          created_at?: string
+          customer_name?: string | null
+          event_type?: string
+          grand_total?: number | null
+          id?: string
+          invoice_id?: string | null
+          invoice_no?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_notifications_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       api_keys: {
         Row: {
           created_at: string

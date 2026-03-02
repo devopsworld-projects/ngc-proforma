@@ -7,9 +7,9 @@ interface AppLayoutProps {
 export function AppLayout({
   children
 }: AppLayoutProps) {
-  const { unreadCount, resetUnreadCount } = useAdminInvoiceNotification();
+  const { unreadCount, notifications, markAsRead, lastReadAt } = useAdminInvoiceNotification();
   return <div className="min-h-screen flex flex-col bg-background">
-      <AppNavigation unreadInvoiceCount={unreadCount} onResetUnread={resetUnreadCount} />
+      <AppNavigation unreadInvoiceCount={unreadCount} notifications={notifications} onMarkAsRead={markAsRead} lastReadAt={lastReadAt} />
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto">

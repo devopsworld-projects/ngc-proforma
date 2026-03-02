@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { NotificationBell } from "@/components/layout/NotificationBell";
+import { AdminNotification } from "@/hooks/useAdminInvoiceNotification";
 import { toast } from "sonner";
 const mainNavItems = [{
   path: "/dashboard",
@@ -39,10 +41,12 @@ const managementItems = [{
 }];
 interface AppNavigationProps {
   unreadInvoiceCount?: number;
-  onResetUnread?: () => void;
+  notifications?: AdminNotification[];
+  onMarkAsRead?: () => void;
+  lastReadAt?: string | null;
 }
 
-export function AppNavigation({ unreadInvoiceCount = 0, onResetUnread }: AppNavigationProps) {
+export function AppNavigation({ unreadInvoiceCount = 0, notifications = [], onMarkAsRead, lastReadAt = null }: AppNavigationProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -113,14 +117,12 @@ export function AppNavigation({ unreadInvoiceCount = 0, onResetUnread }: AppNavi
             <DropdownNavGroup label="Management" icon={Package} items={managementItems} />
             {isAdmin && <NavLink path="/settings" label="Settings" icon={Settings} />}
             {isAdmin && <>
-              <Link to="/invoices" onClick={() => onResetUnread?.()} className="relative flex items-center gap-1 px-2 py-2 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
-                <Bell className="h-4 w-4" />
-                {unreadInvoiceCount > 0 && (
-                  <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 text-[10px] flex items-center justify-center rounded-full">
-                    {unreadInvoiceCount > 99 ? "99+" : unreadInvoiceCount}
-                  </Badge>
-                )}
-              </Link>
+              <NotificationBell
+                unreadCount={unreadInvoiceCount}
+                notifications={notifications}
+                onMarkAsRead={() => onMarkAsRead?.()}
+                lastReadAt={lastReadAt}
+              />
               <Link to="/admin" className={cn("flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors", isActive("/admin") ? "bg-amber-500 text-white" : "text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/20")}>
                 <Shield className="h-4 w-4" />
                 Admin
@@ -197,15 +199,15 @@ export function AppNavigation({ unreadInvoiceCount = 0, onResetUnread }: AppNavi
             {/* System Section */}
             <div className="pt-2 border-t">
               {isAdmin && <NavLink path="/settings" label="Settings" icon={Settings} />}
-              {isAdmin && <Link to="/invoices" onClick={() => { setMobileMenuOpen(false); onResetUnread?.(); }} className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
-                  <Bell className="h-4 w-4" />
-                  Notifications
-                  {unreadInvoiceCount > 0 && (
-                    <Badge variant="destructive" className="h-5 min-w-[20px] px-1 text-[10px] rounded-full">
-                      {unreadInvoiceCount > 99 ? "99+" : unreadInvoiceCount}
-                    </Badge>
-                  )}
-                </Link>}
+              {isAdmin && <div className="flex items-center gap-2 px-3 py-2">
+                  <NotificationBell
+                    unreadCount={unreadInvoiceCount}
+                    notifications={notifications}
+                    onMarkAsRead={() => onMarkAsRead?.()}
+                    lastReadAt={lastReadAt}
+                  />
+                  <span className="text-sm text-muted-foreground">Notifications</span>
+                </div>}
               {isAdmin && <Link to="/admin" onClick={() => setMobileMenuOpen(false)} className={cn("flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors", isActive("/admin") ? "bg-amber-500 text-white" : "text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/20")}>
                   <Shield className="h-4 w-4" />
                   Admin
