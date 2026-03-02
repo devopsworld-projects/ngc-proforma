@@ -90,6 +90,7 @@ export type Database = {
       }
       admin_notifications: {
         Row: {
+          actor_name: string | null
           actor_user_id: string | null
           created_at: string
           customer_name: string | null
@@ -100,6 +101,7 @@ export type Database = {
           invoice_no: string
         }
         Insert: {
+          actor_name?: string | null
           actor_user_id?: string | null
           created_at?: string
           customer_name?: string | null
@@ -110,6 +112,7 @@ export type Database = {
           invoice_no: string
         }
         Update: {
+          actor_name?: string | null
           actor_user_id?: string | null
           created_at?: string
           customer_name?: string | null
