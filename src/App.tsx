@@ -17,6 +17,7 @@ import EditInvoice from "./pages/EditInvoice";
 import InvoicePreview from "./pages/InvoicePreview";
 import Settings from "./pages/Settings";
 import Products from "./pages/Products";
+import AddProduct from "./pages/AddProduct";
 import PdfTemplateEditor from "./pages/PdfTemplateEditor";
 
 
@@ -53,6 +54,7 @@ const App = () => (
                 <Route path="/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
                 <Route path="/recurring" element={<ProtectedRoute><Recurring /></ProtectedRoute>} />
                 <Route path="/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />
+                <Route path="/products/new" element={<ProtectedRoute><AddProduct /></ProtectedRoute>} />
                 
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                 
