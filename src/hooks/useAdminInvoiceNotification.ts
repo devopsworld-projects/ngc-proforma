@@ -13,6 +13,7 @@ export interface AdminNotification {
   customer_name: string | null;
   grand_total: number | null;
   actor_user_id: string | null;
+  actor_name: string | null;
   created_at: string;
 }
 
@@ -82,6 +83,21 @@ export function useAdminInvoiceNotification() {
     },
   });
 
+  // Clear all notifications mutation
+  const clearAll = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("admin_notifications")
+        .delete()
+        .neq("id", "00000000-0000-0000-0000-000000000000"); // delete all
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-notification-read"] });
+    },
+  });
+
   // Realtime subscription for new notifications + sound
   useEffect(() => {
     if (!user || !isAdmin) return;
@@ -124,6 +140,7 @@ export function useAdminInvoiceNotification() {
     notifications,
     unreadCount,
     markAsRead: () => markAsRead.mutate(),
+    clearAll: () => clearAll.mutate(),
     lastReadAt,
   };
 }

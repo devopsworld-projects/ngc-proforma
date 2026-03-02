@@ -43,10 +43,11 @@ interface AppNavigationProps {
   unreadInvoiceCount?: number;
   notifications?: AdminNotification[];
   onMarkAsRead?: () => void;
+  onClearAll?: () => void;
   lastReadAt?: string | null;
 }
 
-export function AppNavigation({ unreadInvoiceCount = 0, notifications = [], onMarkAsRead, lastReadAt = null }: AppNavigationProps) {
+export function AppNavigation({ unreadInvoiceCount = 0, notifications = [], onMarkAsRead, onClearAll, lastReadAt = null }: AppNavigationProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -121,6 +122,7 @@ export function AppNavigation({ unreadInvoiceCount = 0, notifications = [], onMa
                 unreadCount={unreadInvoiceCount}
                 notifications={notifications}
                 onMarkAsRead={() => onMarkAsRead?.()}
+                onClearAll={() => onClearAll?.()}
                 lastReadAt={lastReadAt}
               />
               <Link to="/admin" className={cn("flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors", isActive("/admin") ? "bg-amber-500 text-white" : "text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/20")}>
@@ -204,6 +206,7 @@ export function AppNavigation({ unreadInvoiceCount = 0, notifications = [], onMa
                     unreadCount={unreadInvoiceCount}
                     notifications={notifications}
                     onMarkAsRead={() => onMarkAsRead?.()}
+                    onClearAll={() => onClearAll?.()}
                     lastReadAt={lastReadAt}
                   />
                   <span className="text-sm text-muted-foreground">Notifications</span>

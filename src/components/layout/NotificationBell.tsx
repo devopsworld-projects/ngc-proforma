@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Bell, FileText, Trash2, RotateCcw, CheckCircle, Send, XCircle, Edit } from "lucide-react";
+import { Bell, FileText, Trash2, RotateCcw, CheckCircle, Send, XCircle, Edit, UserCircle } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ interface NotificationBellProps {
   unreadCount: number;
   notifications: AdminNotification[];
   onMarkAsRead: () => void;
+  onClearAll: () => void;
   lastReadAt: string | null;
 }
 
@@ -26,7 +27,7 @@ function getEventIcon(eventType: string) {
   }
 }
 
-export function NotificationBell({ unreadCount, notifications, onMarkAsRead, lastReadAt }: NotificationBellProps) {
+export function NotificationBell({ unreadCount, notifications, onMarkAsRead, onClearAll, lastReadAt }: NotificationBellProps) {
   const isUnread = (n: AdminNotification) =>
     !lastReadAt || new Date(n.created_at) > new Date(lastReadAt);
 
@@ -45,9 +46,21 @@ export function NotificationBell({ unreadCount, notifications, onMarkAsRead, las
       <DropdownMenuContent align="end" className="w-80 p-0 bg-background border border-border shadow-xl z-[100]">
         <div className="flex items-center justify-between px-4 py-3 border-b">
           <h4 className="text-sm font-semibold">Notifications</h4>
-          {unreadCount > 0 && (
-            <span className="text-xs text-muted-foreground">{unreadCount} new</span>
-          )}
+          <div className="flex items-center gap-2">
+            {unreadCount > 0 && (
+              <span className="text-xs text-muted-foreground">{unreadCount} new</span>
+            )}
+            {notifications.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-xs text-muted-foreground hover:text-destructive"
+                onClick={(e) => { e.stopPropagation(); onClearAll(); }}
+              >
+                Clear all
+              </Button>
+            )}
+          </div>
         </div>
         <ScrollArea className="max-h-[400px]">
           {notifications.length === 0 ? (
@@ -79,7 +92,13 @@ export function NotificationBell({ unreadCount, notifications, onMarkAsRead, las
                           ₹{Number(n.grand_total).toLocaleString("en-IN")}
                         </span>
                       )}
-                      <span className="text-[10px] text-muted-foreground">
+                      {n.actor_name && (
+                        <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                          <UserCircle className="h-3 w-3" />
+                          {n.actor_name}
+                        </span>
+                      )}
+                      <span className="text-[10px] text-muted-foreground ml-auto">
                         {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
                       </span>
                     </div>
