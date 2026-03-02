@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, Edit, Download, Loader2, Share2 } from "lucide-react";
 import { InvoiceData, CompanyInfo, SupplierInfo, InvoiceItem, InvoiceTotals } from "@/types/invoice";
 import { formatDate, numberToWords } from "@/lib/invoice-utils";
-import { downloadInvoiceAsPdf } from "@/lib/html-to-pdf";
+import { downloadInvoiceAsPdf, generateInvoicePdfFile } from "@/lib/html-to-pdf";
 import { toast } from "sonner";
 
 // Shadow style for screen display only
@@ -20,6 +20,7 @@ export default function InvoicePreview() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
   const { data: invoice, isLoading: invoiceLoading } = useInvoice(id);
   const { data: companySettings, isLoading: settingsLoading } = useCompanySettings();
   const { data: templateSettings, isLoading: templateLoading } = usePdfTemplateSettings();
@@ -35,17 +36,52 @@ export default function InvoicePreview() {
     }
   }, [invoice]);
 
-  const handleShareWhatsApp = () => {
+  const handleShareWhatsApp = async () => {
     if (!invoice) return;
     const customer = invoice.customers;
-    const message = encodeURIComponent(
-      `Hi${customer?.name ? ` ${customer.name}` : ''},\n\nPlease find Proforma Invoice #${invoice.invoice_no} for ₹${Number(invoice.grand_total).toLocaleString('en-IN', { minimumFractionDigits: 2 })}.\n\nYou can view it here: ${window.location.href}\n\nThank you!`
-    );
+    const message = `Hi${customer?.name ? ` ${customer.name}` : ''},\n\nPlease find Proforma Invoice #${invoice.invoice_no} for ₹${Number(invoice.grand_total).toLocaleString('en-IN', { minimumFractionDigits: 2 })}.\n\nThank you!`;
     const phone = customer?.phone?.replace(/[^0-9]/g, '') || '';
+
+    // Try Web Share API with PDF attachment (works on mobile)
+    setIsSharing(true);
+    try {
+      const pdfFile = await generateInvoicePdfFile(
+        "invoice-container",
+        `Proforma-${invoice.invoice_no}`
+      );
+
+      // Restore shadow after capture
+      const container = document.getElementById("invoice-container");
+      if (container) container.style.boxShadow = SCREEN_SHADOW;
+
+      if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+        await navigator.share({
+          title: `Proforma Invoice #${invoice.invoice_no}`,
+          text: message,
+          files: [pdfFile],
+        });
+        toast.success("Shared successfully");
+        setIsSharing(false);
+        return;
+      }
+    } catch (error: any) {
+      // User cancelled or share failed — fall back to WhatsApp link
+      if (error?.name === 'AbortError') {
+        setIsSharing(false);
+        return;
+      }
+      console.warn("Web Share API unavailable, falling back to WhatsApp link", error);
+    }
+
+    // Fallback: open WhatsApp with text link
+    const encoded = encodeURIComponent(
+      `${message}\n\nYou can view it here: ${window.location.href}`
+    );
     const url = phone
-      ? `https://wa.me/${phone.startsWith('91') ? phone : '91' + phone}?text=${message}`
-      : `https://wa.me/?text=${message}`;
+      ? `https://wa.me/${phone.startsWith('91') ? phone : '91' + phone}?text=${encoded}`
+      : `https://wa.me/?text=${encoded}`;
     window.open(url, '_blank');
+    setIsSharing(false);
   };
 
   const handleDownloadPdf = async () => {
@@ -245,10 +281,15 @@ export default function InvoicePreview() {
             <Button
               variant="outline"
               onClick={handleShareWhatsApp}
+              disabled={isSharing}
               className="gap-2"
             >
-              <Share2 className="h-4 w-4" />
-              WhatsApp
+              {isSharing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Share2 className="h-4 w-4" />
+              )}
+              {isSharing ? "Sharing..." : "WhatsApp"}
             </Button>
             <Button onClick={() => navigate(`/invoices/${id}/edit`)}>
               <Edit className="h-4 w-4 mr-2" />
