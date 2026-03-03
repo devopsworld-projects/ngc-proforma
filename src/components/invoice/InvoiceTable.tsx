@@ -163,6 +163,10 @@ export function InvoiceTable({ items, settings }: InvoiceTableProps) {
                               src={item.productImage} 
                               alt={item.brand || item.description}
                               className="w-full h-full object-cover rounded-md border border-gray-200 shadow-sm"
+                              loading="lazy"
+                              decoding="async"
+                              width={48}
+                              height={48}
                             />
                           </div>
                         </HoverCardTrigger>
@@ -171,6 +175,10 @@ export function InvoiceTable({ items, settings }: InvoiceTableProps) {
                             src={item.productImage} 
                             alt={item.brand || item.description}
                             className="max-w-[200px] max-h-[200px] object-contain rounded-md"
+                            loading="lazy"
+                            decoding="async"
+                            width={200}
+                            height={200}
                           />
                           <p className="text-xs text-muted-foreground mt-2 text-center max-w-[200px] truncate">
                             {item.brand || item.description}
