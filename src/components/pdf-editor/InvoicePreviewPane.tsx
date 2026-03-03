@@ -100,7 +100,7 @@ export function InvoicePreviewPane({ settings, companyName = "Your Company Name"
   // Logo element
   const logoElement = settings.show_logo ? (
     companyLogo ? (
-      <img src={companyLogo} alt="Logo" className={`${logoSizeClass} rounded-lg object-contain`} />
+      <img src={companyLogo} alt="Logo" className={`${logoSizeClass} rounded-lg object-contain`} loading="lazy" decoding="async" width={80} height={80} />
     ) : (
       <div className={`${logoSizeClass} rounded-lg flex items-center justify-center`} style={{ backgroundColor: settings.accent_color }}>
         <Building2 className={logoIconClass} style={{ color: settings.primary_color }} />

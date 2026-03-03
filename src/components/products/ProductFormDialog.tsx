@@ -194,6 +194,10 @@ export function ProductFormDialog({ product, trigger }: ProductFormDialogProps) 
                     src={formData.image_url}
                     alt="Product"
                     className="h-24 w-24 object-cover rounded-lg border"
+                    loading="lazy"
+                    decoding="async"
+                    width={96}
+                    height={96}
                   />
                   <Button
                     type="button"

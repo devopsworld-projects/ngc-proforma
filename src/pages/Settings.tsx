@@ -205,6 +205,10 @@ export default function SettingsPage() {
                         src={logoUrl}
                         alt="Company logo"
                         className="w-32 h-32 object-contain rounded-lg border bg-white"
+                        loading="lazy"
+                        decoding="async"
+                        width={128}
+                        height={128}
                       />
                       <Button
                         type="button"

@@ -37,6 +37,10 @@ export function ProductViewDialog({ product, trigger }: ProductViewDialogProps) 
                 src={product.image_url} 
                 alt={product.name}
                 className="h-32 w-32 object-cover rounded-lg border"
+                loading="lazy"
+                decoding="async"
+                width={128}
+                height={128}
               />
             ) : (
               <div className="h-32 w-32 bg-muted rounded-lg flex items-center justify-center">

@@ -309,6 +309,10 @@ export default function ProductsPage() {
                                 src={product.image_url} 
                                 alt={product.name}
                                 className="h-10 w-10 object-cover rounded"
+                                loading="lazy"
+                                decoding="async"
+                                width={40}
+                                height={40}
                               />
                             ) : (
                               <div className="h-10 w-10 bg-muted rounded flex items-center justify-center">

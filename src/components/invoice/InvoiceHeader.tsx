@@ -102,7 +102,11 @@ export function InvoiceHeader({
               <img 
                 src={company.logoUrl} 
                 alt={`${company.name} logo`} 
-                className={`${logoSizeClass} rounded-lg object-contain`} 
+                className={`${logoSizeClass} rounded-lg object-contain`}
+                loading="lazy"
+                decoding="async"
+                width={80}
+                height={80}
               />
             ) : (
               <div 
@@ -175,7 +179,11 @@ export function InvoiceHeader({
             <img 
               src={company.logoUrl} 
               alt={`${company.name} logo`} 
-              className={`${logoSizeClass} rounded-lg object-contain`} 
+              className={`${logoSizeClass} rounded-lg object-contain`}
+              loading="lazy"
+              decoding="async"
+              width={80}
+              height={80}
             />
           ) : (
             <div 
@@ -223,7 +231,11 @@ export function InvoiceHeader({
             <img 
               src={company.logoUrl} 
               alt={`${company.name} logo`} 
-              className={`${logoSizeClass} rounded-lg object-contain`} 
+              className={`${logoSizeClass} rounded-lg object-contain`}
+              loading="lazy"
+              decoding="async"
+              width={80}
+              height={80}
             />
           ) : (
             <div 
