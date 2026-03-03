@@ -28,18 +28,19 @@ Deno.serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    // Verify user - auth header already set on client
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Verify user via JWT claims (faster, no network call)
+    const token = authHeader.replace("Bearer ", "");
+    const { data, error: claimsError } = await supabase.auth.getClaims(token);
 
-    if (authError || !user) {
-      console.error("Auth error:", authError);
+    if (claimsError || !data?.claims?.sub) {
+      console.error("Auth error:", claimsError);
       return new Response(
         JSON.stringify({ success: false, error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const userId = user.id;
+    const userId = data.claims.sub as string;
 
     // Get request body with device info
     const { userAgent, browser, os, deviceType } = await req.json();
