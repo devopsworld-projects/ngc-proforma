@@ -1,6 +1,14 @@
 import "@testing-library/jest-dom";
 import { vi } from "vitest";
 
+// Mock fabric/canvas to avoid native dependency issues in test environment
+vi.mock("fabric", () => ({
+  Canvas: vi.fn(),
+  Rect: vi.fn(),
+  Text: vi.fn(),
+  Image: vi.fn(),
+}));
+
 Object.defineProperty(window, "matchMedia", {
   writable: true,
   value: (query: string) => ({
