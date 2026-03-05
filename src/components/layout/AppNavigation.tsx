@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Users, LayoutDashboard, RefreshCcw, PlusCircle, BarChart3, Settings, Package, LogOut, Shield, UserCircle, Menu, X, ChevronDown, Globe, FileText, Bell } from "lucide-react";
+import { Users, LayoutDashboard, RefreshCcw, PlusCircle, BarChart3, Settings, Package, LogOut, Shield, UserCircle, Menu, X, ChevronDown, Globe, FileText, Bell, TicketCheck } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsAdmin } from "@/hooks/useAdmin";
 import { SessionActivityIndicator } from "@/components/auth/SessionActivityIndicator";
@@ -38,6 +38,10 @@ const managementItems = [{
   path: "/products",
   label: "Products",
   icon: Package
+}, {
+  path: "/profile#my-tickets",
+  label: "My Tickets",
+  icon: TicketCheck
 }];
 interface AppNavigationProps {
   unreadInvoiceCount?: number;
