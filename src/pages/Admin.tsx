@@ -28,7 +28,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Users, FileText, DollarSign, Shield, ShieldOff, Eye, Loader2, CheckCircle, XCircle, Mail, MailX, UserCheck, UserX, Trash2, Settings, Monitor, FileEdit } from "lucide-react";
+import { Users, FileText, DollarSign, Shield, ShieldOff, Eye, Loader2, CheckCircle, XCircle, Mail, MailX, UserCheck, UserX, Trash2, Settings, Monitor, FileEdit, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { PricingSettingsCard } from "@/components/admin/PricingSettingsCard";
@@ -154,6 +154,10 @@ export default function AdminPage() {
           <Button variant="outline" onClick={() => navigate("/admin/pdf-editor")}>
             <FileEdit className="h-4 w-4 mr-2" />
             PDF Template Editor
+          </Button>
+          <Button variant="outline" onClick={() => navigate("/admin/performance")}>
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Performance Tracker
           </Button>
         </div>
 
