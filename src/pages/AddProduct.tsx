@@ -108,6 +108,11 @@ export default function AddProduct() {
       return;
     }
 
+    if (!formData.category.trim()) {
+      toast.error("Category is required");
+      return;
+    }
+
     const productData = {
       name: formData.name.trim(),
       description: formData.description.trim() || null,
@@ -247,7 +252,7 @@ export default function AddProduct() {
                   <Input id="gst_percent" type="number" min="0" max="100" step="0.01" value={formData.gst_percent} onChange={(e) => handleChange("gst_percent", e.target.value)} />
                 </div>
                 <div>
-                  <Label htmlFor="category">Category</Label>
+                  <Label htmlFor="category">Category *</Label>
                   <Input id="category" value={formData.category} onChange={(e) => handleChange("category", e.target.value)} placeholder="e.g., Electronics" />
                 </div>
                 <div>
