@@ -1,5 +1,6 @@
 import { AppNavigation } from "@/components/layout/AppNavigation";
 import { DataQualityAgent } from "@/components/layout/DataQualityAgent";
+import { RaiseConcernFab } from "@/components/layout/RaiseConcernFab";
 import { useAdminInvoiceNotification } from "@/hooks/useAdminInvoiceNotification";
 
 interface AppLayoutProps {
@@ -25,5 +26,8 @@ export function AppLayout({
           Global Shopee • Proforma Invoice • Secure & Reliable    
         </div>
       </footer>
+
+      {/* Floating Concern Button */}
+      <RaiseConcernFab />
     </div>;
 }
