@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Mail, Send, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Mail, Send, TicketCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -67,17 +68,32 @@ export function RaiseConcernFab() {
 
   if (!user) return null;
 
+  const navigate = useNavigate();
+
   return (
     <>
-      {/* Floating Action Button */}
-      <button
-        onClick={() => setOpen(true)}
-        className="no-print fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-primary-foreground shadow-lg transition-all hover:scale-105 hover:shadow-xl active:scale-95 group"
-        title="Raise a support ticket"
-      >
-        <Mail className="h-5 w-5" />
-        <span className="hidden sm:inline text-sm font-medium">Support Ticket</span>
-      </button>
+      {/* Floating buttons stack */}
+      <div className="no-print fixed bottom-6 right-6 z-50 flex flex-col gap-3 items-end">
+        {/* My Tickets button - above support ticket */}
+        <button
+          onClick={() => navigate("/my-tickets")}
+          className="flex items-center gap-2 rounded-full bg-secondary px-4 py-3 text-secondary-foreground shadow-lg transition-all hover:scale-105 hover:shadow-xl active:scale-95 group"
+          title="View my support tickets"
+        >
+          <TicketCheck className="h-5 w-5" />
+          <span className="hidden sm:inline text-sm font-medium">My Tickets</span>
+        </button>
+
+        {/* Support Ticket button */}
+        <button
+          onClick={() => setOpen(true)}
+          className="flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-primary-foreground shadow-lg transition-all hover:scale-105 hover:shadow-xl active:scale-95 group"
+          title="Raise a support ticket"
+        >
+          <Mail className="h-5 w-5" />
+          <span className="hidden sm:inline text-sm font-medium">Support Ticket</span>
+        </button>
+      </div>
 
       {/* Dialog Form */}
       <Dialog open={open} onOpenChange={setOpen}>
