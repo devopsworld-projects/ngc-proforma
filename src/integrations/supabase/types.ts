@@ -225,6 +225,42 @@ export type Database = {
         }
         Relationships: []
       }
+      concerns: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          priority: string
+          status: string
+          subject: string
+          user_email: string | null
+          user_id: string
+          user_name: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          priority?: string
+          status?: string
+          subject: string
+          user_email?: string | null
+          user_id: string
+          user_name?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          priority?: string
+          status?: string
+          subject?: string
+          user_email?: string | null
+          user_id?: string
+          user_name?: string | null
+        }
+        Relationships: []
+      }
       customers: {
         Row: {
           created_at: string
