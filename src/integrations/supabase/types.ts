@@ -660,6 +660,33 @@ export type Database = {
         }
         Relationships: []
       }
+      popup_settings: {
+        Row: {
+          id: string
+          is_enabled: boolean
+          message: string
+          popup_key: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          is_enabled?: boolean
+          message?: string
+          popup_key: string
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          is_enabled?: boolean
+          message?: string
+          popup_key?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pricing_settings: {
         Row: {
           created_at: string
