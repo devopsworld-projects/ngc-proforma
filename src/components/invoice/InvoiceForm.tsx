@@ -317,6 +317,23 @@ export function InvoiceForm({ invoice, onCancel, onSuccess }: InvoiceFormProps) 
         throw new Error("You must be logged in to create invoices");
       }
 
+      // Check for duplicate proforma number
+      const { data: existing, error: dupError } = await supabase
+        .from("invoices")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("invoice_no", data.invoiceNo)
+        .is("deleted_at", null);
+      
+      if (dupError) throw dupError;
+      
+      const isDuplicate = existing?.some(inv => !(isEditing && invoice && inv.id === invoice.id));
+      if (isDuplicate) {
+        toast.error(`Proforma number "${data.invoiceNo}" is already in use. Please use a different number.`);
+        setIsSubmitting(false);
+        return;
+      }
+
       // Create customer snapshot
       const customerSnapshot = createCustomerSnapshot(
         selectedCustomer,
