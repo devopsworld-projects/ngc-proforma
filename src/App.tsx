@@ -33,6 +33,7 @@ const PerformanceTracker = lazy(() => import("./pages/PerformanceTracker"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const ShareInvoice = lazy(() => import("./pages/ShareInvoice"));
+const MyTickets = lazy(() => import("./pages/MyTickets"));
 
 const queryClient = new QueryClient();
 
@@ -66,6 +67,7 @@ const App = () => (
                   <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
                   <Route path="/admin/pdf-editor" element={<ProtectedRoute><PdfTemplateEditor /></ProtectedRoute>} />
                   <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                  <Route path="/my-tickets" element={<ProtectedRoute><MyTickets /></ProtectedRoute>} />
                   <Route path="/admin/performance" element={<ProtectedRoute><PerformanceTracker /></ProtectedRoute>} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
