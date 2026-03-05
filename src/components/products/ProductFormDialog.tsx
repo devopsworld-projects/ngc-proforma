@@ -134,6 +134,11 @@ export function ProductFormDialog({ product, trigger }: ProductFormDialogProps) 
       return;
     }
 
+    if (!formData.category.trim()) {
+      toast.error("Category is required");
+      return;
+    }
+
     const productData = {
       name: formData.name.trim(),
       description: formData.description.trim() || null,
@@ -342,7 +347,7 @@ export function ProductFormDialog({ product, trigger }: ProductFormDialogProps) 
             </div>
             
             <div>
-              <Label htmlFor="category">Category</Label>
+              <Label htmlFor="category">Category *</Label>
               <Input
                 id="category"
                 value={formData.category}
