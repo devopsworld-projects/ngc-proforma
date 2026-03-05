@@ -29,6 +29,7 @@ const AddProduct = lazy(() => import("./pages/AddProduct"));
 const PdfTemplateEditor = lazy(() => import("./pages/PdfTemplateEditor"));
 const Admin = lazy(() => import("./pages/Admin"));
 const Profile = lazy(() => import("./pages/Profile"));
+const PerformanceTracker = lazy(() => import("./pages/PerformanceTracker"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
@@ -63,6 +64,7 @@ const App = () => (
                   <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
                   <Route path="/admin/pdf-editor" element={<ProtectedRoute><PdfTemplateEditor /></ProtectedRoute>} />
                   <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                  <Route path="/admin/performance" element={<ProtectedRoute><PerformanceTracker /></ProtectedRoute>} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>

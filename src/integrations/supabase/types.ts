@@ -905,6 +905,32 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_org_performance_stats: {
+        Args: never
+        Returns: {
+          customers_added: number
+          email: string
+          full_name: string
+          last_login: string
+          products_added: number
+          proformas_created: number
+          proformas_paid: number
+          proformas_sent: number
+          session_count: number
+          total_revenue: number
+          user_id: string
+        }[]
+      }
+      get_top_products_stats: {
+        Args: { limit_count?: number }
+        Returns: {
+          invoice_count: number
+          product_name: string
+          seller_name: string
+          total_amount: number
+          total_quantity: number
+        }[]
+      }
       get_user_invoices_admin: {
         Args: { target_user_id: string }
         Returns: {
