@@ -12,6 +12,7 @@ import { InvoiceData, CompanyInfo, SupplierInfo, InvoiceItem, InvoiceTotals } fr
 import { formatDate, numberToWords } from "@/lib/invoice-utils";
 import { downloadInvoiceAsPdf, generateInvoicePdfFile } from "@/lib/html-to-pdf";
 import { toast } from "sonner";
+import { QRCodeSVG } from "qrcode.react";
 
 // Shadow style for screen display only
 const SCREEN_SHADOW = "0 25px 50px -12px rgba(30, 42, 74, 0.15)";
@@ -307,9 +308,25 @@ export default function InvoicePreview() {
           </div>
         </div>
 
-        {/* Invoice Preview */}
-        <div className="max-w-4xl mx-auto">
-          <Invoice data={invoiceData} containerId="invoice-container" />
+        {/* Invoice Preview with QR Code */}
+        <div className="flex justify-center gap-6 items-start">
+          <div className="max-w-4xl flex-1 min-w-0">
+            <Invoice data={invoiceData} containerId="invoice-container" />
+          </div>
+          {/* QR Code - beside the invoice, hidden on small screens and during print */}
+          <div className="no-print hidden xl:flex flex-col items-center gap-2 sticky top-24 shrink-0">
+            <div className="bg-white p-3 rounded-lg border border-border shadow-sm">
+              <QRCodeSVG
+                value={`${window.location.origin}/invoices/${id}`}
+                size={120}
+                level="M"
+                includeMargin={false}
+              />
+            </div>
+            <p className="text-[10px] text-muted-foreground text-center max-w-[120px] leading-tight">
+              Scan to view &amp; download this proforma
+            </p>
+          </div>
         </div>
       </div>
     </AppLayout>
