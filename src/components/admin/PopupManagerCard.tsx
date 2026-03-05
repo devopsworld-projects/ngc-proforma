@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Loader2, Save, BellRing, Package, Users, FileText } from "lucide-react";
+import { Loader2, Save, BellRing, Package, Users, FileText, Archive, ScanSearch } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -19,14 +19,22 @@ interface PopupSetting {
 
 const POPUP_ICONS: Record<string, React.ReactNode> = {
   uncategorized_products: <Package className="h-5 w-5 text-muted-foreground" />,
+  missing_sku: <Package className="h-5 w-5 text-muted-foreground" />,
+  zero_stock: <Archive className="h-5 w-5 text-muted-foreground" />,
   incomplete_customers: <Users className="h-5 w-5 text-muted-foreground" />,
+  missing_address: <Users className="h-5 w-5 text-muted-foreground" />,
   draft_proformas: <FileText className="h-5 w-5 text-muted-foreground" />,
+  stale_drafts: <FileText className="h-5 w-5 text-muted-foreground" />,
 };
 
 const POPUP_LABELS: Record<string, string> = {
   uncategorized_products: "Uncategorized Products",
+  missing_sku: "Missing SKU",
+  zero_stock: "Out of Stock",
   incomplete_customers: "Incomplete Customers",
+  missing_address: "Missing Addresses",
   draft_proformas: "Draft Proformas",
+  stale_drafts: "Stale Drafts (7+ days)",
 };
 
 export function PopupManagerCard() {
@@ -120,11 +128,11 @@ export function PopupManagerCard() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <BellRing className="h-5 w-5" />
-          Popup Manager
+          <ScanSearch className="h-5 w-5" />
+          Data Quality Agent
         </CardTitle>
         <CardDescription>
-          Enable or disable popup notifications and customize their content for all users.
+          The agent scans your application data and notifies users about issues. Enable scan rules and customize messages.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
