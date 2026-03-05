@@ -13,11 +13,13 @@ import {
 import { AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsAdmin } from "@/hooks/useAdmin";
 
 const CHECK_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
 export function UncategorizedProductsAlert() {
   const { user } = useAuth();
+  const { data: isAdmin } = useIsAdmin();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [count, setCount] = useState(0);
@@ -25,18 +27,24 @@ export function UncategorizedProductsAlert() {
   const checkUncategorized = useCallback(async () => {
     if (!user) return;
 
-    const { count: uncatCount, error } = await supabase
+    let query = supabase
       .from("products")
       .select("id", { count: "exact", head: true })
       .eq("is_active", true)
-      .eq("user_id", user.id)
       .is("category", null);
+
+    // Regular users only see their own; admins see all
+    if (!isAdmin) {
+      query = query.eq("user_id", user.id);
+    }
+
+    const { count: uncatCount, error } = await query;
 
     if (!error && uncatCount && uncatCount > 0) {
       setCount(uncatCount);
       setOpen(true);
     }
-  }, [user]);
+  }, [user, isAdmin]);
 
   // Check on mount (every page refresh) and every 5 minutes
   useEffect(() => {
