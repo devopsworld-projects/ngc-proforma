@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,6 @@ import {
   RotateCcw,
   Rows3,
   SlidersHorizontal,
-  PenTool,
 } from "lucide-react";
 import { useIsAdmin } from "@/hooks/useAdmin";
 import { usePdfTemplateSettings, useUpdatePdfTemplateSettings } from "@/hooks/usePdfTemplateSettings";
@@ -31,7 +30,7 @@ import { FontSettingsPanel } from "@/components/pdf-editor/FontSettingsPanel";
 import { LayoutSettingsPanel } from "@/components/pdf-editor/LayoutSettingsPanel";
 import { SpacingSettingsPanel } from "@/components/pdf-editor/SpacingSettingsPanel";
 import { InvoicePreviewPane } from "@/components/pdf-editor/InvoicePreviewPane";
-import { InvoiceCanvasEditor } from "@/components/canvas-editor/InvoiceCanvasEditor";
+
 import {
   ResizablePanelGroup,
   ResizablePanel,
@@ -98,7 +97,6 @@ const defaultSettings = {
   compact_header: false,
   border_style: "subtle",
   table_border_color: "#e5e7eb",
-  custom_canvas_data: null as any | null,
 };
 
 type SettingsType = typeof defaultSettings & { id?: string };
@@ -166,17 +164,6 @@ export default function PdfTemplateEditor() {
     toast.info("Settings reset to defaults");
   };
 
-  const handleCanvasSave = useCallback(async (canvasData: string) => {
-    try {
-      await updateSettings.mutateAsync({
-        ...settings,
-        id: existingSettings?.id,
-        custom_canvas_data: JSON.parse(canvasData),
-      });
-    } catch (error) {
-      throw error;
-    }
-  }, [settings, existingSettings, updateSettings]);
 
   if (adminLoading || settingsLoading) {
     return (
@@ -241,10 +228,6 @@ export default function PdfTemplateEditor() {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
             <div className="border-b px-4 overflow-x-auto">
               <TabsList className="h-12 flex-wrap">
-                <TabsTrigger value="canvas" className="gap-1.5 text-xs">
-                  <PenTool className="h-3.5 w-3.5" />
-                  Canvas Editor
-                </TabsTrigger>
                 <TabsTrigger value="templates" className="gap-1.5 text-xs">
                   <LayoutTemplate className="h-3.5 w-3.5" />
                   Templates
@@ -276,20 +259,7 @@ export default function PdfTemplateEditor() {
               </TabsList>
             </div>
 
-            {/* Canvas Editor - Full Width */}
-            <TabsContent value="canvas" className="flex-1 m-0 overflow-hidden">
-              <InvoiceCanvasEditor
-                initialData={existingSettings?.custom_canvas_data ? JSON.stringify(existingSettings.custom_canvas_data) : null}
-                templateSettings={settings}
-                companyName={companySettings?.name}
-                companyLogo={companySettings?.logo_url}
-                onSave={handleCanvasSave}
-                isSaving={updateSettings.isPending}
-              />
-            </TabsContent>
 
-            {/* Settings tabs - with preview panel */}
-            {activeTab !== "canvas" && (
               <div className="flex-1 overflow-hidden">
                 <ResizablePanelGroup direction="horizontal">
                   {/* Settings Panel */}
@@ -370,7 +340,6 @@ export default function PdfTemplateEditor() {
                   </ResizablePanel>
                 </ResizablePanelGroup>
               </div>
-            )}
           </Tabs>
         </div>
       </div>

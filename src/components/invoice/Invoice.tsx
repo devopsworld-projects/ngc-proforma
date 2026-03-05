@@ -3,7 +3,7 @@ import { InvoiceHeader } from "./InvoiceHeader";
 import { InvoiceTable } from "./InvoiceTable";
 import { InvoiceTotals } from "./InvoiceTotals";
 import { InvoiceFooter } from "./InvoiceFooter";
-import { CanvasOverlay } from "./CanvasOverlay";
+
 import { usePdfTemplate } from "@/contexts/PdfTemplateContext";
 import { useMemo } from "react";
 
@@ -85,8 +85,6 @@ export function Invoice({ data, containerId = "invoice-container" }: InvoiceProp
         "--invoice-header-text": settings.header_text_color,
       } as React.CSSProperties}
     >
-      {/* Canvas overlay for custom elements from the template editor */}
-      <CanvasOverlay />
       {/* Page break indicator - shows where page 2 would start */}
       <div className="invoice-page-indicator no-print" aria-hidden="true" />
       
