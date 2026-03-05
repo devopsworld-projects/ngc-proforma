@@ -38,6 +38,7 @@ import { UserSessionsCard } from "@/components/admin/UserSessionsCard";
 import { RevenueManagementCard } from "@/components/admin/RevenueManagementCard";
 import { ApiKeysCard } from "@/components/admin/ApiKeysCard";
 import { PopupManagerCard } from "@/components/admin/PopupManagerCard";
+import { SupportTicketsCard } from "@/components/admin/SupportTicketsCard";
 
 const statusColors: Record<string, string> = {
   draft: "bg-muted text-muted-foreground",
@@ -171,6 +172,7 @@ export default function AdminPage() {
             <TabsTrigger value="quotations">Quotation Tracking</TabsTrigger>
             <TabsTrigger value="api-keys">API Keys</TabsTrigger>
             <TabsTrigger value="popups">Popup Manager</TabsTrigger>
+            <TabsTrigger value="tickets">Support Tickets</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -463,6 +465,10 @@ export default function AdminPage() {
 
           <TabsContent value="popups">
             <PopupManagerCard />
+          </TabsContent>
+
+          <TabsContent value="tickets">
+            <SupportTicketsCard />
           </TabsContent>
         </Tabs>
       </div>

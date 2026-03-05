@@ -52,14 +52,14 @@ export function RaiseConcernFab() {
         },
       });
 
-      toast.success("Your concern has been submitted successfully! The developer will review it.");
+      toast.success("Your support ticket has been submitted! The developer will review it.");
       setSubject("");
       setMessage("");
       setPriority("medium");
       setOpen(false);
     } catch (err: any) {
-      toast.error("Failed to submit concern. Please try again.");
-      console.error("Concern submission error:", err);
+      toast.error("Failed to submit ticket. Please try again.");
+      console.error("Ticket submission error:", err);
     } finally {
       setSubmitting(false);
     }
@@ -73,10 +73,10 @@ export function RaiseConcernFab() {
       <button
         onClick={() => setOpen(true)}
         className="no-print fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-primary-foreground shadow-lg transition-all hover:scale-105 hover:shadow-xl active:scale-95 group"
-        title="Raise a concern to the developer"
+        title="Raise a support ticket"
       >
         <Mail className="h-5 w-5" />
-        <span className="hidden sm:inline text-sm font-medium">Raise a Concern</span>
+        <span className="hidden sm:inline text-sm font-medium">Support Ticket</span>
       </button>
 
       {/* Dialog Form */}
@@ -85,10 +85,10 @@ export function RaiseConcernFab() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Mail className="h-5 w-5 text-primary" />
-              Raise a Concern to the Developer
+              Raise a Support Ticket
             </DialogTitle>
             <DialogDescription>
-              Report bugs, suggest improvements, or raise any issue. Your message will be sent directly to the developer.
+              Report bugs, suggest improvements, or raise any issue. Your ticket will be sent directly to the developer.
             </DialogDescription>
           </DialogHeader>
 
@@ -142,7 +142,7 @@ export function RaiseConcernFab() {
               ) : (
                 <>
                   <Send className="h-4 w-4 mr-2" />
-                  Submit Concern
+                  Submit Ticket
                 </>
               )}
             </Button>

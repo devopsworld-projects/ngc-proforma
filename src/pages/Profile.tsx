@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { User, Lock, Loader2, CheckCircle, AlertCircle } from "lucide-react";
+import { MyTicketsCard } from "@/components/profile/MyTicketsCard";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -288,6 +289,8 @@ export default function ProfilePage() {
             </form>
           </CardContent>
         </Card>
+        {/* My Support Tickets */}
+        <MyTicketsCard />
       </div>
     </AppLayout>
   );
