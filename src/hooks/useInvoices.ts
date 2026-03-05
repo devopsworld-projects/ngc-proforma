@@ -251,16 +251,21 @@ export function useNextInvoiceNumber() {
     queryKey: ["nextInvoiceNumber", user?.id],
     queryFn: async () => {
       if (!user) return "1";
+      // Get all invoice numbers for this user to find the highest numeric value
       const { data, error } = await supabase
         .from("invoices")
         .select("invoice_no")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(1);
+        .eq("user_id", user.id);
       if (error) throw error;
       if (!data || data.length === 0) return "1";
-      const lastNo = parseInt(data[0].invoice_no) || 0;
-      return String(lastNo + 1);
+      
+      // Find the highest numeric invoice number
+      const maxNo = data.reduce((max, inv) => {
+        const num = parseInt(inv.invoice_no) || 0;
+        return num > max ? num : max;
+      }, 0);
+      
+      return String(maxNo + 1);
     },
     enabled: !!user,
   });
