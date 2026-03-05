@@ -1,4 +1,5 @@
 import { AppNavigation } from "@/components/layout/AppNavigation";
+import { UncategorizedProductsAlert } from "@/components/layout/UncategorizedProductsAlert";
 import { useAdminInvoiceNotification } from "@/hooks/useAdminInvoiceNotification";
 
 interface AppLayoutProps {
@@ -10,7 +11,7 @@ export function AppLayout({
   const { unreadCount, notifications, markAsRead, clearAll, lastReadAt } = useAdminInvoiceNotification();
   return <div className="min-h-screen flex flex-col bg-background">
       <AppNavigation unreadInvoiceCount={unreadCount} notifications={notifications} onMarkAsRead={markAsRead} onClearAll={clearAll} lastReadAt={lastReadAt} />
-
+      <UncategorizedProductsAlert />
       {/* Main Content */}
       <main className="flex-1 overflow-auto">
         <div className="container max-w-7xl mx-auto px-4 sm:px-6 py-6">
