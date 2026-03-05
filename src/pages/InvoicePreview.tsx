@@ -317,7 +317,7 @@ export default function InvoicePreview() {
           <div className="no-print hidden xl:flex flex-col items-center gap-2 sticky top-24 shrink-0">
             <div className="bg-white p-3 rounded-lg border border-border shadow-sm">
               <QRCodeSVG
-                value={`${window.location.origin}/invoices/${id}`}
+                value={`${window.location.origin}/share/${id}`}
                 size={120}
                 level="M"
                 includeMargin={false}
