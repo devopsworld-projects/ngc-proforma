@@ -37,6 +37,7 @@ import { CreateUserDialog } from "@/components/admin/CreateUserDialog";
 import { UserSessionsCard } from "@/components/admin/UserSessionsCard";
 import { RevenueManagementCard } from "@/components/admin/RevenueManagementCard";
 import { ApiKeysCard } from "@/components/admin/ApiKeysCard";
+import { PopupManagerCard } from "@/components/admin/PopupManagerCard";
 
 const statusColors: Record<string, string> = {
   draft: "bg-muted text-muted-foreground",
@@ -169,6 +170,7 @@ export default function AdminPage() {
             <TabsTrigger value="pricing">Pricing Settings</TabsTrigger>
             <TabsTrigger value="quotations">Quotation Tracking</TabsTrigger>
             <TabsTrigger value="api-keys">API Keys</TabsTrigger>
+            <TabsTrigger value="popups">Popup Manager</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -457,6 +459,10 @@ export default function AdminPage() {
 
           <TabsContent value="api-keys">
             <ApiKeysCard />
+          </TabsContent>
+
+          <TabsContent value="popups">
+            <PopupManagerCard />
           </TabsContent>
         </Tabs>
       </div>
