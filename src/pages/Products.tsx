@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -131,24 +131,8 @@ export default function ProductsPage() {
     setCurrentPage(1);
   }, [searchTerm, categoryFilter, userFilter, sortConfig]);
 
-  // Notify user about uncategorized products
-  useEffect(() => {
-    if (!products || products.length === 0) return;
-    const uncategorized = products.filter((p) => !p.category);
-    if (uncategorized.length > 0) {
-      toast.warning(
-        `${uncategorized.length} product${uncategorized.length > 1 ? "s" : ""} missing a category. Please update ${uncategorized.length > 1 ? "them" : "it"}.`,
-        {
-          id: "uncategorized-products-warning",
-          duration: 8000,
-          action: {
-            label: "Show",
-            onClick: () => setCategoryFilter("uncategorized"),
-          },
-        }
-      );
-    }
-  }, [products]);
+
+
 
   const totalPages = Math.ceil(filteredAndSortedProducts.length / ITEMS_PER_PAGE);
   const paginatedProducts = filteredAndSortedProducts.slice(
