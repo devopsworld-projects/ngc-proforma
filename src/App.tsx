@@ -32,6 +32,7 @@ const Profile = lazy(() => import("./pages/Profile"));
 const PerformanceTracker = lazy(() => import("./pages/PerformanceTracker"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const ShareInvoice = lazy(() => import("./pages/ShareInvoice"));
 
 const queryClient = new QueryClient();
 
@@ -51,6 +52,7 @@ const App = () => (
                   <Route path="/signup" element={<Signup />} />
                   <Route path="/forgot-password" element={<ForgotPassword />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
+                  <Route path="/share/:id" element={<ShareInvoice />} />
                   <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                   <Route path="/invoices/new" element={<ProtectedRoute><CreateInvoice /></ProtectedRoute>} />
                   <Route path="/invoices/:id" element={<ProtectedRoute><InvoicePreview /></ProtectedRoute>} />

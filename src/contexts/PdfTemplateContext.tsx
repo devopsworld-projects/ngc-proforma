@@ -86,6 +86,20 @@ export function PdfTemplateProvider({ children }: { children: ReactNode }) {
   );
 }
 
+/** Static provider for public pages where settings are passed directly (no auth needed) */
+export function StaticPdfTemplateProvider({ settings: externalSettings, children }: { settings: any; children: ReactNode }) {
+  const settings = {
+    ...defaultSettings,
+    ...(externalSettings || {}),
+  };
+
+  return (
+    <PdfTemplateContext.Provider value={{ settings, isLoading: false }}>
+      {children}
+    </PdfTemplateContext.Provider>
+  );
+}
+
 export function usePdfTemplate() {
   const context = useContext(PdfTemplateContext);
   if (!context) {
