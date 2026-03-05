@@ -38,10 +38,6 @@ const managementItems = [{
   path: "/products",
   label: "Products",
   icon: Package
-}, {
-  path: "/profile#my-tickets",
-  label: "My Tickets",
-  icon: TicketCheck
 }];
 interface AppNavigationProps {
   unreadInvoiceCount?: number;
@@ -120,6 +116,7 @@ export function AppNavigation({ unreadInvoiceCount = 0, notifications = [], onMa
             {mainNavItems.map(item => <NavLink key={item.path} {...item} />)}
             <DropdownNavGroup label="Proforma Invoice" icon={FileText} items={invoiceItems} />
             <DropdownNavGroup label="Management" icon={Package} items={managementItems} />
+            <NavLink path="/profile#my-tickets" label="My Tickets" icon={TicketCheck} />
             {isAdmin && <NavLink path="/settings" label="Settings" icon={Settings} />}
             {isAdmin && <>
               <NotificationBell
