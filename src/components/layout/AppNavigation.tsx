@@ -116,7 +116,7 @@ export function AppNavigation({ unreadInvoiceCount = 0, notifications = [], onMa
             {mainNavItems.map(item => <NavLink key={item.path} {...item} />)}
             <DropdownNavGroup label="Proforma Invoice" icon={FileText} items={invoiceItems} />
             <DropdownNavGroup label="Management" icon={Package} items={managementItems} />
-            <NavLink path="/my-tickets" label="My Tickets" icon={TicketCheck} />
+            {isAdmin && <NavLink path="/settings" label="Settings" icon={Settings} />}
             {isAdmin && <NavLink path="/settings" label="Settings" icon={Settings} />}
             {isAdmin && <>
               <NotificationBell
