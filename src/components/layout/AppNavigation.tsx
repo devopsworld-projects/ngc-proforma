@@ -117,7 +117,6 @@ export function AppNavigation({ unreadInvoiceCount = 0, notifications = [], onMa
             <DropdownNavGroup label="Proforma Invoice" icon={FileText} items={invoiceItems} />
             <DropdownNavGroup label="Management" icon={Package} items={managementItems} />
             {isAdmin && <NavLink path="/settings" label="Settings" icon={Settings} />}
-            {isAdmin && <NavLink path="/settings" label="Settings" icon={Settings} />}
             {isAdmin && <>
               <NotificationBell
                 unreadCount={unreadInvoiceCount}
