@@ -18,6 +18,7 @@ export function RaiseConcernFab() {
   const [priority, setPriority] = useState("medium");
   const [submitting, setSubmitting] = useState(false);
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async () => {
     if (!subject.trim() || !message.trim()) {
@@ -67,8 +68,6 @@ export function RaiseConcernFab() {
   };
 
   if (!user) return null;
-
-  const navigate = useNavigate();
 
   return (
     <>
