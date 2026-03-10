@@ -68,8 +68,6 @@ export function RaiseConcernFab() {
 
   if (!user) return null;
 
-  const navigate = useNavigate();
-
   return (
     <>
       {/* Floating buttons stack */}
